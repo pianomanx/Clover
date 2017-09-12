@@ -518,7 +518,9 @@ MainBuildScript() {
 #    echo "NASM_PREFIX: ${NASM_PREFIX}"
 
     local repoRev="0000"
-    if [[ -d .svn ]]; then
+    if [[ -e _svnver.txt ]]; then
+        repoRev=$(cat _svnver.txt)
+    elif [[ -d .svn ]]; then
         repoRev=$(svnversion -n | tr -d [:alpha:])
     elif [[ -d .git ]]; then
         repoRev=$(git svn find-rev git-svn | tr -cd [:digit:])

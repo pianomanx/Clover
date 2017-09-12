@@ -32,7 +32,9 @@ done
 cd "$(dirname $0)"
 
 version=v2.4k
-if [[ -d ../.git ]]; then
+if [[ -e ../_svnver.txt ]]; then
+  revision=$(cat ../_svnver.txt)
+elif [[ -d ../.git ]]; then
   revision=$(git svn info | grep Revision | tr -cd [:digit:])
 else
   revision=$(svnversion -n | tr -d [:alpha:])
