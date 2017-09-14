@@ -817,6 +817,16 @@ struct ACPI_PATCHED_AML
   INPUT_ITEM        MenuItem;
 };
 
+// syscl - Side load kext
+typedef struct SIDELOAD_KEXT SIDELOAD_KEXT;
+struct SIDELOAD_KEXT {
+    SIDELOAD_KEXT  *Next;
+    SIDELOAD_KEXT  *PlugInList;
+    CHAR16         *FileName;
+    CHAR16         *MatchOS;
+    INPUT_ITEM     MenuItem;
+};
+
 // SysVariables
 typedef struct SYSVARIABLES SYSVARIABLES;
 struct SYSVARIABLES
@@ -1208,6 +1218,11 @@ typedef struct {
 
   //BlackListed kexts
   CHAR16                  BlockKexts[64];
+    
+  // Disable inject kexts
+  UINT32                  DisableInjectKextCount;
+  CHAR16                  **DisabledInjectKext;
+  INPUT_ITEM              *InjectKextMenuItem;
 
   //ACPI tables
   UINTN                   SortedACPICount;
@@ -1683,6 +1698,9 @@ extern TagPtr                          gConfigDict[];
 
 // ACPI/PATCHED/AML
 extern ACPI_PATCHED_AML                *ACPIPatchedAML;
+
+// Sideload/inject kext
+extern SIDELOAD_KEXT                   *InjectKextList;
 
 // SysVariables
 //extern SYSVARIABLES                   *SysVariables;
