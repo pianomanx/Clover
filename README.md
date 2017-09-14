@@ -15,7 +15,7 @@ The 'versioning' branch has some work arounds for bugs/problems with 'git-svn' a
 
 Pre-built Clover from my master branch is available on Bitbucket:
 
-https://bitbucket.org/RehabMan/Clover/downloads/
+https://bitbucket.org/RehabMan/clover/downloads/
 
 
 ### RehabMan added features/fixes
@@ -30,7 +30,10 @@ https://bitbucket.org/RehabMan/Clover/downloads/
 ### Building
 
 A fork of Mikey1979's Build_Clover.command script (https://github.com/Micky1979/Build_Clover.git) is available here:
-https://github.com/RehabMan/Build_Clover.git.  It has the change required to use my repo instead of Clover on sourceforge.
+
+https://github.com/RehabMan/Build_Clover
+
+It has the change required to use my repo instead of Clover on sourceforge, along with a few other changes.
 
 Obtain copy of the script:
 ```
@@ -52,13 +55,7 @@ The script will automatically clone master from my Clover fork.  If you wanted t
 
 You will not be able to reproduce the 'svn' branch using 'git svn clone'.  Something has changed in git svn or the Clover repo since the al3xtjames fork was created on github.  If you wish to have a copy of the svn branch with a connection to the svn repo, start with the 'base_git-svn.git.zip' that you find in this project.
 
-To use it:
-
-- download the base_git-svn.git.zip file from bitbucket
-
-- unzip it
-
-Now you will have a copy of the 'svn' branch, but it is not up-to-date with current svn (it is Clover r4200).  You will notice that remote 'origin' points to 'https://github.com/al3xtjames/Clover' (you can see with 'git remote -v').
+To use it, download the base_git-svn.git.zip file from bitbucket (https://bitbucket.org/RehabMan/clover/downloads/base_git-svn.git.zip), then unzip into a folder of your choice.  Now you will have a copy of the 'svn' branch, but it is not up-to-date with current svn (it is Clover r4200).  You will notice that remote 'origin' points to 'https://github.com/al3xtjames/Clover' (you can see with 'git remote -v').
 
 At this point, you can add other remotes, merge, and/or use git-svn rebase.
 
@@ -86,7 +83,7 @@ git checkout versioning
 git checkout master
 ```
 
-The procedure above is only needed if you wish to be able to 'git svn rebase' from the svn branch.  For normal use you can just clone the repo as usual:
+The procedure above is only needed if you wish to be able to 'git svn rebase' from the svn branch.  For normal use, you can just clone the repo as usual:
 
 ```
 mkdir ~/Projects
@@ -157,6 +154,12 @@ If there are changes to commit, use the command that was output by the sync_vers
 
 ```
 git commit -m "update _svnver.txt 4207"
+```
+
+After that, you can switch back to the master branch and merge the updated code from the versioning branch:
+```
+git checkout master
+git merge versioning
 ```
 
 Generally, I will try to keep all branches in my fork closely in sync with Clover on sourceforge svn.
