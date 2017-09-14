@@ -658,7 +658,7 @@ MainBuildScript() {
       #echo "#define FIRMWARE_VERSION \"2.31\"" > "$CLOVERROOT"/Version.h
       echo "#define FIRMWARE_BUILDDATE \"${clover_build_date}\"" > "$CLOVERROOT"/Version.h
       echo "#define FIRMWARE_REVISION L\"${clover_revision}\""   >> "$CLOVERROOT"/Version.h
-      echo "#define REVISION_STR \"Clover revision: ${clover_revision}\"" >> "$CLOVERROOT"/Version.h
+      echo "#define REVISION_STR \"Clover(RehabMan) revision: ${clover_revision}\"" >> "$CLOVERROOT"/Version.h
 
       local clover_build_info="Args: "
       if [[ -n "$@" ]]; then
