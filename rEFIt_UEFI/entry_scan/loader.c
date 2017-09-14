@@ -767,6 +767,7 @@ STATIC VOID AddDefaultMenu(IN LOADER_ENTRY *Entry)
       AddMenuCheck(SubScreen, "macOS 64bit",          OPT_X64,  68);
     }
     AddMenuCheck(SubScreen, "Verbose (-v)",                               OPT_VERBOSE, 68);
+    AddMenuCheck(SubScreen, "Without caches (-f)",    OSFLAG_NOCACHES, 69);
     AddMenuCheck(SubScreen, "Single User (-s)",                           OPT_SINGLE_USER, 68);
     AddMenuCheck(SubScreen, "Safe Mode (-x)",                             OPT_SAFE, 68);
     AddMenuCheck(SubScreen, "Disable KASLR (slide=0)",                    OPT_SLIDE, 68);
@@ -774,10 +775,10 @@ STATIC VOID AddDefaultMenu(IN LOADER_ENTRY *Entry)
     AddMenuCheck(SubScreen, "Use Nvidia WEB drivers (nvda_drv=1)",        OPT_NVWEBON, 68);
     AddMenuCheck(SubScreen, "Disable PowerNap (darkwake=0)",              OPT_POWERNAPOFF, 68);
     AddMenuCheck(SubScreen, "Use XNU CPUPM (-xcpm)",                      OPT_XCPM, 68);
-    AddMenuCheck(SubScreen, "Disable Intel Idle Mode (-gux_no_idle)",     OPT_GNOIDLE, 68);
-    AddMenuCheck(SubScreen, "Sleep Uses Shutdown (-gux_nosleep)",         OPT_GNOSLEEP, 68);
-    AddMenuCheck(SubScreen, "Force No Msi Int (-gux_nomsi)",              OPT_GNOMSI, 68);
-    AddMenuCheck(SubScreen, "EHC manage USB2 ports (-gux_defer_usb2)",    OPT_EHCUSB, 68);
+//    AddMenuCheck(SubScreen, "Disable Intel Idle Mode (-gux_no_idle)",     OPT_GNOIDLE, 68);
+//    AddMenuCheck(SubScreen, "Sleep Uses Shutdown (-gux_nosleep)",         OPT_GNOSLEEP, 68);
+//    AddMenuCheck(SubScreen, "Force No Msi Int (-gux_nomsi)",              OPT_GNOMSI, 68);
+//    AddMenuCheck(SubScreen, "EHC manage USB2 ports (-gux_defer_usb2)",    OPT_EHCUSB, 68);
     AddMenuCheck(SubScreen, "Keep symbols on panic (keepsyms=1)",         OPT_KEEPSYMS, 68);
     AddMenuCheck(SubScreen, "Don't reboot on panic (debug=0x100)",        OPT_DEBUG, 68);
     AddMenuCheck(SubScreen, "Debug kexts (kextlog=0xffff)",               OPT_KEXTLOG, 68);
