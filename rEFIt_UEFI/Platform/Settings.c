@@ -5351,6 +5351,9 @@ GetUserSettings(
         if (Prop != NULL) {
           gSettings.PluginType = (UINT8)GetPropertyInteger (Prop, gSettings.PluginType);
           DBG ("PluginType: %d\n", gSettings.PluginType);
+
+          Prop = GetProperty (Dict2, "DisableAPSNAPLF");
+          gSettings.DisableAPSNAPLF = IsPropertyTrue (Prop);
         }
       }
 
