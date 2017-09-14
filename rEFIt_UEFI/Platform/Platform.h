@@ -943,6 +943,9 @@ typedef struct {
   BOOLEAN                 DropSSDT;
   BOOLEAN                 GeneratePStates;
   BOOLEAN                 GenerateCStates;
+  BOOLEAN                 GenerateAPSN;
+  BOOLEAN                 GenerateAPLF;
+  BOOLEAN                 GeneratePluginType;
   UINT8                   PLimitDict;
   UINT8                   UnderVoltStep;
   BOOLEAN                 DoubleFirstState;
@@ -963,7 +966,6 @@ typedef struct {
   UINT8                   MinMultiplier;
   UINT8                   MaxMultiplier;
   UINT8                   PluginType;
-  BOOLEAN                 DisableAPSNAPLF;
   BOOLEAN                 DropMCFG;
 
   //Injections

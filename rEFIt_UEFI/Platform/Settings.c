@@ -5347,17 +5347,31 @@ GetUserSettings(
         Prop2 = GetProperty (Dict2, "Generate");
         if (Prop2 != NULL) {
           if (IsPropertyTrue (Prop2)) {
+            // all Generate on
             gSettings.GeneratePStates = TRUE;
             gSettings.GenerateCStates = TRUE;
+            gSettings.GenerateAPSN = TRUE;
+            gSettings.GenerateAPLF = TRUE;
+            gSettings.GeneratePluginType = TRUE;
           } else if (IsPropertyFalse (Prop2)) {
+            // all Generate off
             gSettings.GeneratePStates = FALSE;
             gSettings.GenerateCStates = FALSE;
+            gSettings.GenerateAPSN = FALSE;
+            gSettings.GenerateAPLF = FALSE;
+            gSettings.GeneratePluginType = FALSE;
           } else if (Prop2->type == kTagTypeDict) {
-            Prop                      = GetProperty (Prop2, "PStates");
+            // custom Generate, with backward compatible defaults
+            Prop = GetProperty (Prop2, "PStates");
             gSettings.GeneratePStates = IsPropertyTrue (Prop);
-
-            Prop                      = GetProperty (Prop2, "CStates");
+            Prop = GetProperty (Prop2, "CStates");
             gSettings.GenerateCStates = IsPropertyTrue (Prop);
+            Prop = GetProperty (Prop2, "APSN");
+            gSettings.GenerateAPSN = !IsPropertyFalse (Prop);
+            Prop = GetProperty (Prop2, "APLF");
+            gSettings.GenerateAPLF = !IsPropertyFalse (Prop);
+            Prop = GetProperty (Prop2, "PluginType");
+            gSettings.GeneratePluginType = !IsPropertyFalse (Prop);
           }
         }
 
@@ -5422,9 +5436,6 @@ GetUserSettings(
         if (Prop != NULL) {
           gSettings.PluginType = (UINT8)GetPropertyInteger (Prop, gSettings.PluginType);
           DBG ("PluginType: %d\n", gSettings.PluginType);
-
-          Prop = GetProperty (Dict2, "DisableAPSNAPLF");
-          gSettings.DisableAPSNAPLF = IsPropertyTrue (Prop);
         }
       }
 
@@ -5776,6 +5787,7 @@ GetUserSettings(
       Prop                 = GetProperty (DictPointer, "HWPEnable");
       if (Prop && IsPropertyTrue (Prop)) {
         gSettings.HWP = TRUE;
+        gSettings.GeneratePluginType = TRUE;
         AsmWriteMsr64 (MSR_IA32_PM_ENABLE, 1);
       }
       Prop                 = GetProperty (DictPointer, "HWPValue");
