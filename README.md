@@ -20,6 +20,8 @@ https://bitbucket.org/RehabMan/clover/downloads/
 
 ### RehabMan added features/fixes
 
+- MountESP script is fixed for APFS configurations on 10.13.  It means the installer works for installing to the ESP on 10.13
+
 - allow finer control over ACPI/SSDT/Generate/PStates with addition of Generate/APSN, Generate/APLF, Generate/PluginType options.  So, with Haswell or later, you can enable CPU PM with only config.plist/ACPI/SSDT/Generate/PluginType=true.  And with Sandy or Ivy, for use with SSDT.aml generated from ssdtPRgen.sh, but you need to drop the OEM tables and use Generate=true, you can disable APLF/APSN generation with Generate/PStates=true, Generate/CStates=true, Generate/APLF=false, Generate/APSN=false.  The new settings are backward compatible with old config.plist files (no change in behavior when the new options are missing, all new options are default true).  Note that because APSN/APLF are part of Generate/PStates, they have no effect unless Generate/PStates=true, whereas PluginType is independent, and is effective regardless of Generate/PStates selection.
 
 - restore "Without caches (-f) " option in Clover "spacebar" menu
