@@ -370,7 +370,7 @@ SSDT_TABLE *generate_pss_ssdt(UINT8 FirstID, UINTN Number)
         aml_add_buffer(packPCT, resource_template_register_fixedhw, sizeof(resource_template_register_fixedhw));
         metPCT = aml_add_method(scop, "_PCT", 0);
         aml_add_return_name(metPCT, "PCT_");
-        if (gSettings.PluginType) {
+        if (gSettings.GeneratePluginType && gSettings.PluginType) {
           aml_add_buffer(scop, plugin_type, sizeof(plugin_type));
           aml_add_byte(scop, gSettings.PluginType);
         }

@@ -5345,6 +5345,10 @@ GetUserSettings(
       Dict2 = GetProperty (DictPointer, "SSDT");
       if (Dict2) {
         Prop2 = GetProperty (Dict2, "Generate");
+        // backward compatibility, APFS, APLF, PluginType follow PStates
+        gSettings.GenerateAPSN = gSettings.GeneratePStates;
+        gSettings.GenerateAPLF = gSettings.GeneratePStates;
+        gSettings.GeneratePluginType = gSettings.GeneratePStates;
         if (Prop2 != NULL) {
           if (IsPropertyTrue (Prop2)) {
             // all Generate on
@@ -5367,11 +5371,17 @@ GetUserSettings(
             Prop = GetProperty (Prop2, "CStates");
             gSettings.GenerateCStates = IsPropertyTrue (Prop);
             Prop = GetProperty (Prop2, "APSN");
-            gSettings.GenerateAPSN = !IsPropertyFalse (Prop);
+            if (Prop) {
+              gSettings.GenerateAPSN = IsPropertyTrue (Prop);
+            }
             Prop = GetProperty (Prop2, "APLF");
-            gSettings.GenerateAPLF = !IsPropertyFalse (Prop);
+            if (Prop) {
+              gSettings.GenerateAPLF = IsPropertyTrue (Prop);
+            }
             Prop = GetProperty (Prop2, "PluginType");
-            gSettings.GeneratePluginType = !IsPropertyFalse (Prop);
+            if (Prop) {
+              gSettings.GeneratePluginType = IsPropertyTrue (Prop);
+            }
           }
         }
 
