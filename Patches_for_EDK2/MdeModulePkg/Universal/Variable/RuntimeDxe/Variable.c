@@ -1611,8 +1611,7 @@ CHAR8 *
 EFIAPI
 VariableGetBestLanguage (
   IN CONST CHAR8  *SupportedLanguages,
-  IN BOOLEAN      Iso639Language,
-  IN CONST CHAR8  *Lang,
+  IN UINTN      Iso639Language,
   ...
   )
 {
@@ -1627,7 +1626,7 @@ VariableGetBestLanguage (
     return NULL;
   }
 
-  VA_START (Args, Lang);
+  VA_START (Args, Iso639Language);
   while ((Language = VA_ARG (Args, CHAR8 *)) != NULL) {
     //
     // Default to ISO 639-2 mode
