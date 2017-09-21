@@ -2074,19 +2074,19 @@ VOID FinalizeSmbios() //continue
     //
     if (gRemapSmBiosIsRequire)
     {
-      //
-      // syscl: remap smbios table 1 guid
-      //
-      DBG("Remap smbios table type 1 guid.\n");
-      gBS->InstallConfigurationTable (&gRemapEfiSmbiosTableGuid, (VOID*)SmbiosEpsNew);
+        //
+        // syscl: remap smbios table 1 guid
+        //
+        DBG("Remap smbios table type 1 guid.\n");
+        gBS->InstallConfigurationTable (&gRemapEfiSmbiosTableGuid, (VOID*)SmbiosEpsNew);
     }
     else
     {
-      //
-      // use origin smbios guid table
-      //
-      DBG("Use origin smbios table type 1 guid.\n");
-	  gBS->InstallConfigurationTable (&gEfiSmbiosTableGuid, (VOID*)SmbiosEpsNew);
+        //
+        // use origin smbios guid table
+        //
+        DBG("Use origin smbios table type 1 guid.\n");
+        gBS->InstallConfigurationTable (&gEfiSmbiosTableGuid, (VOID*)SmbiosEpsNew);
     }
     
 	gST->Hdr.CRC32 = 0;
