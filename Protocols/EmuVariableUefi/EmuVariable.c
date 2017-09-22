@@ -578,7 +578,7 @@ CHAR8 *
 EFIAPI
 VariableGetBestLanguage (
   IN CONST CHAR8  *SupportedLanguages, 
-  IN UINTN      Iso639Language,
+  IN BOOLEAN      Iso639Language,
   ...
   )
 {
