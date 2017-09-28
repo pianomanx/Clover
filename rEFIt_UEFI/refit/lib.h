@@ -512,10 +512,11 @@ typedef struct {
   INTN        MainEntriesSize;
   INTN        TileXSpace;
   INTN        TileYSpace;
+  INTN        IconFormat;
   BOOLEAN     Proportional;
   BOOLEAN     NoEarlyProgress;
-//  INTN        PruneScrollRows;
-  INTN        IconFormat;
+  BOOLEAN     ShowOptimus;
+  BOOLEAN     HibernationFixup;
 } REFIT_CONFIG;
 
 // types
