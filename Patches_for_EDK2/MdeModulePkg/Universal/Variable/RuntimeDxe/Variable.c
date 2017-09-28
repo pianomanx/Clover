@@ -1612,6 +1612,7 @@ EFIAPI
 VariableGetBestLanguage (
   IN CONST CHAR8  *SupportedLanguages,
   IN BOOLEAN      Iso639Language,
+  IN CONST CHAR8  *Lang,
   ...
   )
 {
@@ -1626,7 +1627,7 @@ VariableGetBestLanguage (
     return NULL;
   }
 
-  VA_START (Args, Iso639Language);
+  VA_START (Args, Lang);
   while ((Language = VA_ARG (Args, CHAR8 *)) != NULL) {
     //
     // Default to ISO 639-2 mode
@@ -1816,6 +1817,7 @@ CheckRemainingSpaceForConsistencyInternal (
       //
       // No enough space for Variable[Index].
       //
+      VA_END (Args);
       return FALSE;
     }
     //
@@ -2011,7 +2013,7 @@ AutoUpdateLangVariable (
       //
       // When setting PlatformLang, firstly get most matched language string from supported language codes.
       //
-      BestPlatformLang = VariableGetBestLanguage (mVariableModuleGlobal->PlatformLangCodes, FALSE, Data, NULL);
+      BestPlatformLang = VariableGetBestLanguage (mVariableModuleGlobal->PlatformLangCodes, FALSE, "" /* skipped by GetBestLanguage() */, Data, NULL);
       if (BestPlatformLang != NULL) {
         //
         // Get the corresponding index in language codes.
@@ -2060,7 +2062,7 @@ AutoUpdateLangVariable (
       //
       // When setting Lang, firstly get most matched language string from supported language codes.
       //
-      BestLang = VariableGetBestLanguage (mVariableModuleGlobal->LangCodes, TRUE, Data, NULL);
+      BestLang = VariableGetBestLanguage (mVariableModuleGlobal->LangCodes, TRUE, "" /* skipped by GetBestLanguage() */, Data, NULL);
       if (BestLang != NULL) {
         //
         // Get the corresponding index in language codes.

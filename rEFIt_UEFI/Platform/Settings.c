@@ -141,10 +141,12 @@ REFIT_CONFIG   GlobalConfig = {
   128,            // INTN        MainEntriesSize;
   8,              // INTN        TileXSpace;
   24,             // INTN        TileYSpace;
+  ICON_FORMAT_DEF, // INTN        IconFormat;
   FALSE,          // BOOLEAN     Proportional;
   FALSE,          // BOOLEAN     NoEarlyProgress;
+  FALSE,          // BOOLEAN     ShowOptimus;
+  FALSE,          // BOOLEAN     HibernationFixup
 //  0,              // INTN        PruneScrollRows;
-  ICON_FORMAT_DEF // INTN        IconFormat;
 };
 
 /*
@@ -2358,6 +2360,8 @@ GetEarlyUserSettings (
       if (IsPropertyTrue (Prop)) {
         GlobalConfig.StrictHibernate = TRUE;
       }
+      Prop = GetProperty (DictPointer, "HibernationFixup");
+      GlobalConfig.HibernationFixup = IsPropertyTrue (Prop);
 
       //      Prop = GetProperty (DictPointer, "GetLegacyLanAddress");
       //      GetLegacyLanAddress = IsPropertyTrue (Prop);
@@ -2592,11 +2596,15 @@ GetEarlyUserSettings (
       if (IsPropertyTrue (Prop)) {
         GlobalConfig.CustomIcons = TRUE;
       }
+      
+      Prop = GetProperty (DictPointer, "ShowOptimus");
+      GlobalConfig.ShowOptimus = IsPropertyTrue (Prop);
+      //      DBG("ShowOptimus set to %d\n", GlobalConfig.ShowOptimus);
 
       Prop = GetProperty (DictPointer, "TextOnly");
       if (IsPropertyTrue (Prop)) {
         GlobalConfig.TextOnly = TRUE;
-        DBG ("TextOnly option enabled\n");
+        //        DBG ("TextOnly option enabled\n");
       }
 
       Prop = GetProperty (DictPointer, "ScreenResolution");
