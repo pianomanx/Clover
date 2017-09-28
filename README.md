@@ -139,6 +139,7 @@ Fast-forwarded svn to refs/remotes/git-svn.
 From there, I update _svnver.txt using the versioning branch:
 ```
 git checkout versioning
+git merge svn
 ./sync_version.sh
 ```
 
