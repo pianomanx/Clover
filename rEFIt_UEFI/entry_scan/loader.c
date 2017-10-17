@@ -65,6 +65,8 @@
 #define BOOT_LOADER_PATH L"\\EFI\\BOOT\\BOOTIA32.efi"
 #endif
 
+extern REFIT_MENU_ENTRY *SubMenuKextInjectMgmt(CHAR8* OSVersion);
+
 // Linux loader path data
 typedef struct LINUX_PATH_DATA
 {
@@ -697,7 +699,7 @@ STATIC VOID AddDefaultMenu(IN LOADER_ENTRY *Entry)
 
   // create the submenu
   SubScreen = AllocateZeroPool(sizeof(REFIT_MENU_SCREEN));
-  SubScreen->Title = PoolPrint(L"Boot Options for %s on %s", Entry->me.Title, Entry->VolName);
+  SubScreen->Title = PoolPrint(L"Options for %s", Entry->me.Title, Entry->VolName);
   SubScreen->TitleImage = Entry->me.Image;
   SubScreen->ID = Entry->LoaderType + 20;
   //  DBG("get anime for os=%d\n", SubScreen->ID);
@@ -714,7 +716,9 @@ STATIC VOID AddDefaultMenu(IN LOADER_ENTRY *Entry)
   }
   AddMenuInfoLine(SubScreen, PoolPrint(L"Options: %s", Entry->LoadOptions));
   // loader-specific submenu entries
-  if (Entry->LoaderType == OSTYPE_OSX || Entry->LoaderType == OSTYPE_OSX_INSTALLER || Entry->LoaderType == OSTYPE_RECOVERY) { // entries for Mac OS X
+  if (Entry->LoaderType == OSTYPE_OSX ||
+      Entry->LoaderType == OSTYPE_OSX_INSTALLER ||
+      Entry->LoaderType == OSTYPE_RECOVERY) { // entries for Mac OS X
     AddMenuInfoLine(SubScreen, PoolPrint(L"macOS %a", Entry->OSVersion));
 
     SubEntry = DuplicateLoaderEntry(Entry);
@@ -728,20 +732,8 @@ STATIC VOID AddDefaultMenu(IN LOADER_ENTRY *Entry)
       SubEntry->me.Title        = L"Boot macOS with selected options";
       AddMenuEntry(SubScreen, (REFIT_MENU_ENTRY *)SubEntry);
     }
-/*
-    SubEntry = DuplicateLoaderEntry(Entry);
-    if (SubEntry) {
-      SubEntry->me.Title        = OSFLAG_ISSET(SubEntry->Flags, OSFLAG_WITHKEXTS) ?
-      L"Boot macOS without injected kexts" :
-      L"Boot macOS with injected kexts";
-      SubEntry->Flags           = OSFLAG_TOGGLE(SubEntry->Flags, OSFLAG_WITHKEXTS);
-      SubEntry->LoadOptions     = AddLoadOption(SubEntry->LoadOptions, L"-v");
-      AddMenuEntry(SubScreen, (REFIT_MENU_ENTRY *)SubEntry);
-    }
-*/
-    
-//    AddMenuCheck(SubScreen, "Without caches",       OSFLAG_NOCACHES, 69);
-//    AddMenuCheck(SubScreen, "With injected kexts",  OSFLAG_WITHKEXTS, 69);
+
+    AddMenuEntry(SubScreen, SubMenuKextInjectMgmt(Entry->OSVersion));
     AddMenuInfo(SubScreen, L"=== boot-args ===");
     if (!KernelIs64BitOnly) {
       AddMenuCheck(SubScreen, "macOS 32bit",          OPT_I386, 68);
@@ -884,16 +876,20 @@ STATIC BOOLEAN AddLoaderEntry(IN CHAR16 *LoaderPath, IN CHAR16 *LoaderOptions,
 
   DBG("        AddLoaderEntry for Volume Name=%s\n", Volume->VolName);
   //don't add hided entries
-  for (HVi = 0; HVi < gSettings.HVCount; HVi++) {
-    if (StriStr(LoaderPath, gSettings.HVHideStrings[HVi])) {
-      DBG("        hiding entry: %s\n", LoaderPath);
-      return FALSE;
+  if (!gSettings.ShowHiddenEntries) {
+    for (HVi = 0; HVi < gSettings.HVCount; HVi++) {
+      if (StriStr(LoaderPath, gSettings.HVHideStrings[HVi])) {
+        DBG("        hiding entry: %s\n", LoaderPath);
+        return FALSE;
+      }
     }
   }
 
   Entry = CreateLoaderEntry(LoaderPath, LoaderOptions, NULL, LoaderTitle, Volume, Image, NULL, OSType, Flags, 0, NULL, CUSTOM_BOOT_DISABLED, NULL, NULL, FALSE);
   if (Entry != NULL) {
-    if ((Entry->LoaderType == OSTYPE_OSX) || (Entry->LoaderType == OSTYPE_OSX_INSTALLER ) || (Entry->LoaderType == OSTYPE_RECOVERY)) {
+    if ((Entry->LoaderType == OSTYPE_OSX) ||
+        (Entry->LoaderType == OSTYPE_OSX_INSTALLER ) ||
+        (Entry->LoaderType == OSTYPE_RECOVERY)) {
       if (gSettings.WithKexts) {
         Entry->Flags = OSFLAG_SET(Entry->Flags, OSFLAG_WITHKEXTS);
       }
@@ -916,6 +912,7 @@ STATIC BOOLEAN AddLoaderEntry(IN CHAR16 *LoaderPath, IN CHAR16 *LoaderOptions,
 //constants
 CHAR16  APFSFVBootPath[75]      = L"\\00000000-0000-0000-0000-000000000000\\System\\Library\\CoreServices\\boot.efi"; 
 CHAR16  APFSRecBootPath[47]     = L"\\00000000-0000-0000-0000-000000000000\\boot.efi";
+CHAR16  APFSInstallBootPath[67] = L"\\00000000-0000-0000-0000-000000000000\\com.apple.installer\\boot.efi";
 
 VOID ScanLoader(VOID)
 {
@@ -973,14 +970,17 @@ VOID ScanLoader(VOID)
 if ((StriCmp(Volume->VolName,L"Recovery") == 0 || StriCmp(Volume->VolName,L"Preboot") == 0 )&&APFSSupport==TRUE) {
     for (UINTN i = 0; i < APFSUUIDBankCounter+1; i++) {
       //Store current UUID
-      CHAR16 *CurrentUUID=GuidLEToStr((EFI_GUID *)((UINT8 *)APFSUUIDBank+i*0x10));
+      CHAR16 *CurrentUUID=GuidLEToStr((EFI_GUID *)((UINT8 *)APFSUUIDBank + i * 0x10));
       //Fill with current UUID
-      StrnCpy(APFSFVBootPath+1,CurrentUUID,36);
-      StrnCpy(APFSRecBootPath+1,CurrentUUID,36);
+      StrnCpy(APFSFVBootPath + 1, CurrentUUID, 36);
+      StrnCpy(APFSRecBootPath + 1, CurrentUUID, 36);
+      StrnCpy(APFSInstallBootPath + 1, CurrentUUID, 36);
       ///Try to add FileVault entry
       AddLoaderEntry(APFSFVBootPath, NULL, L"FileVault Prebooter", Volume, NULL, OSTYPE_OSX, 0);
       //Try to add Recovery APFS entry
       AddLoaderEntry(APFSRecBootPath, NULL, L"Recovery", Volume, NULL, OSTYPE_RECOVERY, 0);
+      //Try to add macOS install entry
+      AddLoaderEntry(APFSInstallBootPath, NULL, L"macOS Install Prebooter", Volume, NULL, OSTYPE_OSX_INSTALLER, 0);
       FreePool(CurrentUUID);
     }
   }
@@ -998,8 +998,8 @@ if ((StriCmp(Volume->VolName,L"Recovery") == 0 || StriCmp(Volume->VolName,L"Preb
     // since on some systems this will actually be CloverX64.efi
     // renamed to bootmgfw.efi
     AddLoaderEntry(L"\\EFI\\microsoft\\Boot\\bootmgfw.efi", L"", L"Microsoft EFI Boot", Volume, NULL, OSTYPE_WINEFI, 0);
-    // check for Microsoft boot loader/menu. This entry is redundant
-    AddLoaderEntry(L"\\bootmgr.efi", L"", L"Microsoft EFI mgrboot", Volume, NULL, OSTYPE_WINEFI, 0);
+    // check for Microsoft boot loader/menu. This entry is redundant so excluded
+    // AddLoaderEntry(L"\\bootmgr.efi", L"", L"Microsoft EFI mgrboot", Volume, NULL, OSTYPE_WINEFI, 0);
     // check for Microsoft boot loader/menu on CDROM
     if (!AddLoaderEntry(L"\\EFI\\MICROSOFT\\BOOT\\cdboot.efi", L"", L"Microsoft EFI cdboot", Volume, NULL, OSTYPE_WINEFI, 0)) {
       AddLoaderEntry(L"\\EFI\\MICROSOF\\BOOT\\CDBOOT.EFI", L"", L"Microsoft EFI CDBOOT", Volume, NULL, OSTYPE_WINEFI, 0);
