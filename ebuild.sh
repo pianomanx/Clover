@@ -655,10 +655,20 @@ MainBuildScript() {
     if (( $SkipAutoGen == 0 )) || (( $FORCEREBUILD == 1 )); then
       local clover_revision=$(cat "${CLOVERROOT}/${VERSTXT}")
       local clover_build_date=$(date '+%Y-%m-%d %H:%M:%S')
+      local clover_gitrevision=$(git rev-list --count HEAD)
+      local clover_githash=$(git rev-parse --short HEAD)
+      local edk2_gitrevision=$(cd .. && git rev-list --count HEAD)
+      local edk2_githash=$(cd .. && git rev-parse --short HEAD)
+
       #echo "#define FIRMWARE_VERSION \"2.31\"" > "$CLOVERROOT"/Version.h
       echo "#define FIRMWARE_BUILDDATE \"${clover_build_date}\"" > "$CLOVERROOT"/Version.h
       echo "#define FIRMWARE_REVISION L\"${clover_revision}\""   >> "$CLOVERROOT"/Version.h
-      echo "#define REVISION_STR \"Clover(RehabMan) revision: ${clover_revision}\"" >> "$CLOVERROOT"/Version.h
+      echo "#define REVISION_STR \"Clover-RM(${clover_githash}.${edk2_githash}) revision: ${clover_revision}.${clover_gitrevision}.${edk2_gitrevision}\"" >> "$CLOVERROOT"/Version.h
+
+      echo "#define CLOVER_GITREVISION ${clover_gitrevision}" >> "$CLOVERROOT"/Version.h
+      echo "#define EDK2_GITREVISION ${edk2_gitrevision}" >> "$CLOVERROOT"/Version.h
+      echo "#define CLOVER_GITHASH \"${clover_githash}\"" >> "$CLOVERROOT"/Version.h
+      echo "#define EDK2_GITHASH \"${edk2_githash}\"" >> "$CLOVERROOT"/Version.h
 
       local clover_build_info="Args: "
       if [[ -n "$@" ]]; then

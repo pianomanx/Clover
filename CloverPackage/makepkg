@@ -31,7 +31,7 @@ done
 # Go to the script directory to create the package
 cd "$(dirname $0)"
 
-version=v2.4k
+version=v2.4k-rm
 if [[ -e ../_svnver.txt ]]; then
   revision=$(cat ../_svnver.txt)
 elif [[ -d ../.git ]]; then
@@ -40,12 +40,15 @@ else
   revision=$(svnversion -n | tr -d [:alpha:])
 fi
 
+clover_gitrevision=$(git rev-list --count HEAD)
+clover_githash=$(git rev-parse --short HEAD)
+
 SRCROOT="${PWD}"
 SYMROOT="${SRCROOT}"/sym
 PKG_BUILD_DIR="${SYMROOT}"/package
 
 echo "${version}"  > version
-echo "${revision}" > revision
+echo "${revision}.${clover_gitrevision}.${clover_githash}" > revision
 
 # Workspace = edk2/Clover/CloverPackage
 
