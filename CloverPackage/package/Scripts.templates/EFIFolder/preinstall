@@ -91,7 +91,7 @@ keepBackupLimit=$(GetNVRamKey 'Clover.KeepBackupLimit')
 backupDirOnDestVol=$(GetNVRamKey 'Clover.BackupDirOnDestVol')
 if [[ "$backupDirOnDestVol" =~ N|n ]]; then
     backupRootDir="$EFI_ROOT_DIR/EFI-Backups"
-    [[ -z "$keepBackupLimit" ]] && keepBackupLimit=0
+    [[ -z "$keepBackupLimit" ]] && keepBackupLimit=1
 else
     backupRootDir="$DEST_VOL/EFI-Backups" # backup on destination volume (default)
     [[ -z "$keepBackupLimit" ]] && keepBackupLimit=10

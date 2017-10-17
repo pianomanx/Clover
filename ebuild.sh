@@ -663,7 +663,7 @@ MainBuildScript() {
       #echo "#define FIRMWARE_VERSION \"2.31\"" > "$CLOVERROOT"/Version.h
       echo "#define FIRMWARE_BUILDDATE \"${clover_build_date}\"" > "$CLOVERROOT"/Version.h
       echo "#define FIRMWARE_REVISION L\"${clover_revision}\""   >> "$CLOVERROOT"/Version.h
-      echo "#define REVISION_STR \"Clover-RM(${clover_githash}.${edk2_githash}) revision: ${clover_revision}.${clover_gitrevision}.${edk2_gitrevision}\"" >> "$CLOVERROOT"/Version.h
+      echo "#define REVISION_STR \"Clover revision: ${clover_revision}.RM-${clover_gitrevision}.${edk2_gitrevision}(${clover_githash}.${edk2_githash}) \"" >> "$CLOVERROOT"/Version.h
 
       echo "#define CLOVER_GITREVISION ${clover_gitrevision}" >> "$CLOVERROOT"/Version.h
       echo "#define EDK2_GITREVISION ${edk2_gitrevision}" >> "$CLOVERROOT"/Version.h
