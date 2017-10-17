@@ -1813,7 +1813,7 @@ FillinCustomEntry (
 
     // InjectKexts default values
     Entry->Flags = OSFLAG_UNSET(Entry->Flags, OSFLAG_CHECKFAKESMC);
-    Entry->Flags = OSFLAG_UNSET(Entry->Flags, OSFLAG_WITHKEXTS);
+  //  Entry->Flags = OSFLAG_UNSET(Entry->Flags, OSFLAG_WITHKEXTS);
 
     Prop = GetProperty (DictPointer, "InjectKexts");
     if (Prop != NULL) {
@@ -2361,8 +2361,10 @@ GetEarlyUserSettings (
         GlobalConfig.StrictHibernate = TRUE;
       }
       Prop = GetProperty (DictPointer, "HibernationFixup");
-      GlobalConfig.HibernationFixup = IsPropertyTrue (Prop);
-
+      if (Prop) {
+        GlobalConfig.HibernationFixup = IsPropertyTrue (Prop); //t will be set automatically
+      } 
+      
       //      Prop = GetProperty (DictPointer, "GetLegacyLanAddress");
       //      GetLegacyLanAddress = IsPropertyTrue (Prop);
 
@@ -3066,89 +3068,79 @@ GetListOfACPI ()
   FreePool(AcpiPath);
 }
 
-VOID GetListOfInjectKext(CHAR16 *sysVer)
+VOID GetListOfInjectKext(CHAR16 *KextPath)
 {
-    REFIT_DIR_ITER  DirIter;
-    EFI_FILE_INFO*  DirEntry;
-    SIDELOAD_KEXT*  mKext;
-    SIDELOAD_KEXT*  mPlugInKext;
-    gSettings.DisableInjectKextCount = 0;
-    INTN i, Count = gSettings.DisableInjectKextCount;
-    CHAR16*   KextPath = NULL;
-    CHAR8     ascii_sysVer[6];
-    
-    // check if KextPath exist or not in
-    // both OEM path and Clover/kexts.
-    // if OEM path not exist then go check
-    // the existence of Clover/kexts
-    if (StrStr(sysVer, L"Other") != NULL) {
-        KextPath = GetOtherKextsDir();
-    } else {
-        UnicodeStrToAsciiStrS(sysVer, ascii_sysVer, 6);
-        KextPath = GetOSVersionKextsDir(ascii_sysVer);
+  REFIT_DIR_ITER  DirIter;
+  EFI_FILE_INFO*  DirEntry;
+  SIDELOAD_KEXT*  mKext;
+  SIDELOAD_KEXT*  mPlugInKext;
+  CHAR16*         FullPath = PoolPrint(L"%s\\KEXTS\\%s", OEMPath, KextPath);
+
+  DirIterOpen(SelfRootDir, FullPath, &DirIter);
+  while (DirIterNext(&DirIter, 1, L"*.kext", &DirEntry)) {
+    CHAR16  FullName[256];
+    if (DirEntry->FileName[0] == L'.' || StrStr(DirEntry->FileName, L".kext") == NULL) {
+      continue;
     }
-    
-    if (KextPath == NULL) {
-        // Extra kext folder not found
-        DBG("Extra kext folder of %a does not found - skip\n", ascii_sysVer);
-        return;
+   UnicodeSPrint(FullName, 512, L"%s\\%s", FullPath, DirEntry->FileName);
+    mKext = AllocateZeroPool (sizeof(SIDELOAD_KEXT));
+    mKext->FileName = PoolPrint(L"%s", DirEntry->FileName);
+    mKext->MenuItem.BValue = FALSE;
+    mKext->MatchOS = PoolPrint(L"%s", KextPath);
+    mKext->Next = InjectKextList;
+    InjectKextList = mKext;
+ //   DBG("Added mKext=%s, MatchOS=%s\n", mKext->FileName, mKext->MatchOS);
+
+    // Obtain PlugInList
+    // Iterate over PlugIns directory
+    REFIT_DIR_ITER  PlugInsIter;
+    EFI_FILE_INFO   *PlugInEntry;
+    CHAR16          PlugInsPath[256];
+
+    UnicodeSPrint(PlugInsPath, 512, L"%s\\%s", FullName, L"Contents\\PlugIns");
+
+    DirIterOpen(SelfRootDir, PlugInsPath, &PlugInsIter);
+    while (DirIterNext(&PlugInsIter, 1, L"*.kext", &PlugInEntry)) {
+      if (PlugInEntry->FileName[0] == L'.' || StrStr(PlugInEntry->FileName, L".kext") == NULL) {
+        continue;
+      }
+
+      mPlugInKext = AllocateZeroPool(sizeof(SIDELOAD_KEXT));
+      mPlugInKext->FileName = PoolPrint(L"%s", PlugInEntry->FileName);
+      mPlugInKext->MenuItem.BValue = FALSE;
+      mPlugInKext->MatchOS = PoolPrint(L"%s", KextPath);
+      mPlugInKext->Next    = mKext->PlugInList;
+      mKext->PlugInList    = mPlugInKext;
+//      DBG("---| added plugin=%s, MatchOS=%s\n", mPlugInKext->FileName, mPlugInKext->MatchOS);
     }
-    //CHAR16*         KextPath = PoolPrint(L"%s\\KEXTS\\%s", OEMPath, sysVer);
-    
-    //DirIterOpen(SelfRootDir, KextPath, &DirIter);
-    
-    DirIterOpen(SelfVolume->RootDir, KextPath, &DirIter);
-    while (DirIterNext(&DirIter, 1, L"*.kext", &DirEntry)) {
-        CHAR16  FullName[256];
-        if (DirEntry->FileName[0] == L'.' || StrStr(DirEntry->FileName, L".kext") == NULL) {
-            continue;
-        }
-        
-        UnicodeSPrint(FullName, 512, L"%s\\%s", KextPath, DirEntry->FileName);
-        BOOLEAN KextDisable = FALSE;
-        mKext = AllocateZeroPool (sizeof(SIDELOAD_KEXT));
-        mKext->FileName = PoolPrint(L"%s", DirEntry->FileName);
-        
-        for (i = 0; i < Count; i++) {
-            if ((gSettings.DisabledInjectKext[i] != NULL) &&
-                (StriCmp(mKext->FileName, gSettings.DisabledInjectKext[i]) == 0)) {
-                KextDisable = TRUE;
-                break;
-            }
-        }
-        mKext->MenuItem.BValue = KextDisable;
-        mKext->MatchOS = sysVer;
-        mKext->Next = InjectKextList;
-        InjectKextList = mKext;
-        
-        // Obtain PlugInList
-        // Iterate over PlugIns directory
-        REFIT_DIR_ITER  PlugInsIter;
-        EFI_FILE_INFO   *PlugInEntry;
-        CHAR16          PlugInsPath[256];
-        
-        UnicodeSPrint(PlugInsPath, 512, L"%s\\%s", FullName, L"Contents\\PlugIns");
-        
-        DirIterOpen(SelfVolume->RootDir, PlugInsPath, &PlugInsIter);
-        while (DirIterNext(&PlugInsIter, 1, L"*.kext", &PlugInEntry)) {
-            CHAR16 CurrentPlugInPath[256];
-            if (PlugInEntry->FileName[0] == L'.' || StrStr(PlugInEntry->FileName, L".kext") == NULL) {
-                continue;
-            }
-            
-            UnicodeSPrint(CurrentPlugInPath, 512, L"%s\\%s", PlugInsPath, PlugInEntry->FileName);
-            BOOLEAN plugInKextDisable = FALSE;
-            mPlugInKext = AllocateZeroPool(sizeof(SIDELOAD_KEXT));
-            mPlugInKext->FileName = PoolPrint(L"%s", PlugInEntry->FileName);
-            mPlugInKext->MenuItem.BValue = plugInKextDisable;
-            mPlugInKext->MatchOS = sysVer;
-            mPlugInKext->Next    = mKext->PlugInList;
-            mKext->PlugInList    = mPlugInKext;
-        }
-        DirIterClose(&PlugInsIter);
+    DirIterClose(&PlugInsIter);
+  }
+  DirIterClose(&DirIter);
+  FreePool(KextPath);
+}
+
+VOID InitKextList()
+{
+  REFIT_DIR_ITER  KextsIter;
+  EFI_FILE_INFO   *FolderEntry = NULL;
+  CHAR16          *KextsPath;
+
+  if (InjectKextList) {
+    return;  //don't scan again
+  }
+  KextsPath = PoolPrint(L"%s\\kexts", OEMPath);
+
+  // Iterate over kexts directory
+
+  DirIterOpen(SelfRootDir, KextsPath, &KextsIter);
+  while (DirIterNext(&KextsIter, 1, L"*", &FolderEntry)) {
+    if (FolderEntry->FileName[0] == L'.') {
+      continue;
     }
-    DirIterClose(&DirIter);
-    FreePool(KextPath);
+    GetListOfInjectKext(FolderEntry->FileName);
+  }
+  DirIterClose(&KextsIter);
+  FreePool(KextsPath);
 }
 
 #define CONFIG_THEME_FILENAME L"theme.plist"
@@ -3168,7 +3160,7 @@ GetListOfThemes ()
 
   ThemesNum = 0;
   DirIterOpen (SelfRootDir, L"\\EFI\\CLOVER\\themes", &DirIter);
-  while (DirIterNext(&DirIter, 1, L"*.EFI", &DirEntry)) {
+  while (DirIterNext(&DirIter, 1, L"*", &DirEntry)) {
     if (DirEntry->FileName[0] == '.') {
       //DBG("Skip theme: %s\n", DirEntry->FileName);
       continue;
@@ -4606,7 +4598,7 @@ GetUserSettings(
         //---------
       }
 
-      Prop                          = GetProperty (DictPointer, "NoDefaultProperties");
+      Prop  = GetProperty (DictPointer, "NoDefaultProperties");
       gSettings.NoDefaultProperties = IsPropertyTrue (Prop);
 
       Prop = GetProperty (DictPointer, "Arbitrary"); //yyyy
@@ -4660,69 +4652,62 @@ GetUserSettings(
                 UINTN Size = 0;
                 if (!EFI_ERROR(GetElement(Dict2, PropIndex, &Dict3))) {
 
-                  DevProp = gSettings.AddProperties;
-                  gSettings.AddProperties = AllocateZeroPool(sizeof(DEV_PROPERTY));
-                  gSettings.AddProperties->Next = DevProp;
+                  DevProp = gSettings.ArbProperties;
+                  gSettings.ArbProperties = AllocateZeroPool(sizeof(DEV_PROPERTY));
+                  gSettings.ArbProperties->Next = DevProp;
 
-                  gSettings.AddProperties->Device = (UINT32)DeviceAddr;
-                  gSettings.AddProperties->Label = AllocateCopyPool(AsciiStrSize(Label), Label);;
+                  gSettings.ArbProperties->Device = (UINT32)DeviceAddr;
+                  gSettings.ArbProperties->Label = AllocateCopyPool(AsciiStrSize(Label), Label);;
                   
                   Prop3 = GetProperty (Dict3, "Disabled");
-                  gSettings.AddProperties->MenuItem.BValue = !IsPropertyTrue(Prop3);
+                  gSettings.ArbProperties->MenuItem.BValue = !IsPropertyTrue(Prop3);
 
                   Prop3 = GetProperty (Dict3, "Key");
                   if (Prop3 && (Prop3->type == kTagTypeString) && Prop3->string) {
-                    gSettings.AddProperties->Key = AllocateCopyPool(AsciiStrSize(Prop3->string), Prop3->string);
+                    gSettings.ArbProperties->Key = AllocateCopyPool(AsciiStrSize(Prop3->string), Prop3->string);
                   }
 
                   Prop3 = GetProperty (Dict3, "Value");
                   if (Prop3 && (Prop3->type == kTagTypeString) && Prop3->string) {
                     //first suppose it is Ascii string
-                    gSettings.AddProperties->Value = AllocateCopyPool(AsciiStrSize(Prop3->string), Prop3->string);
-                    gSettings.AddProperties->ValueLen = AsciiStrLen(Prop3->string) + 1;
-                    gSettings.AddProperties->ValueType = kTagTypeString;
+                    gSettings.ArbProperties->Value = AllocateCopyPool(AsciiStrSize(Prop3->string), Prop3->string);
+                    gSettings.ArbProperties->ValueLen = AsciiStrLen(Prop3->string) + 1;
+                    gSettings.ArbProperties->ValueType = kTagTypeString;
                   } else if (Prop3 && (Prop3->type == kTagTypeInteger)) {
-                    gSettings.AddProperties->Value = AllocatePool(4);
-                    CopyMem (gSettings.AddProperties->Value, &(Prop3->string), 4);
-                    gSettings.AddProperties->ValueLen = 4;
-                    gSettings.AddProperties->ValueType = kTagTypeInteger;
+                    gSettings.ArbProperties->Value = AllocatePool(4);
+                    CopyMem (gSettings.ArbProperties->Value, &(Prop3->string), 4);
+                    gSettings.ArbProperties->ValueLen = 4;
+                    gSettings.ArbProperties->ValueType = kTagTypeInteger;
                   } else if (Prop3 && (Prop3->type == kTagTypeTrue)) {
-                    gSettings.AddProperties->Value = AllocateZeroPool(4);
-                    gSettings.AddProperties->Value[0] = TRUE;
-                    gSettings.AddProperties->ValueLen = 1;
-                    gSettings.AddProperties->ValueType = kTagTypeTrue;
+                    gSettings.ArbProperties->Value = AllocateZeroPool(4);
+                    gSettings.ArbProperties->Value[0] = TRUE;
+                    gSettings.ArbProperties->ValueLen = 1;
+                    gSettings.ArbProperties->ValueType = kTagTypeTrue;
                   } else if (Prop3 && (Prop3->type == kTagTypeFalse)) {
-                    gSettings.AddProperties->Value = AllocateZeroPool(4);
-                    //gSettings.AddProperties->Value[0] = FALSE;
-                    gSettings.AddProperties->ValueLen = 1;
-                    gSettings.AddProperties->ValueType = kTagTypeFalse;
+                    gSettings.ArbProperties->Value = AllocateZeroPool(4);
+                    //gSettings.ArbProperties->Value[0] = FALSE;
+                    gSettings.ArbProperties->ValueLen = 1;
+                    gSettings.ArbProperties->ValueType = kTagTypeFalse;
                  } else {
                     //else  data
-                    gSettings.AddProperties->Value = GetDataSetting (Dict3, "Value", &Size);
-                    gSettings.AddProperties->ValueLen = Size;
-                    gSettings.AddProperties->ValueType = kTagTypeData;
+                    gSettings.ArbProperties->Value = GetDataSetting (Dict3, "Value", &Size);
+                    gSettings.ArbProperties->ValueLen = Size;
+                    gSettings.ArbProperties->ValueType = kTagTypeData;
                   }
                   
                   //Special case. In future there must be more such cases
-                  if ((AsciiStrStr(gSettings.AddProperties->Key, "-platform-id") != NULL)/* &&
-                      (gSettings.IgPlatform != 0)*/) {
-                    CopyMem ((CHAR8*)&gSettings.IgPlatform, gSettings.AddProperties->Value, 4);
-                  /*  gSettings.AddProperties->Value = AllocatePool(4);
-                    CopyMem (gSettings.AddProperties->Value, (CHAR8*)&gSettings.IgPlatform, 4);                        
-                    gSettings.AddProperties->ValueLen = 4;
-                    gSettings.AddProperties->ValueType = kTagTypeInteger; */
+                  if ((AsciiStrStr(gSettings.ArbProperties->Key, "-platform-id") != NULL)) {
+                    CopyMem ((CHAR8*)&gSettings.IgPlatform, gSettings.ArbProperties->Value, 4);
                   }
                 }
-                // gSettings.NrAddProperties++;
               }   //for() device properties
             }
-            
             FreePool(Label);
           } //for() devices
         }
-        gSettings.NrAddProperties = 0xFFFE;
+//        gSettings.NrAddProperties = 0xFFFE;
       }
-      else { //can't use AddProperties with CustomProperties
+      //can use AddProperties with ArbProperties
         Prop = GetProperty (DictPointer, "AddProperties");
         if (Prop != NULL) {
           INTN i, Count = GetTagCount (Prop);
@@ -4811,7 +4796,7 @@ GetUserSettings(
             gSettings.NrAddProperties = Index;
           }
         }
-      }
+      //end AddProperties
 
       Prop = GetProperty (DictPointer, "FakeID");
       if (Prop != NULL) {
@@ -5878,23 +5863,6 @@ GetUserSettings(
       if (Prop != NULL && AsciiStrLen (Prop->string) > 0) {
         gSettings.RtMLB         = AllocateCopyPool (AsciiStrSize (Prop->string), Prop->string);
       }
-/*
-      // Setting Clover Variables for RC Scripts in config.plist is now deprecated (r2889+)
-      Prop = GetProperty (DictPointer, "MountEFI");
-      if (Prop != NULL) {
-        DBG ("** Warning: ignoring RtVariable MountEFI set in config.plist: deprecated !\n");
-      }
-
-      Prop = GetProperty (DictPointer, "LogLineCount");
-      if (Prop != NULL) {
-        DBG ("** Warning: ignoring RtVariable LogLineCount set in config.plist: deprecated !\n");
-      }
-
-      Prop = GetProperty (DictPointer, "LogEveryBoot");
-      if (Prop != NULL) {
-        DBG ("** Warning: ignoring RtVariable LogEveryBoot set in config.plist: deprecated !\n");
-      }
-*/
       // CsrActiveConfig
       Prop = GetProperty (DictPointer, "CsrActiveConfig");
       gSettings.CsrActiveConfig = (UINT32)GetPropertyInteger (Prop, 0x67); //the value 0xFFFF means not set
@@ -5978,7 +5946,29 @@ GetUserSettings(
       *(UINT32*)&gSettings.flagstate[0] = (UINT32)GetPropertyInteger (Prop, 0x80000000);
 
     }
-    
+/*
+ //Example
+ <key>RMde</key>
+ <array>
+   <string>char</string>
+   <data>
+     QQ==
+   </data>
+ </array>
+
+    DictPointer = GetProperty (Dict, "SMCKeys");
+    if (DictPointer != NULL) {   //sss
+      TagPtr     Key, ValArray;
+      for (Key = DictPointer->tag; Key != NULL; Key = Key->tagNext) {
+        ValArray = Prop->tag;
+        if (Key->type != kTagTypeKey || ValArray == NULL) {
+          DBG (" ERROR: Tag is not <key>, type = %d\n", Key->type);
+          continue;
+        }
+       //....
+      }
+    }
+*/
     /*
      {
      EFI_GUID AppleGuid;
@@ -6362,7 +6352,7 @@ GetDevices ()
                 gfx->Mmio = (UINT8 *)(UINTN)(Pci.Device.Bar[5] & ~0x0f);
               }
               gfx->Connectors = *(UINT32*)(gfx->Mmio + RADEON_BIOS_0_SCRATCH);
-              DBG(" - RADEON_BIOS_0_SCRATCH = 0x%08x\n", gfx->Connectors);
+   //           DBG(" - RADEON_BIOS_0_SCRATCH = 0x%08x\n", gfx->Connectors);
               gfx->ConnChanged = FALSE;
               
               SlotDevice                  = &SlotDevices[0];
@@ -6543,65 +6533,15 @@ GetDevices ()
             hda->controller_vendor_id       = Pci.Hdr.VendorId;
             hda->controller_device_id       = Pci.Hdr.DeviceId;
 
-// TODO remove the above switch
-/*
-          switch (Pci.Hdr.VendorId) {
-              case 0x8086:
-                  hda->Vendor = Intel;
-                  AsciiSPrint (hda->Model, 64, "pci%x,%x", Pci.Hdr.VendorId, Pci.Hdr.DeviceId);
-                  break;
-
-              case 0x10de:
-                  hda->Vendor = Nvidia;
-                  AsciiSPrint (hda->Model, 64, "pci%x,%x", Pci.Hdr.VendorId, Pci.Hdr.DeviceId);
-                  break;
-
-              case 0x1002:
-                  hda->Vendor = Ati;
-                  AsciiSPrint (hda->Model, 64, "pci%x,%x", Pci.Hdr.VendorId, Pci.Hdr.DeviceId);
-                  break;
-
-              case 0x17f3:
-                  hda->Vendor = RDC;
-                  AsciiSPrint (hda->Model, 64, "pci%x,%x", Pci.Hdr.VendorId, Pci.Hdr.DeviceId);
-                  break;
-
-              case 0x1106:
-                  hda->Vendor = VIA;
-                  AsciiSPrint (hda->Model, 64, "pci%x,%x", Pci.Hdr.VendorId, Pci.Hdr.DeviceId);
-                  break;
-
-              case 0x1039:
-                  hda->Vendor = SiS;
-                  AsciiSPrint (hda->Model, 64, "pci%x,%x", Pci.Hdr.VendorId, Pci.Hdr.DeviceId);
-                  break;
-
-              case 0x10b9:
-                  hda->Vendor = ULI;
-                  AsciiSPrint (hda->Model, 64, "pci%x,%x", Pci.Hdr.VendorId, Pci.Hdr.DeviceId);
-                  break;
-
-              default:
-                  hda->Vendor = Unknown;
-                  AsciiSPrint (hda->Model, 64, "pci%x,%x", Pci.Hdr.VendorId, Pci.Hdr.DeviceId);
-                  break;
-          }
-*/
 
             // HDA Controller Info
             AsciiSPrint ( hda->controller_name,64, "%a",
                          get_hda_controller_name ( Pci.Hdr.DeviceId, Pci.Hdr.VendorId )
                          );
 
-            // HDA Codec Info
-/*            AsciiSPrint ( hda->codec_name, 64, "%a",
-                         get_hda_codec_name ( hda->codec_vendor_id, hda->codec_device_id, hda->codec_revision_id, hda->codec_stepping_id )
-                         );
-*/
-
           if (IsHDMIAudio(HandleArray[Index])) {
             DBG(" - HDMI Audio: \n");
-   //if ((Pci.Hdr.VendorId == 0x1002) || (Pci.Hdr.VendorId == 0x10DE)){
+
             SlotDevice = &SlotDevices[4];
             SlotDevice->SegmentGroupNum = (UINT16)Segment;
             SlotDevice->BusNum          = (UINT8)Bus;
@@ -6686,11 +6626,11 @@ SetDevices (
         PCIdevice.class_id                   = *((UINT16*)(Pci.Hdr.ClassCode+1));
         PCIdevice.subsys_id.subsys.vendor_id = Pci.Device.SubsystemVendorID;
         PCIdevice.subsys_id.subsys.device_id = Pci.Device.SubsystemID;
+        PCIdevice.used                       = FALSE;
 
-        if (gSettings.NrAddProperties == 0xFFFE) {  //yyyy it means Arbitrary
-          DEV_PROPERTY *Prop = gSettings.AddProperties;
+  //      if (gSettings.NrAddProperties == 0xFFFE) {  //yyyy it means Arbitrary
+          DEV_PROPERTY *Prop = gSettings.ArbProperties;
           DevPropDevice *device = NULL;
-          BOOLEAN Once = TRUE;
           if (!string) {
             string = devprop_create_string();
           }
@@ -6699,9 +6639,9 @@ SetDevices (
               Prop = Prop->Next;
               continue;
             }
-            if (Once) {
+            if (!PCIdevice.used) {
               device = devprop_add_device_pci(string, &PCIdevice);
-              Once = FALSE;
+              PCIdevice.used = TRUE;
             }
             //special corrections
             if (Prop->MenuItem.BValue) {
@@ -6716,12 +6656,12 @@ SetDevices (
             Prop = Prop->Next;
           }
             
-          if (!Once) {
-            DBG("custom properties for device %02x:%02x.%02x injected, continue\n",
+          if (PCIdevice.used) {
+            DBG("custom properties for device %02x:%02x.%02x injected\n",
                 Bus, Device, Function);
 //            continue;
           }
-        }
+//        }
         // GFX
         //if (/* gSettings.GraphicsInjector && */
         //    (Pci.Hdr.ClassCode[2] == PCI_CLASS_DISPLAY) &&
@@ -7094,17 +7034,19 @@ CHAR16
 }
 
 //dmazar
+// caller is responsible for FreePool the result
 CHAR16
 *GetOSVersionKextsDir (
                        CHAR8 *OSVersion
                        )
 {
   CHAR16 *SrcDir         = NULL;
-  CHAR8  FixedVersion[6];
+  CHAR8  FixedVersion[16];
   CHAR8  *DotPtr;
 
   if (OSVersion != NULL) {
-    AsciiStrnCpyS(FixedVersion, 6, OSVersion, 5);
+    AsciiStrnCpyS(FixedVersion, 16, OSVersion, 5);
+//    DBG("%a\n", FixedVersion);
     // OSVersion may contain minor version too (can be 10.x or 10.x.y)
     if ((DotPtr = AsciiStrStr (FixedVersion, ".")) != NULL) {
       DotPtr = AsciiStrStr (DotPtr+1, "."); // second dot
@@ -7129,7 +7071,6 @@ CHAR16
       SrcDir = NULL;
     }
   }
-
   return SrcDir;
 }
 

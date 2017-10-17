@@ -1222,9 +1222,9 @@ typedef struct {
   CHAR16                  BlockKexts[64];
     
   // Disable inject kexts
-  UINT32                  DisableInjectKextCount;
-  CHAR16                  **DisabledInjectKext;
-  INPUT_ITEM              *InjectKextMenuItem;
+//  UINT32                  DisableInjectKextCount;
+//  CHAR16                  **DisabledInjectKext;
+//  INPUT_ITEM              *InjectKextMenuItem;
 
   //ACPI tables
   UINTN                   SortedACPICount;
@@ -1251,6 +1251,8 @@ typedef struct {
   UINT32 UIScale;
   UINT32 EFILoginHiDPI;
   UINT8  flagstate[32];
+
+  DEV_PROPERTY            *ArbProperties;
 
 } SETTINGS_DATA;
 
@@ -2421,6 +2423,9 @@ VOID GetBootFromOption(VOID);
 //
 VOID
 SetBootCurrent(REFIT_MENU_ENTRY *LoadedEntry);
+
+VOID
+InitKextList();
 
 //
 // PlatformDriverOverride.c

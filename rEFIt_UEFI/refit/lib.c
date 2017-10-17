@@ -1119,12 +1119,14 @@ VOID ScanVolumes(VOID)
     if (!EFI_ERROR(Status)) {
       
       AddListElement((VOID ***) &Volumes, &VolumesCount, Volume);
-      for (HVi = 0; HVi < gSettings.HVCount; HVi++) {
-        if (StriStr(Volume->DevicePathString, gSettings.HVHideStrings[HVi]) ||
-            (Volume->VolName != NULL && StriStr(Volume->VolName, gSettings.HVHideStrings[HVi]))) {
-          Volume->Hidden = TRUE;
-          DBG("        hiding this volume\n");
-          break;
+      if (!gSettings.ShowHiddenEntries) {
+        for (HVi = 0; HVi < gSettings.HVCount; HVi++) {
+          if (StriStr(Volume->DevicePathString, gSettings.HVHideStrings[HVi]) ||
+              (Volume->VolName != NULL && StriStr(Volume->VolName, gSettings.HVHideStrings[HVi]))) {
+            Volume->Hidden = TRUE;
+            DBG("        hiding this volume\n");
+            break;
+          }
         }
       }
       
@@ -1344,11 +1346,13 @@ REFIT_VOLUME *FindVolumeByName(IN CHAR16 *VolName)
 BOOLEAN FileExists(IN EFI_FILE *Root, IN CHAR16 *RelativePath)
 {
   EFI_STATUS  Status;
-  EFI_FILE    *TestFile;
+  EFI_FILE    *TestFile = NULL;
   
   Status = Root->Open(Root, &TestFile, RelativePath, EFI_FILE_MODE_READ, 0);
   if (Status == EFI_SUCCESS) {
-    TestFile->Close(TestFile);
+    if (TestFile && TestFile->Close) {
+      TestFile->Close(TestFile);
+    }
     return TRUE;
   }
   return FALSE;

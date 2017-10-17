@@ -462,8 +462,8 @@ VOID ReadSIPCfg()
     StrCatS(csrLog, SVALUE_MAX_SIZE/2, PoolPrint(L"%a%a", StrLen(csrLog) ? " | " : "", "CSR_ALLOW_DEVICE_CONFIGURATION"));
   if (csrCfg & CSR_ALLOW_ANY_RECOVERY_OS)
     StrCatS(csrLog, SVALUE_MAX_SIZE/2, PoolPrint(L"%a%a", StrLen(csrLog) ? " | " : "", "CSR_ALLOW_ANY_RECOVERY_OS"));
-  if (csrCfg & CSR_DISABLE_KEXT_CONSENT)
-    StrCatS(csrLog, SVALUE_MAX_SIZE/2, PoolPrint(L"%a%a", StrLen(csrLog) ? " | " : "", "CSR_DISABLE_KEXT_CONSENT"));
+  if (csrCfg & CSR_ALLOW_UNAPPROVED_KEXTS)
+    StrCatS(csrLog, SVALUE_MAX_SIZE/2, PoolPrint(L"%a%a", StrLen(csrLog) ? " | " : "", "CSR_ALLOW_UNAPPROVED_KEXTS"));
     
   if (StrLen(csrLog)) {
     DBG("CSR_CFG: %s\n", csrLog);
@@ -553,7 +553,7 @@ static VOID StartLoader(IN LOADER_ENTRY *Entry)
     // Correct OSVersion if it was not found
     // This should happen only for 10.7-10.9 OSTYPE_OSX_INSTALLER
     // For these cases, take OSVersion from loaded boot.efi image in memory
-    if (Entry->LoaderType == OSTYPE_OSX_INSTALLER || !Entry->OSVersion) {
+    if (/*Entry->LoaderType == OSTYPE_OSX_INSTALLER ||*/ !Entry->OSVersion) {
       Status = gBS->HandleProtocol(ImageHandle, &gEfiLoadedImageProtocolGuid, (VOID **) &LoadedImage);
       if (!EFI_ERROR(Status)) {
         // version in boot.efi appears as "Mac OS X 10.?"
@@ -1698,7 +1698,8 @@ CHAR16  APFSServerPlistPath[86] = L"\\00000000-0000-0000-0000-000000000000\\Syst
 CHAR16  APFSRecPlistPath[58]    = L"\\00000000-0000-0000-0000-000000000000\\SystemVersion.plist";
   
 
-VOID SystemVersionInit(VOID){ 
+VOID SystemVersionInit(VOID)
+{
   //Plists iterators
   UINTN      SysIter            = 2;
   UINTN      RecIter            = 1;
@@ -2222,8 +2223,9 @@ RefitMain (IN EFI_HANDLE           ImageHandle,
   do {
     MainMenu.EntryCount = 0;
     OptionMenu.EntryCount = 0;
+    InitKextList();
     ScanVolumes();
-    
+
     //Check apfs driver loaded state
     //Free APFSUUIDBank
     if (APFSUUIDBank != NULL) {
@@ -2372,6 +2374,7 @@ RefitMain (IN EFI_HANDLE           ImageHandle,
     AfterTool = FALSE;
     gEvent = 0; //clear to cancel loop
     while (MainLoopRunning) {
+      CHAR8 *LastChosenOS = NULL;
       if (GlobalConfig.Timeout == 0 && DefaultEntry != NULL && !ReadAllKeyStrokes()) {
         // go strait to DefaultVolume loading
         MenuExit = MENU_EXIT_TIMEOUT;
@@ -2382,6 +2385,10 @@ RefitMain (IN EFI_HANDLE           ImageHandle,
 
       // disable default boot - have sense only in the first run
       GlobalConfig.Timeout = -1;
+      //remember OS before go to second row
+      if (ChosenEntry->Row == 0) {
+        LastChosenOS = ((LOADER_ENTRY *)ChosenEntry)->OSVersion;
+      }
 
       if ((DefaultEntry != NULL) && (MenuExit == MENU_EXIT_TIMEOUT)) {
         if (DefaultEntry->Tag == TAG_LOADER) {
@@ -2395,7 +2402,7 @@ RefitMain (IN EFI_HANDLE           ImageHandle,
 
       if (MenuExit == MENU_EXIT_OPTIONS){
         gBootChanged = FALSE;
-        OptionsMenu(&OptionEntry);
+        OptionsMenu(&OptionEntry, LastChosenOS);
         if (gBootChanged) {
           AfterTool = TRUE;
           MainLoopRunning = FALSE;
@@ -2458,7 +2465,7 @@ RefitMain (IN EFI_HANDLE           ImageHandle,
 
         case TAG_OPTIONS:    // Options like KernelFlags, DSDTname etc.
           gBootChanged = FALSE;
-          OptionsMenu(&OptionEntry);
+          OptionsMenu(&OptionEntry, LastChosenOS);
           if (gBootChanged)
             AfterTool = TRUE;
           if (gBootChanged || gThemeChanged) // If theme has changed reinit the desktop

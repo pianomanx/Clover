@@ -61,8 +61,6 @@
 				<dict>
 					<key>Comment</key>
 					<string>Remove battery device from desktop</string>
-					<key>Disabled</key>
-					<true/>
 					<key>Find</key>
 					<data>W4IeQkFUMQhfSElEDEHQDAoIX1VJRAEUCF9TVEEApAA=</data>
 					<key>Replace</key>
@@ -71,8 +69,6 @@
 				<dict>
 					<key>Comment</key>
 					<string>Add _SUN property for GIGE</string>
-					<key>Disabled</key>
-					<true/>
 					<key>Find</key>
 					<data>UFhTWAhfQURSAAhfUFJXEgYC</data>
 					<key>Replace</key>
@@ -81,8 +77,6 @@
 				<dict>
 					<key>Comment</key>
 					<string>Rename GFX0 to IGPU</string>
-					<key>Disabled</key>
-					<false/>
 					<key>Find</key>
 					<data>R0ZYMA==</data>
 					<key>Replace</key>
@@ -91,8 +85,6 @@
 				<dict>
 					<key>Comment</key>
 					<string>Rename HDEF to AZAL</string>
-					<key>Disabled</key>
-					<false/>
 					<key>Find</key>
 					<data>SERFRg==</data>
 					<key>Replace</key>
@@ -321,148 +313,6 @@
 				<data>AQAAAA==</data>
 			</dict>
 		</array>
-		<key>#Arbitrary</key>
-		<array>
-			<dict>
-				<key>Comment</key>
-				<string>Thunderbolt bridge</string>
-				<key>CustomProperties</key>
-				<array>
-					<dict>
-						<key>Key</key>
-						<string>PCI-Thunderbolt</string>
-						<key>Disabled</key>
-						<true/>
-						<key>Value</key>
-						<integer>3</integer>
-					</dict>
-				</array>
-				<key>PciAddr</key>
-				<string>03:00:00</string>
-			</dict>
-			<dict>
-				<key>Comment</key>
-				<string>Thunderbolt device</string>
-				<key>CustomProperties</key>
-				<array>
-					<dict>
-						<key>Key</key>
-						<string>TBTDPLowToHigh</string>
-						<key>Disabled</key>
-						<true/>
-						<key>Value</key>
-						<data>AQAAAA==</data>
-					</dict>
-					<dict>
-						<key>Key</key>
-						<string>ThunderboltUUID</string>
-						<key>Disabled</key>
-						<true/>
-						<key>Value</key>
-						<data>CO8yvYVBslCHyHKPjwfU/A==</data>
-					</dict>
-				</array>
-				<key>PciAddr</key>
-				<string>05:00:00</string>
-			</dict>
-			<dict>
-				<key>Comment</key>
-				<string>IntelGfx</string>
-				<key>CustomProperties</key>
-				<array>
-					<dict>
-						<key>Key</key>
-						<string>graphic-options</string>
-						<key>Value</key>
-						<data>DAAAAA==</data>
-					</dict>
-					<dict>
-						<key>Key</key>
-						<string>hda-gfx</string>
-						<key>Value</key>
-						<string>onboard-1</string>
-					</dict>
-					<dict>
-						<key>Key</key>
-						<string>AAPL,ig-platform-id</string>
-						<key>Value</key>
-						<data>AAASGQ==</data>
-					</dict>
-					<dict>
-						<key>Key</key>
-						<string>model</string>
-						<key>Value</key>
-						<string>Intel HD Graphics 7000</string>
-					</dict>
-					<dict>
-						<key>Key</key>
-						<string>subsystem-vendor-id</string>
-						<key>Value</key>
-						<data>axAAAA==</data>
-					</dict>
-					<dict>
-						<key>Key</key>
-						<string>subsystem-id</string>
-						<key>Value</key>
-						<data>hoAAAA==</data>
-					</dict>
-					<dict>
-						<key>Disabled</key>
-						<true/>
-						<key>Key</key>
-						<string>@2,AAPL,boot-display</string>
-						<key>Value</key>
-						<true/>
-					</dict>
-				</array>
-				<key>PciAddr</key>
-				<string>00:02:00</string>
-			</dict>
-			<dict>
-				<key>Comment</key>
-				<string>HDA Audio</string>
-				<key>CustomProperties</key>
-				<array>
-					<dict>
-						<key>Key</key>
-						<string>hda-gfx</string>
-						<key>Value</key>
-						<string>onboard-1</string>
-					</dict>
-				</array>
-				<key>PciAddr</key>
-				<string>00:1f:03</string>
-			</dict>
-			<dict>
-				<key>Comment</key>
-				<string>ATI Radeon</string>
-				<key>CustomProperties</key>
-				<array>
-					<dict>
-						<key>Key</key>
-						<string>hda-gfx</string>
-						<key>Value</key>
-						<string>onboard-2</string>
-					</dict>
-					<dict>
-						<key>Key</key>
-						<string>model</string>
-						<key>Value</key>
-						<string>AMD Radeon HD6450</string>
-					</dict>
-					<dict>
-						<key>Disabled</key>
-						<false/>
-						<key>Key</key>
-						<string>@AAPL,boot-display</string>
-						<key>Value</key>
-						<true/>
-					</dict>
-				</array>
-				<key>PciAddr</key>
-				<string>01:00:00</string>
-			</dict>
-		</array>
 		<key>#FakeID</key>
 		<dict>
 			<key>#ATI</key>
@@ -500,8 +350,6 @@
 			<string>0x0887</string>
 			<key>ResetHDA</key>
 			<true/>
-			<key>AFGLowPowerState</key>
-			<true/>
 		</dict>
 		<key>NoDefaultProperties</key>
 		<false/>
@@ -518,10 +366,6 @@
 		</dict>
 		<key>UseIntelHDMI</key>
 		<false/>
-		<key>#DisableFunctions</key>
-		<string>0x18F6</string>		
-		<key>#AirportBridgeDeviceName</key>
-		<string>RP02</string>
 	</dict>
 	<key>GUI</key>
 	<dict>
@@ -735,11 +579,6 @@
 		</array>
 		<key>#FakeCPUID</key>
 		<string>0x010676</string>
-		<key>#ForceKextsToLoad</key>		
-		<array>
-			<string>\System\Library\Extensions\AMD6000Controller.kext</string>
-			<string>\System\Library\Extensions\AMDFramebuffer.kext</string>
-		</array>
 		<key>#KextsToPatch</key>
 		<array>
 			<dict>
@@ -803,6 +642,8 @@
 		<false/>
 		<key>AppleRTC</key>
 		<true/>
+		<key>AsusAICPUPM</key>
+		<false/>
 		<key>Debug</key>
 		<false/>
 		<key>DellSMBIOSPatch</key>
