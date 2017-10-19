@@ -772,7 +772,34 @@ STATIC UINT8 NameCSDT2[] = {0x80, 0x43, 0x53, 0x44, 0x54};
 
 //UINT32 get_size(UINT8 * An, UINT32 ); // Let borrow from FixBiosDsdt.
 
-VOID DumpChildSsdt(EFI_ACPI_DESCRIPTION_HEADER *TableEntry, CHAR16 *DirName, CHAR16 *FileNamePrefix, UINTN *SsdtCount)
+static CHAR16* GenerateFileName(CHAR16* FileNamePrefix, UINTN SsdtCount, UINTN ChildCount, CHAR8 OemTableId[9])
+// ChildCount == -1 indicates normal SSDT
+// SsdtCount == -1 indicates dynamic SSDT in DSDT
+// otherwise is child SSDT from normal SSDT
+{
+  CHAR16* FileName;
+  CHAR8 Suffix[10]; // "-" + OemTableId + NUL
+  if (gSettings.NoOemTableId || 0 == OemTableId[0]) {
+    Suffix[0] = 0;
+  } else {
+    Suffix[0] = '-';
+    CopyMem(Suffix+1, OemTableId, 9);
+  }
+  if (-1 == ChildCount) {
+    // normal SSDT
+    FileName = PoolPrint(L"%sSSDT-%d%a.aml", FileNamePrefix, SsdtCount, Suffix);
+  } else if (-1 == SsdtCount) {
+    // dynamic SSDT in DSDT
+    FileName = PoolPrint(L"%sSSDT-xDSDT_%d%a.aml", FileNamePrefix, ChildCount, Suffix);
+  } else {
+    // dynamic SSDT in static SSDT
+    FileName = PoolPrint(L"%sSSDT-x%d_%d%a.aml", FileNamePrefix, SsdtCount, ChildCount, Suffix);
+  }
+  // caller must free PoolPrint return value with FreePool
+  return FileName;
+}
+
+VOID DumpChildSsdt(EFI_ACPI_DESCRIPTION_HEADER *TableEntry, CHAR16 *DirName, CHAR16 *FileNamePrefix, UINTN SsdtCount)
 {
   EFI_STATUS    Status = EFI_SUCCESS;
   INTN          j, k, pacLen, pacCount;
@@ -783,6 +810,7 @@ VOID DumpChildSsdt(EFI_ACPI_DESCRIPTION_HEADER *TableEntry, CHAR16 *DirName, CHA
   UINT8         *Entry;
   UINT8         *End;
   UINT8         *pacBody;
+  UINTN         ChildCount = 0;
 
   Entry = (UINT8*)TableEntry;  //first entry is parent SSDT
   End = Entry + TableEntry->Length;
@@ -830,10 +858,7 @@ VOID DumpChildSsdt(EFI_ACPI_DESCRIPTION_HEADER *TableEntry, CHAR16 *DirName, CHA
           }
 
           if ((AsciiStrCmp(Signature, "SSDT") == 0) && (len < 0x20000) && DirName != NULL && !IsTableSaved((VOID*)adr)) {
-            if (gSettings.NoOemTableId || 0 == OemTableId[0])
-              FileName = PoolPrint(L"%sSSDT-%dx.aml", FileNamePrefix, *SsdtCount);
-            else
-              FileName = PoolPrint(L"%sSSDT-%dx-%a.aml", FileNamePrefix, *SsdtCount, OemTableId);
+            FileName = GenerateFileName(FileNamePrefix, SsdtCount, ChildCount, OemTableId);
             len = ((UINT16*)adr)[2];
             DBG("Internal length = %d", len);
             Status = SaveBufferToDisk((VOID*)adr, len, DirName, FileName);
@@ -841,7 +866,7 @@ VOID DumpChildSsdt(EFI_ACPI_DESCRIPTION_HEADER *TableEntry, CHAR16 *DirName, CHA
             if (!EFI_ERROR(Status)) {
               DBG(" -> %s\n", FileName);
               MarkTableAsSaved((VOID*)adr);
-              *SsdtCount += 1;
+              ChildCount++;
             } else {
               DBG(" -> %r\n", Status);
             }
@@ -879,15 +904,12 @@ VOID DumpChildSsdt(EFI_ACPI_DESCRIPTION_HEADER *TableEntry, CHAR16 *DirName, CHA
           DBG("%02x ", ((UINT8*)adr)[k]);
         }
         if ((AsciiStrCmp(Signature, "SSDT") == 0) && (len < 0x20000) && DirName != NULL && !IsTableSaved((VOID*)adr)) {
-          if (gSettings.NoOemTableId || 0 == OemTableId[0])
-            FileName = PoolPrint(L"%sSSDT-%dx.aml", FileNamePrefix, *SsdtCount);
-          else
-            FileName = PoolPrint(L"%sSSDT-%dx-%a.aml", FileNamePrefix, *SsdtCount, OemTableId);
+          FileName = GenerateFileName(FileNamePrefix, SsdtCount, ChildCount, OemTableId);
           Status = SaveBufferToDisk((VOID*)adr, len, DirName, FileName);
           if (!EFI_ERROR(Status)) {
             DBG(" -> %s", FileName);
             MarkTableAsSaved((VOID*)adr);
-            *SsdtCount += 1;
+            ChildCount++;
           } else {
             DBG(" -> %r", Status);
           }
@@ -976,13 +998,9 @@ EFI_STATUS DumpTable(EFI_ACPI_DESCRIPTION_HEADER *TableEntry, CHAR8 *CheckSignat
   if (FileName == NULL) {
     // take the name from the signature
     if (TableEntry->Signature == EFI_ACPI_1_0_SECONDARY_SYSTEM_DESCRIPTION_TABLE_SIGNATURE && SsdtCount != NULL) {
-      // Ssdt counter
-      if (gSettings.NoOemTableId || 0 == OemTableId[0])
-        FileName = PoolPrint(L"%sSSDT-%d.aml", FileNamePrefix, *SsdtCount);
-      else
-        FileName = PoolPrint(L"%sSSDT-%d-%a.aml", FileNamePrefix, *SsdtCount, OemTableId);
-      *SsdtCount = *SsdtCount + 1;
-      DumpChildSsdt(TableEntry, DirName, FileNamePrefix, SsdtCount);
+      FileName = GenerateFileName(FileNamePrefix, *SsdtCount, -1, OemTableId);
+      DumpChildSsdt(TableEntry, DirName, FileNamePrefix, *SsdtCount);
+      *SsdtCount += 1;
     } else {
       FileName = PoolPrint(L"%s%a.aml", FileNamePrefix, Signature);
     }
@@ -1052,7 +1070,7 @@ EFI_STATUS DumpFadtTables(EFI_ACPI_2_0_FIXED_ACPI_DESCRIPTION_TABLE *Fadt, CHAR1
       return Status;
     }
     DBG("\n");
-    DumpChildSsdt(TableEntry, DirName, FileNamePrefix, SsdtCount);
+    DumpChildSsdt(TableEntry, DirName, FileNamePrefix, -1);
   }
   //
   // Save Facs
