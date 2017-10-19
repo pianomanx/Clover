@@ -941,6 +941,7 @@ typedef struct {
   UINT8                   ResetVal;
   BOOLEAN                 NoASPM;
   BOOLEAN                 DropSSDT;
+  BOOLEAN                 NoOemTableId;
   BOOLEAN                 GeneratePStates;
   BOOLEAN                 GenerateCStates;
   BOOLEAN                 GenerateAPSN;
