@@ -5529,6 +5529,9 @@ GetUserSettings(
         }
       }
 
+      Prop = GetProperty (DictPointer, "AutoMerge");
+      gSettings.AutoMerge  = IsPropertyTrue (Prop);
+
       Prop = GetProperty (DictPointer, "DisabledAML");
       if (Prop) {
         INTN   i, Count = GetTagCount (Prop);

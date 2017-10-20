@@ -674,6 +674,8 @@ VOID FillInputs(BOOLEAN New)
   }
   UnicodeSPrint(InputItems[InputItemsCount++].SValue, 16, L"%04d", gSettings.IntelMaxValue);
 
+  InputItems[InputItemsCount].ItemType = BoolValue; //113
+  InputItems[InputItemsCount++].BValue = gSettings.AutoMerge;
 
   //menu for drop table
   if (gSettings.ACPIDropTables) {
@@ -1257,7 +1259,10 @@ VOID ApplyInputs(VOID)
   if (InputItems[i].Valid) {
     gSettings.IntelMaxValue = InputItems[i].BValue;
   }
-
+  i++; //113
+  if (InputItems[i].Valid) {
+    gSettings.AutoMerge = InputItems[i].BValue;
+  }
 
   if (NeedSave) {
     SaveSettings();
@@ -4415,6 +4420,7 @@ REFIT_MENU_ENTRY  *SubMenuDropTables()
   }
 
   AddMenuItem(SubScreen, 4, "Drop all OEM SSDT", TAG_INPUT, FALSE);
+  AddMenuItem(SubScreen, 113, "Automatic smart merge", TAG_INPUT, FALSE);
 
   //AddMenuInfoLine(SubScreen, L"PATCHED AML:");
   if (ACPIPatchedAML) {
