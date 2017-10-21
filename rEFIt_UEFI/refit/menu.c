@@ -4545,6 +4545,7 @@ REFIT_MENU_ENTRY  *SubMenuDsdtFix()
   AddMenuCheck(SubScreen, "Add HDMI",     FIX_HDMI, 67);
   AddMenuCheck(SubScreen, "Fix Regions",  FIX_REGIONS, 67);
   AddMenuCheck(SubScreen, "Fix Headers",  FIX_HEADERS, 67);
+  AddMenuCheck(SubScreen, "Fix Mutex",    FIX_MUTEX, 67);
 
   
   AddMenuEntry(SubScreen, &MenuEntryReturn);

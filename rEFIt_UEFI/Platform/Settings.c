@@ -5202,6 +5202,11 @@ GetUserSettings(
               gSettings.FixDsdt |= FIX_HEADERS;
             }
 
+            Prop2 = GetProperty (Prop, "FixMutex_40000000");
+            if (IsPropertyTrue (Prop2)) {
+              gSettings.FixDsdt |= FIX_MUTEX;
+            }
+
             /*
             Prop2 = GetProperty (Prop, "NewWay_80000000");
             if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
