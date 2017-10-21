@@ -531,7 +531,7 @@ static struct gma_gpu_t KnownGPUS[] = {
   { 0x015E, "Intel Ivy Bridge GT1"           }, // Reserved
   //GT2
   { 0x0162, "Intel HD Graphics 4000"         }, // Desktop
-  { 0x0166, "Intel HD Graphics 4000"         }, // Mobile - MacBookPro9,1, MacBookPro9,2, MacBookPro10,1, MacBookPro10,2, MacBookAir5,1, MacBookAir5,2
+  { 0x0166, "Intel HD Graphics 4000"         }, // Mobile - MacBookPro9,x, MacBookPro10,x, MacBookAir5,x, Macmini6,x
   { 0x016A, "Intel HD Graphics P4000"        }, // Server
 
 
@@ -688,9 +688,9 @@ static struct gma_gpu_t KnownGPUS[] = {
   //GT4
   { 0x192A, "Intel Skylake GT4"              }, //
   //GT4e
-  { 0x1932, "Intel Iris Pro Graphics 580"    }, //
+  { 0x1932, "Intel Iris Pro Graphics 580"    }, // Desktop
   { 0x193A, "Intel Iris Pro Graphics P580"   }, // Server
-  { 0x193B, "Intel Iris Pro Graphics 580"    }, // Desktop, Mobile
+  { 0x193B, "Intel Iris Pro Graphics 580"    }, // Mobile
   { 0x193D, "Intel Iris Pro Graphics P580"   }, // Workstation, Mobile Workstation
 
   //----------------Goldmont------------------
@@ -1813,52 +1813,59 @@ BOOLEAN setup_gma_devprop(pci_dt_t *gma_dev)
     case 0x015E: // "Intel Ivy Bridge GT1"            // Reserved
       //GT2
     case 0x0162: // "Intel HD Graphics 4000"          // Desktop
-    case 0x0166: // "Intel HD Graphics 4000"          // Mobile - MacBookPro9,1, MacBookPro9,2, MacBookPro10,1, MacBookPro10,2, MacBookAir5,1, MacBookAir5,2
+    case 0x0166: // "Intel HD Graphics 4000"          // Mobile - MacBookPro9,x, MacBookPro10,x, MacBookAir5,x, Macmini6,x
     case 0x016A: // "Intel HD Graphics P4000"         // Server
-      if (!SetFake) {
-        switch (gma_dev->device_id) {
-          case 0x0152:
-          case 0x015A:
+      switch (gma_dev->device_id) {
+        case 0x0152:
+        case 0x015A:
+          if (!SetFake) {
             FakeID = 0x01528086 >> 16;
             DBG("  Found FakeID Intel GFX = 0x%04lx8086\n", FakeID);
             devprop_add_value(device, "device-id", (UINT8*)&FakeID, 4);
             FakeID = 0x01528086 & 0xFFFF;
             devprop_add_value(device, "vendor-id", (UINT8*)&FakeID, 4);
-            break;
-          case 0x0156:
+          }
+          if (!SetIg) {
+            devprop_add_value(device, "AAPL,ig-platform-id", ivy_bridge_ig_vals[5], 4);
+            DBG("  Found ig-platform-id = 0x01620005\n");
+          }
+          break;
+        case 0x0156:
+          if (!SetFake) {
             FakeID = 0x01568086 >> 16;
             DBG("  Found FakeID Intel GFX = 0x%04lx8086\n", FakeID);
             devprop_add_value(device, "device-id", (UINT8*)&FakeID, 4);
             FakeID = 0x01568086 & 0xFFFF;
             devprop_add_value(device, "vendor-id", (UINT8*)&FakeID, 4);
-            break;
-          case 0x0162:
-          case 0x016A:
+          }
+          if (!SetIg) {
+            devprop_add_value(device, "AAPL,ig-platform-id", ivy_bridge_ig_vals[9], 4);
+            DBG("  Found ig-platform-id = 0x01660009\n");
+          }
+          break;
+        case 0x0162:
+        case 0x016A:
+          if (!SetFake) {
             FakeID = 0x01628086 >> 16;
             DBG("  Found FakeID Intel GFX = 0x%04lx8086\n", FakeID);
             devprop_add_value(device, "device-id", (UINT8*)&FakeID, 4);
             FakeID = 0x01628086 & 0xFFFF;
             devprop_add_value(device, "vendor-id", (UINT8*)&FakeID, 4);
-            break;
-          case 0x0166:
+          }
+          if (!SetIg) {
+            devprop_add_value(device, "AAPL,ig-platform-id", ivy_bridge_ig_vals[5], 4);
+            DBG("  Found ig-platform-id = 0x01620005\n");
+          }
+          break;
+        case 0x0166:
+          if (!SetFake) {
             FakeID = 0x01668086 >> 16;
             DBG("  Found FakeID Intel GFX = 0x%04lx8086\n", FakeID);
             devprop_add_value(device, "device-id", (UINT8*)&FakeID, 4);
             FakeID = 0x01668086 & 0xFFFF;
             devprop_add_value(device, "vendor-id", (UINT8*)&FakeID, 4);
-            break;
-          default:
-            break;
-        }
-      }
-      if (!SetIg) {
-        switch (MacModel) {
-          case MacBookAir51:
-          case MacBookAir52:
-          case MacBookPro91:
-          case MacBookPro92:
-          case MacBookPro101:
-          case MacBookPro102:
+          }
+          if (!SetIg) {
             if (UGAWidth < 1600) {
               devprop_add_value(device, "AAPL,ig-platform-id", ivy_bridge_ig_vals[3], 4);
               DBG("  Found ig-platform-id = 0x01660003\n");
@@ -1867,12 +1874,10 @@ BOOLEAN setup_gma_devprop(pci_dt_t *gma_dev)
               devprop_add_value(device, "AAPL,ig-platform-id", ivy_bridge_ig_vals[4], 4);
               DBG("  Found ig-platform-id = 0x01660004\n");
             }
-            break;
-          default:
-            devprop_add_value(device, "AAPL,ig-platform-id", ivy_bridge_ig_vals[10], 4);
-            DBG("  Found ig-platform-id = 0x0166000A\n");
-            break;
-        }
+          }
+          break;
+        default:
+          break;
       }
       devprop_add_value(device, "built-in", &BuiltIn, 1);
       devprop_add_value(device, "graphic-options", ivy_bridge_hd_vals[0], 4);
@@ -2213,9 +2218,9 @@ BOOLEAN setup_gma_devprop(pci_dt_t *gma_dev)
       //GT4
     case 0x192A: // "Intel Skylake GT4"               //
       //GT4e
-    case 0x1932: // "Intel Iris Pro Graphics 580"     //
+    case 0x1932: // "Intel Iris Pro Graphics 580"     // Desktop
     case 0x193A: // "Intel Iris Pro Graphics P580"    // Server
-    case 0x193B: // "Intel Iris Pro Graphics 580"     // Desktop, Mobile
+    case 0x193B: // "Intel Iris Pro Graphics 580"     // Mobile
     case 0x193D: // "Intel Iris Pro Graphics P580"    // Workstation, Mobile Workstation
       switch (gma_dev->device_id) {
         case 0x1902:
