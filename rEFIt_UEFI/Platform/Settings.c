@@ -5394,6 +5394,9 @@ GetUserSettings(
             // custom Generate, with backward compatible defaults
             Prop = GetProperty (Prop2, "PStates");
             gSettings.GeneratePStates = IsPropertyTrue (Prop);
+            gSettings.GenerateAPSN = gSettings.GeneratePStates;
+            gSettings.GenerateAPLF = gSettings.GeneratePStates;
+            gSettings.GeneratePluginType = gSettings.GeneratePStates;
             Prop = GetProperty (Prop2, "CStates");
             gSettings.GenerateCStates = IsPropertyTrue (Prop);
             Prop = GetProperty (Prop2, "APSN");
