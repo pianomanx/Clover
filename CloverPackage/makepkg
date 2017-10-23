@@ -48,7 +48,8 @@ SYMROOT="${SRCROOT}"/sym
 PKG_BUILD_DIR="${SYMROOT}"/package
 
 echo "${version}"  > version
-echo "${revision}.${clover_gitrevision}.${clover_githash}" > revision
+full_revision=${revision}.${clover_gitrevision}.${clover_githash}
+echo "${full_revision}" > revision
 
 # Workspace = edk2/Clover/CloverPackage
 
@@ -88,9 +89,9 @@ fi
 
 package/buildpkg.sh --srcroot "$SRCROOT" --symroot "sym" --builddir "$PKG_BUILD_DIR" ${NOEXTRAS:1} || exit $?
 
-(cd sym ; zip Clover_${version}_r${revision}.zip \
- Clover_${version}_r${revision}.pkg              \
- Clover_${version}_r${revision}.pkg.md5 )
+(cd sym ; zip Clover_${version}_r${full_revision}.zip \
+ Clover_${version}_r${full_revision}.pkg              \
+ Clover_${version}_r${full_revision}.pkg.md5 )
 
 # Workspace = edk2/Clover/CloverPackage/
 # Remove temp files.
