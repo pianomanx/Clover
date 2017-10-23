@@ -20,7 +20,46 @@ https://bitbucket.org/RehabMan/clover/downloads/
 
 ### RehabMan added features/fixes
 
-- config.plist/ACPI/DSDT/Fixes/FixMutex_40000000.  This patch fixes any Mutex declared with a non-zero SyncLevel.  Acquiring such a Mutex in macOS/OS X causes ACPI abort (even when used in a legal scenario).  Non-zero SyncLevel Mutex objects are one of the common causes of ACPI battery method failure.
+- fixed spacebar and escape key handling within the GUI
+
+- config.plist/SystemParameters/InjectKexts=Detect works in my version. Broken in official Clover from r4242.
+
+- friendly names for config.plist/ACPI/DSDT/Fixes. Removed the bitmask suffix and made capitalization consistent.
+
+Full list:
+ - "AddDTGP_0001" -> "AddDTGP"
+ - "FixDarwin_0002" -> "FixDarwin"
+ - "FixShutdown_0004" -> "FixShutdown"
+ - "AddMCHC_0008" -> "AddMCHC"
+ - "FixHPET_0010" -> "FixHPET"
+ - "FakeLPC_0020" -> "FakeLPC"
+ - "FixIPIC_0040" -> "FixIPIC"
+ - "FixSBUS_0080" -> "FixSBUS"
+ - "FixDisplay_0100" -> "FixDisplay"
+ - "FixIDE_0200" -> "FixIDE"
+ - "FixSATA_0400" -> "FixSATA"
+ - "FixFirewire_0800" -> "FixFirewire"
+ - "FixUSB_1000" -> "FixUSB"
+ - "FixLAN_2000" -> "FixLAN"
+ - "FixAirport_4000" -> "FixAirport"
+ - "FixHDA_8000" -> "FixHDA"
+ - "FixDarwin7_10000" -> "FixDarwin7"
+ - "FIX_RTC_20000" -> "FixRTC"
+ - "FIX_TMR_40000" -> "FixTMR"
+ - "AddIMEI_80000" -> "AddIMEI"
+ - "FIX_INTELGFX_100000" -> "FixIntelGfx"
+ - "FIX_WAK_200000" -> "FixWAK"
+ - "DeleteUnused_400000" -> "DeleteUnused"
+ - "FIX_ADP1_800000" -> "FixADP1"
+ - "AddPNLF_1000000" -> "AddPNLF"
+ - "FIX_S3D_2000000" -> "FixS3D"
+ - "FIX_ACST_4000000" -> "FixACST"
+ - "AddHDMI_8000000" -> "AddHDMI"
+ - "FixRegions_10000000" -> "FixRegions"
+ - "FixHeaders_20000000" -> "FixHeaders"
+ - "FixMutex" (no old name for "FixMutex" as it is new)
+
+- config.plist/ACPI/DSDT/Fixes/FixMutex.  This patch fixes any Mutex declared with a non-zero SyncLevel.  Acquiring such a Mutex in macOS/OS X causes ACPI abort (even when used in a legal scenario).  Non-zero SyncLevel Mutex objects are one of the common causes of ACPI battery method failure.
 
 - config.plist/ACPI/AutoMerge boolean (default false).  When set true, it changes the way files are handled in ACPI/patched.  Instead of adding such files to the end of the XSDT (eg. treating as add-on table/SSDT), if the signature, index, and OemTableId matches an existing OEM table, it will replace that table.  With this feature, much like we take for granted with DSDT, it is possible to patch individual SSDTs (or other tables) simply by placing the patched file in ACPI/patched.  No need to mess with DropOem or DropTables.  And the original order is maintained.  The matching for SSDTs is based on naming, where the naming convention used by the F4 extractor is used to identify the SSDT position within the XSDT.  As an example, if your ACPI/origin had an SSDT-6-SaSsdt.aml, and you wished to patch it, you can simply patch the file as needed and place in ACPI/patched.  Same if you put it in ACPI/patched as SSDT-6.aml.  Becuase some OEM ACPI sets do not use unique text in the OEM table-id field, Clover uses both the OEM table-id and the number that is part of the file name to determine the location of the original in the XDST.  If you stick with the names provided in ACPI/origin, it can't go wrong.
 
