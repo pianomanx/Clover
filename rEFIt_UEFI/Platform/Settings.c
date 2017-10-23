@@ -552,6 +552,7 @@ LoadUserSettings (
   } 
 
   if (!EFI_ERROR (Status) && gConfigPtr != NULL) {
+    //REVIEW: memory leak... gConfigPtr
     Status = ParseXML ((const CHAR8*)gConfigPtr, Dict, (UINT32)Size);
     if (EFI_ERROR (Status)) {
       //  Dict = NULL;
@@ -3178,6 +3179,7 @@ GetListOfThemes ()
       Status = SelfRootDir->Open (SelfRootDir, &ThemeTestDir, ThemeTestPath, EFI_FILE_MODE_READ, 0);
       if (!EFI_ERROR (Status)) {
         Status = egLoadFile (ThemeTestDir, CONFIG_THEME_FILENAME, (UINT8**)&ThemePtr, &Size);
+        //REVIEW: memory leak... ThemePtr
         if (EFI_ERROR (Status) || (ThemePtr == NULL) || (Size == 0)) {
           Status = EFI_NOT_FOUND;
           DBG (" - bad theme because %s can't be load", CONFIG_THEME_FILENAME);
@@ -5050,161 +5052,49 @@ GetUserSettings(
  //         DBG ("Fixes will override DSDT fix mask %08x!\n", gSettings.FixDsdt);
 
           if (Prop->type == kTagTypeDict) {
-            gSettings.FixDsdt = 0;
-
-            Prop2 = GetProperty (Prop, "AddDTGP_0001");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_DTGP;
-            }
-
-            Prop2 = GetProperty (Prop, "FixDarwin_0002");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_WARNING;
-            }
-
-            Prop2 = GetProperty (Prop, "FixShutdown_0004");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_SHUTDOWN;
-            }
-
-            Prop2 = GetProperty (Prop, "AddMCHC_0008");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_MCHC;
-            }
-
-            Prop2 = GetProperty (Prop, "FixHPET_0010");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_HPET;
-            }
-
-            Prop2 = GetProperty (Prop, "FakeLPC_0020");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_LPC;
-            }
-
-            Prop2 = GetProperty (Prop, "FixIPIC_0040");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_IPIC;
-            }
-
-            Prop2 = GetProperty (Prop, "FixSBUS_0080");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_SBUS;
-            }
-
-            Prop2 = GetProperty (Prop, "FixDisplay_0100");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_DISPLAY;
-            }
-
-            Prop2 = GetProperty (Prop, "FixIDE_0200");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_IDE;
-            }
-
-            Prop2 = GetProperty (Prop, "FixSATA_0400");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_SATA;
-            }
-
-            Prop2 = GetProperty (Prop, "FixFirewire_0800");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_FIREWIRE;
-            }
-
-            Prop2 = GetProperty (Prop, "FixUSB_1000");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_USB;
-            }
-
-            Prop2 = GetProperty (Prop, "FixLAN_2000");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_LAN;
-            }
-
-            Prop2 = GetProperty (Prop, "FixAirport_4000");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_WIFI;
-            }
-
-            Prop2 = GetProperty (Prop, "FixHDA_8000");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_HDA;
-            }
-
-            Prop2 = GetProperty (Prop, "FixDarwin7_10000");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_DARWIN;
-            }
-
-            Prop2 = GetProperty (Prop, "FIX_RTC_20000");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_RTC;
-            }
-
-            Prop2 = GetProperty (Prop, "FIX_TMR_40000");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_TMR;
-            }
-
-            Prop2 = GetProperty (Prop, "AddIMEI_80000");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_IMEI;
-            }
-
-            Prop2 = GetProperty (Prop, "FIX_INTELGFX_100000");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_INTELGFX;
-            }
-
-            Prop2 = GetProperty (Prop, "FIX_WAK_200000");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_WAK;
-            }
-
-            Prop2 = GetProperty (Prop, "DeleteUnused_400000");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_UNUSED;
-            }
-
-            Prop2 = GetProperty (Prop, "FIX_ADP1_800000");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_ADP1;
-            }
-
-            Prop2 = GetProperty (Prop, "AddPNLF_1000000");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_PNLF;
-            }
-
-            Prop2 = GetProperty (Prop, "FIX_S3D_2000000");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_S3D;
-            }
-
-            Prop2 = GetProperty (Prop, "FIX_ACST_4000000");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_ACST;
-            }
-
-            Prop2 = GetProperty (Prop, "AddHDMI_8000000");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_HDMI;
-            }
-
-            Prop2 = GetProperty (Prop, "FixRegions_10000000");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_REGIONS;
-            }
-
-            Prop2 = GetProperty (Prop, "FixHeaders_20000000");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_HEADERS;
-            }
-
-            Prop2 = GetProperty (Prop, "FixMutex_40000000");
-            if (IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_MUTEX;
+            static struct CONFIG { const CHAR8* oldName; const CHAR8* newName; UINT32 bitData; } config[] =
+            {
+              { "AddDTGP_0001", "AddDTGP", FIX_DTGP },
+              { "FixDarwin_0002", "FixDarwin", FIX_WARNING },
+              { "FixShutdown_0004", "FixShutdown", FIX_SHUTDOWN },
+              { "AddMCHC_0008", "AddMCHC", FIX_MCHC },
+              { "FixHPET_0010", "FixHPET", FIX_HPET },
+              { "FakeLPC_0020", "FakeLPC", FIX_LPC },
+              { "FixIPIC_0040", "FixIPIC", FIX_IPIC },
+              { "FixSBUS_0080", "FixSBUS", FIX_SBUS },
+              { "FixDisplay_0100", "FixDisplay", FIX_DISPLAY },
+              { "FixIDE_0200", "FixIDE", FIX_IDE },
+              { "FixSATA_0400", "FixSATA", FIX_SATA },
+              { "FixFirewire_0800", "FixFirewire", FIX_FIREWIRE },
+              { "FixUSB_1000", "FixUSB", FIX_USB },
+              { "FixLAN_2000", "FixLAN", FIX_LAN },
+              { "FixAirport_4000", "FixAirport", FIX_WIFI },
+              { "FixHDA_8000", "FixHDA", FIX_HDA },
+              { "FixDarwin7_10000", "FixDarwin7", FIX_DARWIN },
+              { "FIX_RTC_20000", "FixRTC", FIX_RTC },
+              { "FIX_TMR_40000", "FixTMR", FIX_TMR },
+              { "AddIMEI_80000", "AddIMEI", FIX_IMEI },
+              { "FIX_INTELGFX_100000", "FixIntelGfx", FIX_INTELGFX },
+              { "FIX_WAK_200000", "FixWAK", FIX_WAK },
+              { "DeleteUnused_400000", "DeleteUnused", FIX_UNUSED },
+              { "FIX_ADP1_800000", "FixADP1", FIX_ADP1 },
+              { "AddPNLF_1000000", "AddPNLF", FIX_PNLF },
+              { "FIX_S3D_2000000", "FixS3D", FIX_S3D },
+              { "FIX_ACST_4000000", "FixACST", FIX_ACST },
+              { "AddHDMI_8000000", "AddHDMI", FIX_HDMI },
+              { "FixRegions_10000000", "FixRegions", FIX_REGIONS },
+              { "FixHeaders_20000000", "FixHeaders", FIX_HEADERS },
+              { NULL, "FixMutex", FIX_MUTEX },
+            };
+            UINTN Index;
+            for (Index = 0; Index < sizeof(config)/sizeof(config[0]); Index++) {
+              Prop2 = GetProperty(Prop, config[Index].newName);
+              if (!Prop2 && config[Index].oldName) {
+                Prop2 = GetProperty(Prop, config[Index].oldName);
+              }
+              if (IsPropertyTrue(Prop2)) {
+                gSettings.FixDsdt |= config[Index].bitData;
+              }
             }
 
             /*
@@ -6089,6 +5979,7 @@ CHAR8 *GetOSVersion(IN LOADER_ENTRY *Entry)
     if (!OSINSTALLER_VER) {
       CHAR16 *InstallerPlist = L"\\.IABootFiles\\com.apple.Boot.plist";
       if (FileExists (Entry->Volume->RootDir, InstallerPlist)) {
+        //REVIEW: probable memory leak...PlistBuffer (allocated above ^^)
         Status = egLoadFile (Entry->Volume->RootDir, InstallerPlist, (UINT8 **)&PlistBuffer, &PlistLen);
         if (!EFI_ERROR (Status) && PlistBuffer != NULL && ParseXML (PlistBuffer, &Dict, 0) == EFI_SUCCESS) {
           Prop = GetProperty (Dict, "Kernel Flags");
@@ -6122,6 +6013,7 @@ CHAR8 *GetOSVersion(IN LOADER_ENTRY *Entry)
     // Detect exact version for OS X Recovery
     
    if (RecoveryPlists[j] != NULL) {
+     //REVIEW: probable memory leak...PlistBuffer (allocated above ^^)
       Status = egLoadFile (Entry->Volume->RootDir, RecoveryPlists[j], (UINT8 **)&PlistBuffer, &PlistLen);
       if (!EFI_ERROR (Status) && PlistBuffer != NULL && ParseXML (PlistBuffer, &Dict, 0) == EFI_SUCCESS) {
         Prop       = GetProperty (Dict, "ProductVersion");
