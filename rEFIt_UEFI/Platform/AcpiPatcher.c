@@ -1611,11 +1611,13 @@ VOID        SaveOemDsdt(BOOLEAN FullPatch)
   if (FileExists(SelfRootDir, PoolPrint(L"%s%s", AcpiOemPath, PathDsdt))) {
     DBG("DSDT found in Clover volume OEM folder: %s%s\n", AcpiOemPath, PathDsdt);
     Status = egLoadFile(SelfRootDir, PoolPrint(L"%s%s", AcpiOemPath, PathDsdt), &buffer, &DsdtLen);
+    //REVIEW: memory leak...buffer
   }
 
   if (EFI_ERROR(Status) && FileExists(SelfRootDir, PoolPrint(L"%s%s", PathPatched, PathDsdt))) {
     DBG("DSDT found in Clover volume common folder: %s%s\n", PathPatched, PathDsdt);
     Status = egLoadFile(SelfRootDir, PoolPrint(L"%s%s", PathPatched, PathDsdt), &buffer, &DsdtLen);
+    //REVIEW: memory leak...buffer
   }
 
   if (EFI_ERROR(Status)) {
@@ -1978,16 +1980,19 @@ EFI_STATUS PatchACPI(IN REFIT_VOLUME *Volume, CHAR8 *OSVersion)
   if (EFI_ERROR(Status) && FileExists(SelfRootDir, PoolPrint(L"%s%s", AcpiOemPath, PathDsdt))) {
     DBG("DSDT found in Clover volume OEM folder: %s%s\n", AcpiOemPath, PathDsdt);
     Status = egLoadFile(SelfRootDir, PoolPrint(L"%s%s", AcpiOemPath, PathDsdt), &buffer, &bufferLen);
+    //REVIEW: memory leak... buffer
   }
 
   if (EFI_ERROR(Status) && FileExists(RootDir, PathDsdt)) {
     DBG("DSDT found in booted volume\n");
     Status = egLoadFile(RootDir, PathDsdt, &buffer, &bufferLen);
+    //REVIEW: memory leak... buffer
   }
 
   if (EFI_ERROR(Status) && FileExists(SelfRootDir, PoolPrint(L"%s%s", PathPatched, PathDsdt))) {
     DBG("DSDT found in Clover volume: %s%s\n", PathPatched, PathDsdt);
     Status = egLoadFile(SelfRootDir, PoolPrint(L"%s%s", PathPatched, PathDsdt), &buffer, &bufferLen);
+    //REVIEW: memory leak... buffer
   }
   //
   //apply DSDT loaded from a file into buffer
@@ -2124,6 +2129,7 @@ EFI_STATUS PatchACPI(IN REFIT_VOLUME *Volume, CHAR8 *OSVersion)
           UnicodeSPrint(FullName, 512, L"%s\\%s", AcpiOemPath, gSettings.SortedACPI[Index]);
           DBG("Inserting table[%d]:%s from %s ... ", Index, gSettings.SortedACPI[Index], AcpiOemPath);
           Status = egLoadFile(SelfRootDir, FullName, &buffer, &bufferLen);
+          //REVIEW: memory leak... buffer
           if (!EFI_ERROR(Status)) {
             //before insert we should checksum it
             if (buffer) {
@@ -2151,6 +2157,7 @@ EFI_STATUS PatchACPI(IN REFIT_VOLUME *Volume, CHAR8 *OSVersion)
           UnicodeSPrint(FullName, 512, L"%s\\%s", AcpiOemPath, ACPIPatchedAMLTmp->FileName);
           DBG("Inserting %s from %s ... ", ACPIPatchedAMLTmp->FileName, AcpiOemPath);
           Status = egLoadFile(SelfRootDir, FullName, &buffer, &bufferLen);
+          //REVIEW: memory leak... buffer
           if (!EFI_ERROR(Status)) {
             //before insert we should checksum it
             if (buffer) {
@@ -2442,8 +2449,7 @@ EFI_STATUS LoadAndInjectDSDT(CHAR16 *PathPatched,
       DBG("DSDT at 0x%x injected to FADT 0x%p\n", Dsdt, FadtPointer);
     }
 
-    // Buffer allocated with AllocatePages() and we do not know how many pages is allocated
-    gBS->FreePages((EFI_PHYSICAL_ADDRESS)(UINTN)Buffer, EFI_SIZE_TO_PAGES(BufferLen));
+    FreePool(Buffer);
   }
 
   return Status;
@@ -2505,8 +2511,7 @@ EFI_STATUS LoadAndInjectAcpiTable(CHAR16 *PathPatched,
       DBG("Insert return status %r\n", Status);
     }
 
-    // buffer allocated with AllocatePages() and we do not know how many pages is allocated
-    gBS->FreePages((EFI_PHYSICAL_ADDRESS)(UINTN)Buffer, EFI_SIZE_TO_PAGES(BufferLen));
+    FreePool(Buffer);
   } // if table loaded
 
   return Status;
