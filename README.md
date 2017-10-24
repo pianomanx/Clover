@@ -20,44 +20,59 @@ https://bitbucket.org/RehabMan/clover/downloads/
 
 ### RehabMan added features/fixes
 
+Future build:
+
+- internal: rewrote platformdata.c to use single data structure array (easier to read/maintain)
+
+- internal: removed need to manually maintain padding/alignment in Platform.h (easier to maintain)
+
+- internal: some comments regarding existing memory leaks (more review + fixes to come)
+
+- fixed code that was calling FreePages for data allocated with FreePool (AcpiPatcher.c calls to egLoadFiel)
+
+- added back ability to boot with or without injected kexts
+
+- changed installer backup default to save one backup (intead of none) when installing to the EFI partition
+
+- "Cancel hibernate" is not presented when boot target is not hibernated
+
 - fixed spacebar and escape key handling within the GUI
 
 - config.plist/SystemParameters/InjectKexts=Detect works in my version. Broken in official Clover from r4242.
 
 - friendly names for config.plist/ACPI/DSDT/Fixes. Removed the bitmask suffix and made capitalization consistent.
 
-Full list:
- - "AddDTGP_0001" -> "AddDTGP"
- - "FixDarwin_0002" -> "FixDarwin"
- - "FixShutdown_0004" -> "FixShutdown"
- - "AddMCHC_0008" -> "AddMCHC"
- - "FixHPET_0010" -> "FixHPET"
- - "FakeLPC_0020" -> "FakeLPC"
- - "FixIPIC_0040" -> "FixIPIC"
- - "FixSBUS_0080" -> "FixSBUS"
- - "FixDisplay_0100" -> "FixDisplay"
- - "FixIDE_0200" -> "FixIDE"
- - "FixSATA_0400" -> "FixSATA"
- - "FixFirewire_0800" -> "FixFirewire"
- - "FixUSB_1000" -> "FixUSB"
- - "FixLAN_2000" -> "FixLAN"
- - "FixAirport_4000" -> "FixAirport"
- - "FixHDA_8000" -> "FixHDA"
- - "FixDarwin7_10000" -> "FixDarwin7"
- - "FIX_RTC_20000" -> "FixRTC"
- - "FIX_TMR_40000" -> "FixTMR"
- - "AddIMEI_80000" -> "AddIMEI"
- - "FIX_INTELGFX_100000" -> "FixIntelGfx"
- - "FIX_WAK_200000" -> "FixWAK"
- - "DeleteUnused_400000" -> "DeleteUnused"
- - "FIX_ADP1_800000" -> "FixADP1"
- - "AddPNLF_1000000" -> "AddPNLF"
- - "FIX_S3D_2000000" -> "FixS3D"
- - "FIX_ACST_4000000" -> "FixACST"
- - "AddHDMI_8000000" -> "AddHDMI"
- - "FixRegions_10000000" -> "FixRegions"
- - "FixHeaders_20000000" -> "FixHeaders"
- - "FixMutex" (no old name for "FixMutex" as it is new)
+    - "AddDTGP_0001" -> "AddDTGP"
+    - "FixDarwin_0002" -> "FixDarwin"
+    - "FixShutdown_0004" -> "FixShutdown"
+    - "AddMCHC_0008" -> "AddMCHC"
+    - "FixHPET_0010" -> "FixHPET"
+    - "FakeLPC_0020" -> "FakeLPC"
+    - "FixIPIC_0040" -> "FixIPIC"
+    - "FixSBUS_0080" -> "FixSBUS"
+    - "FixDisplay_0100" -> "FixDisplay"
+    - "FixIDE_0200" -> "FixIDE"
+    - "FixSATA_0400" -> "FixSATA"
+    - "FixFirewire_0800" -> "FixFirewire"
+    - "FixUSB_1000" -> "FixUSB"
+    - "FixLAN_2000" -> "FixLAN"
+    - "FixAirport_4000" -> "FixAirport"
+    - "FixHDA_8000" -> "FixHDA"
+    - "FixDarwin7_10000" -> "FixDarwin7"
+    - "FIX_RTC_20000" -> "FixRTC"
+    - "FIX_TMR_40000" -> "FixTMR"
+    - "AddIMEI_80000" -> "AddIMEI"
+    - "FIX_INTELGFX_100000" -> "FixIntelGfx"
+    - "FIX_WAK_200000" -> "FixWAK"
+    - "DeleteUnused_400000" -> "DeleteUnused"
+    - "FIX_ADP1_800000" -> "FixADP1"
+    - "AddPNLF_1000000" -> "AddPNLF"
+    - "FIX_S3D_2000000" -> "FixS3D"
+    - "FIX_ACST_4000000" -> "FixACST"
+    - "AddHDMI_8000000" -> "AddHDMI"
+    - "FixRegions_10000000" -> "FixRegions"
+    - "FixHeaders_20000000" -> "FixHeaders"
+    - "FixMutex" (no old name for "FixMutex" as it is new)
 
 - config.plist/ACPI/DSDT/Fixes/FixMutex.  This patch fixes any Mutex declared with a non-zero SyncLevel.  Acquiring such a Mutex in macOS/OS X causes ACPI abort (even when used in a legal scenario).  Non-zero SyncLevel Mutex objects are one of the common causes of ACPI battery method failure.
 
@@ -66,6 +81,9 @@ Full list:
 - config.plist/ACPI/SSDT/NoOemTableId boolean (default false).  When set true, the OEM table-id is NOT added to the end of the file name in a Clover F4 ACPI dump to ACPI/origin.
 
 - strip trailing spaces from SSDT names when the OEM table-id is added as a suffix (when NoOemTableId=false).
+
+
+Released as Clover_v2.4k_r4210.zip on bitbucket:
 
 - MountESP script is fixed for APFS configurations on 10.13.  It means the installer works for installing to the ESP on 10.13
 
