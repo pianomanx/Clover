@@ -20,7 +20,9 @@ https://bitbucket.org/RehabMan/clover/downloads/
 
 ### RehabMan added features/fixes
 
-Future build:
+Released as Clover_v2.4k_r4265.RM-4346.38d5ad43.zip on bitbucket, 2017-10-26:
+
+- internal: automatic calculation of embedded image/font sizes
 
 - internal: rewrote platformdata.c to use single data structure array (easier to read/maintain)
 
@@ -83,7 +85,7 @@ Future build:
 - strip trailing spaces from SSDT names when the OEM table-id is added as a suffix (when NoOemTableId=false).
 
 
-Released as Clover_v2.4k_r4210.zip on bitbucket:
+Released as Clover_v2.4k_r4210.zip on bitbucket, 2017-09-09:
 
 - MountESP script is fixed for APFS configurations on 10.13.  It means the installer works for installing to the ESP on 10.13
 
