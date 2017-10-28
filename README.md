@@ -20,9 +20,10 @@ https://bitbucket.org/RehabMan/clover/downloads/
 
 ### RehabMan added features/fixes
 
-Future build:
+Released as Clover_v2.4k_r4270.RM-4359.cc5db5ba.pkg on bitbucket, 2017-10-28:
 
 - added config.plist/ACPI/SSDT/NoDynamicExtract (boolean) option, default false.  When set true, this flag will disable extraction of dynamic SSDTs when using F4.  Dynamic SSDTs are rarely needed and usually just cause confusion (mistakenly putting them in ACPI/patched).
+
 
 Released as Clover_v2.4k_r4265.RM-4346.38d5ad43.zip on bitbucket, 2017-10-26:
 
