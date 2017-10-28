@@ -44,13 +44,13 @@
 #include "Platform.h"
 
 #define ALIGN_64 __attribute__((__aligned__(8)))
-#define DEFINE_EMB_DATA(ico) UINT8 ALIGN_64 ico[] =
+#define DEFINE_EMB_DATA(ico) UINT8 ALIGN_64 const ico[] =
 #define DEFINE_EMB_SIZE(ico) UINTN const ico##_size = sizeof(ico);
 //REVIEW: const would be more useful if the cast was not needed, but that
 // would require correct use of const in the related functions.
 #define ACCESS_EMB_DATA(ico) ((UINT8*)ico)
 #define ACCESS_EMB_SIZE(ico) ico##_size
-#define DECLARE_EMB_EXTERN_WITH_SIZE(ico) extern UINT8 ico[]; extern UINTN const ico##_size;
+#define DECLARE_EMB_EXTERN_WITH_SIZE(ico) extern UINT8 const ico[]; extern UINTN const ico##_size;
 
 DECLARE_EMB_EXTERN_WITH_SIZE(emb_font_data)
 DECLARE_EMB_EXTERN_WITH_SIZE(emb_pointer)
