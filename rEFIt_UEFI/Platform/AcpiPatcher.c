@@ -928,6 +928,10 @@ VOID DumpChildSsdt(EFI_ACPI_DESCRIPTION_HEADER *TableEntry, CHAR16 *DirName, CHA
   UINT8         *pacBody;
   UINTN         ChildCount = 0;
 
+  if (gSettings.NoDynamicExtract) {
+    return;
+  }
+
   Entry = (UINT8*)TableEntry;  //first entry is parent SSDT
   End = Entry + TableEntry->Length;
   while (Entry < End) {
