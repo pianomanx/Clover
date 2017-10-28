@@ -301,7 +301,7 @@ PLATFORMDATA ApplePlatformData[] =
     "Mac mini", "1.0", "C07JD041DWYN", "Mini-Aluminum",
     { 0x02, 0x08, 0x0f, 0, 0, 0x01 },  "j50s", "j50s", 0x7d006 },
   //Macmini7,1
-  { "Macmini7,1", "MM71.88Z.0224.B00.1708080033", "Mac-35C5E08120C7EEAF", // Intel Core i5-4278U @ 2.60 GHz
+  { "Macmini7,1", "MM71.88Z.0226.B00.1709290808", "Mac-35C5E08120C7EEAF", // Intel Core i5-4278U @ 2.60 GHz
     "Mac mini", "1.0", "C02NN7NHG1J0", "Mini-Aluminum",
     { 0x02, 0x24, 0x0f, 0, 0, 0x32 },  "j64", "j64", 0xf04008 },
   //iMac4,1
