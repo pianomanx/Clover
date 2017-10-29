@@ -35,7 +35,7 @@ Released as Clover_v2.4k_r4265.RM-4346.38d5ad43.zip on bitbucket, 2017-10-26:
 
 - internal: some comments regarding existing memory leaks (more review + fixes to come)
 
-- fixed code that was calling FreePages for data allocated with FreePool (AcpiPatcher.c calls to egLoadFiel)
+- fixed code that was calling FreePages for data allocated with FreePool (AcpiPatcher.c calls to egLoadFile)
 
 - added back ability to boot with or without injected kexts
 
