@@ -729,17 +729,19 @@ STATIC VOID AddDefaultMenu(IN LOADER_ENTRY *Entry)
         AddMenuEntry(SubScreen, (REFIT_MENU_ENTRY *)SubEntry);
       }
     }
+
     SubEntry = DuplicateLoaderEntry(Entry);
     if (SubEntry) {
       SubEntry->me.Title        = L"Boot macOS with selected options";
       AddMenuEntry(SubScreen, (REFIT_MENU_ENTRY *)SubEntry);
     }
+    
     SubEntry = DuplicateLoaderEntry(Entry);
     if (SubEntry) {
-        SubEntry->me.Title        = L"Boot macOS with injected kexts";
-        SubEntry->Flags           = OSFLAG_UNSET(SubEntry->Flags, OSFLAG_CHECKFAKESMC);
-        SubEntry->Flags           = OSFLAG_SET(SubEntry->Flags, OSFLAG_WITHKEXTS);
-        AddMenuEntry(SubScreen, (REFIT_MENU_ENTRY *)SubEntry);
+      SubEntry->me.Title        = L"Boot macOS with injected kexts";
+      SubEntry->Flags           = OSFLAG_UNSET(SubEntry->Flags, OSFLAG_CHECKFAKESMC);
+      SubEntry->Flags           = OSFLAG_SET(SubEntry->Flags, OSFLAG_WITHKEXTS);
+      AddMenuEntry(SubScreen, (REFIT_MENU_ENTRY *)SubEntry);
     }
     SubEntry = DuplicateLoaderEntry(Entry);
     if (SubEntry) {

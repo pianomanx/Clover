@@ -5027,6 +5027,7 @@ VOID FixMutex(UINT8 *dsdt, UINT32 len)
   }
 }
 
+
 VOID FixBiosDsdt (UINT8* temp, EFI_ACPI_2_0_FIXED_ACPI_DESCRIPTION_TABLE* fadt, CHAR8 *OSVersion)
 {
   UINT32 DsdtLen;
@@ -5242,9 +5243,9 @@ VOID FixBiosDsdt (UINT8* temp, EFI_ACPI_2_0_FIXED_ACPI_DESCRIPTION_TABLE* fadt, 
   if ((gSettings.FixDsdt & FIX_REGIONS)) {
     FixRegions(temp, DsdtLen);
   }
-
+  
   //RehabMan: Fix Mutex objects
-  if (gSettings.FixDsdt & FIX_MUTEX) {
+  if ((gSettings.FixDsdt & FIX_MUTEX)) {
     FixMutex(temp, DsdtLen);
   }
 

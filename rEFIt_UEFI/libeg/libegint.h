@@ -86,6 +86,7 @@ DECLARE_EMB_EXTERN_WITH_SIZE(emb_selection_indicator)
 DECLARE_EMB_EXTERN_WITH_SIZE(emb_checkbox)
 DECLARE_EMB_EXTERN_WITH_SIZE(emb_checkbox_checked)
 
+
 /* types */
 
 //typedef EG_IMAGE * (*EG_DECODE_FUNC)(IN UINT8 *FileData, IN UINTN FileDataLength, IN UINTN IconSize, IN BOOLEAN WantAlpha);

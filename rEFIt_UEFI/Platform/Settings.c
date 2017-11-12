@@ -151,6 +151,42 @@ REFIT_CONFIG   GlobalConfig = {
 //  0,              // INTN        PruneScrollRows;
 };
 
+static struct FIX_CONFIG { const CHAR8* oldName; const CHAR8* newName; UINT32 bitData; } FixesConfig[] =
+{
+    { "AddDTGP_0001", "AddDTGP", FIX_DTGP },
+    { "FixDarwin_0002", "FixDarwin", FIX_WARNING },
+    { "FixShutdown_0004", "FixShutdown", FIX_SHUTDOWN },
+    { "AddMCHC_0008", "AddMCHC", FIX_MCHC },
+    { "FixHPET_0010", "FixHPET", FIX_HPET },
+    { "FakeLPC_0020", "FakeLPC", FIX_LPC },
+    { "FixIPIC_0040", "FixIPIC", FIX_IPIC },
+    { "FixSBUS_0080", "FixSBUS", FIX_SBUS },
+    { "FixDisplay_0100", "FixDisplay", FIX_DISPLAY },
+    { "FixIDE_0200", "FixIDE", FIX_IDE },
+    { "FixSATA_0400", "FixSATA", FIX_SATA },
+    { "FixFirewire_0800", "FixFirewire", FIX_FIREWIRE },
+    { "FixUSB_1000", "FixUSB", FIX_USB },
+    { "FixLAN_2000", "FixLAN", FIX_LAN },
+    { "FixAirport_4000", "FixAirport", FIX_WIFI },
+    { "FixHDA_8000", "FixHDA", FIX_HDA },
+    { "FixDarwin7_10000", "FixDarwin7", FIX_DARWIN },
+    { "FIX_RTC_20000", "FixRTC", FIX_RTC },
+    { "FIX_TMR_40000", "FixTMR", FIX_TMR },
+    { "AddIMEI_80000", "AddIMEI", FIX_IMEI },
+    { "FIX_INTELGFX_100000", "FixIntelGfx", FIX_INTELGFX },
+    { "FIX_WAK_200000", "FixWAK", FIX_WAK },
+    { "DeleteUnused_400000", "DeleteUnused", FIX_UNUSED },
+    { "FIX_ADP1_800000", "FixADP1", FIX_ADP1 },
+    { "AddPNLF_1000000", "AddPNLF", FIX_PNLF },
+    { "FIX_S3D_2000000", "FixS3D", FIX_S3D },
+    { "FIX_ACST_4000000", "FixACST", FIX_ACST },
+    { "AddHDMI_8000000", "AddHDMI", FIX_HDMI },
+    { "FixRegions_10000000", "FixRegions", FIX_REGIONS },
+    { "FixHeaders_20000000", "FixHeaders", FIX_HEADERS },
+    { NULL, "FixMutex", FIX_MUTEX },
+};
+
+
 /*
  VOID __inline WaitForSts(VOID) {
  UINT32 inline_timeout = 100000;
@@ -3080,55 +3116,94 @@ GetListOfACPI ()
   FreePool(AcpiPath);
 }
 
+CHAR16* GetBundleVersion(CHAR16 *FullName)
+{
+  EFI_STATUS      Status;
+  CHAR16*         CFBundleVersion = NULL;
+  CHAR16*         InfoPlistPath;
+  CHAR8*          InfoPlistPtr = NULL;
+  TagPtr          InfoPlistDict = NULL;
+  TagPtr          Prop = NULL;
+  UINTN           Size;
+
+  InfoPlistPath = PoolPrint(L"%s\\%s", FullName, L"Contents\\Info.plist");
+  Status = egLoadFile (SelfRootDir, InfoPlistPath, (UINT8**)&InfoPlistPtr, &Size);
+  if(!EFI_ERROR(Status)) {
+    Status = ParseXML ((const CHAR8*)InfoPlistPtr, &InfoPlistDict, (UINT32)Size);
+    if(!EFI_ERROR(Status)) {
+      Prop = GetProperty(InfoPlistDict, "CFBundleVersion");
+      if (Prop != NULL && Prop->string != NULL) {
+        CFBundleVersion = PoolPrint (L"%a", Prop->string);
+      }
+    }
+  }
+  if (InfoPlistPtr) {
+    FreePool(InfoPlistPtr);
+  }
+  FreePool(InfoPlistPath);
+  return CFBundleVersion;
+}
+
 VOID GetListOfInjectKext(CHAR16 *KextPath)
 {
+
   REFIT_DIR_ITER  DirIter;
   EFI_FILE_INFO*  DirEntry;
   SIDELOAD_KEXT*  mKext;
   SIDELOAD_KEXT*  mPlugInKext;
+  CHAR16*         FullName;
   CHAR16*         FullPath = PoolPrint(L"%s\\KEXTS\\%s", OEMPath, KextPath);
+  REFIT_DIR_ITER  PlugInsIter;
+  EFI_FILE_INFO   *PlugInEntry;
+  CHAR16*         PlugInsPath;
+  CHAR16*         PlugInsName;
 
   DirIterOpen(SelfRootDir, FullPath, &DirIter);
   while (DirIterNext(&DirIter, 1, L"*.kext", &DirEntry)) {
-    CHAR16  FullName[256];
     if (DirEntry->FileName[0] == L'.' || StrStr(DirEntry->FileName, L".kext") == NULL) {
       continue;
     }
-   UnicodeSPrint(FullName, 512, L"%s\\%s", FullPath, DirEntry->FileName);
+/*
+    <key>CFBundleVersion</key>
+    <string>8.8.8</string>
+*/
+    FullName = PoolPrint(L"%s\\%s", FullPath, DirEntry->FileName);
+
     mKext = AllocateZeroPool (sizeof(SIDELOAD_KEXT));
     mKext->FileName = PoolPrint(L"%s", DirEntry->FileName);
     mKext->MenuItem.BValue = FALSE;
     mKext->MatchOS = PoolPrint(L"%s", KextPath);
     mKext->Next = InjectKextList;
+    mKext->Version = GetBundleVersion(FullName);
     InjectKextList = mKext;
- //   DBG("Added mKext=%s, MatchOS=%s\n", mKext->FileName, mKext->MatchOS);
+    //   DBG("Added mKext=%s, MatchOS=%s\n", mKext->FileName, mKext->MatchOS);
 
     // Obtain PlugInList
     // Iterate over PlugIns directory
-    REFIT_DIR_ITER  PlugInsIter;
-    EFI_FILE_INFO   *PlugInEntry;
-    CHAR16          PlugInsPath[256];
-
-    UnicodeSPrint(PlugInsPath, 512, L"%s\\%s", FullName, L"Contents\\PlugIns");
+    PlugInsPath = PoolPrint(L"%s\\%s", FullName, L"Contents\\PlugIns");
 
     DirIterOpen(SelfRootDir, PlugInsPath, &PlugInsIter);
     while (DirIterNext(&PlugInsIter, 1, L"*.kext", &PlugInEntry)) {
       if (PlugInEntry->FileName[0] == L'.' || StrStr(PlugInEntry->FileName, L".kext") == NULL) {
         continue;
       }
-
+      PlugInsName = PoolPrint(L"%s\\%s", PlugInsPath, PlugInEntry->FileName);
       mPlugInKext = AllocateZeroPool(sizeof(SIDELOAD_KEXT));
       mPlugInKext->FileName = PoolPrint(L"%s", PlugInEntry->FileName);
       mPlugInKext->MenuItem.BValue = FALSE;
       mPlugInKext->MatchOS = PoolPrint(L"%s", KextPath);
       mPlugInKext->Next    = mKext->PlugInList;
+      mPlugInKext->Version = GetBundleVersion(PlugInsName);
       mKext->PlugInList    = mPlugInKext;
-//      DBG("---| added plugin=%s, MatchOS=%s\n", mPlugInKext->FileName, mPlugInKext->MatchOS);
+      //      DBG("---| added plugin=%s, MatchOS=%s\n", mPlugInKext->FileName, mPlugInKext->MatchOS);
+      FreePool(PlugInsName);
     }
+    FreePool(PlugInsPath);
+    FreePool(FullName);
     DirIterClose(&PlugInsIter);
   }
   DirIterClose(&DirIter);
-  FreePool(KextPath);
+  FreePool(FullPath);
 }
 
 VOID InitKextList()
@@ -3177,7 +3252,6 @@ GetListOfThemes ()
       //DBG("Skip theme: %s\n", DirEntry->FileName);
       continue;
     }
-
     //DBG ("Found theme directory: %s", DirEntry->FileName);
     DBG ("- [%02d]: %s", ThemesNum, DirEntry->FileName);
     ThemeTestPath = PoolPrint (L"EFI\\CLOVER\\themes\\%s", DirEntry->FileName);
@@ -3202,8 +3276,10 @@ GetListOfThemes ()
       FreePool (ThemeTestPath);
     }
     DBG ("\n");
+    if (ThemePtr) {
+      FreePool(ThemePtr);
+    }
   }
-
   DirIterClose (&DirIter);
 }
 
@@ -4503,6 +4579,9 @@ GetUserSettings(
         }
       }
 
+      Prop = GetProperty (DictPointer, "RadeonDeInit");
+      gSettings.DeInit = IsPropertyTrue (Prop);
+
       Prop = GetProperty (DictPointer, "VRAM");
       gSettings.VRAM = (UINTN)GetPropertyInteger(Prop, (INTN)gSettings.VRAM); //Mb 
       //
@@ -5055,61 +5134,20 @@ GetUserSettings(
 
         Prop = GetProperty (Dict2, "Fixes");
         if (Prop != NULL) {
- //         DBG ("Fixes will override DSDT fix mask %08x!\n", gSettings.FixDsdt);
-
+          UINTN Index;
+          //         DBG ("Fixes will override DSDT fix mask %08x!\n", gSettings.FixDsdt);
           if (Prop->type == kTagTypeDict) {
-            static struct CONFIG { const CHAR8* oldName; const CHAR8* newName; UINT32 bitData; } config[] =
-            {
-              { "AddDTGP_0001", "AddDTGP", FIX_DTGP },
-              { "FixDarwin_0002", "FixDarwin", FIX_WARNING },
-              { "FixShutdown_0004", "FixShutdown", FIX_SHUTDOWN },
-              { "AddMCHC_0008", "AddMCHC", FIX_MCHC },
-              { "FixHPET_0010", "FixHPET", FIX_HPET },
-              { "FakeLPC_0020", "FakeLPC", FIX_LPC },
-              { "FixIPIC_0040", "FixIPIC", FIX_IPIC },
-              { "FixSBUS_0080", "FixSBUS", FIX_SBUS },
-              { "FixDisplay_0100", "FixDisplay", FIX_DISPLAY },
-              { "FixIDE_0200", "FixIDE", FIX_IDE },
-              { "FixSATA_0400", "FixSATA", FIX_SATA },
-              { "FixFirewire_0800", "FixFirewire", FIX_FIREWIRE },
-              { "FixUSB_1000", "FixUSB", FIX_USB },
-              { "FixLAN_2000", "FixLAN", FIX_LAN },
-              { "FixAirport_4000", "FixAirport", FIX_WIFI },
-              { "FixHDA_8000", "FixHDA", FIX_HDA },
-              { "FixDarwin7_10000", "FixDarwin7", FIX_DARWIN },
-              { "FIX_RTC_20000", "FixRTC", FIX_RTC },
-              { "FIX_TMR_40000", "FixTMR", FIX_TMR },
-              { "AddIMEI_80000", "AddIMEI", FIX_IMEI },
-              { "FIX_INTELGFX_100000", "FixIntelGfx", FIX_INTELGFX },
-              { "FIX_WAK_200000", "FixWAK", FIX_WAK },
-              { "DeleteUnused_400000", "DeleteUnused", FIX_UNUSED },
-              { "FIX_ADP1_800000", "FixADP1", FIX_ADP1 },
-              { "AddPNLF_1000000", "AddPNLF", FIX_PNLF },
-              { "FIX_S3D_2000000", "FixS3D", FIX_S3D },
-              { "FIX_ACST_4000000", "FixACST", FIX_ACST },
-              { "AddHDMI_8000000", "AddHDMI", FIX_HDMI },
-              { "FixRegions_10000000", "FixRegions", FIX_REGIONS },
-              { "FixHeaders_20000000", "FixHeaders", FIX_HEADERS },
-              { NULL, "FixMutex", FIX_MUTEX },
-            };
-            UINTN Index;
-            for (Index = 0; Index < sizeof(config)/sizeof(config[0]); Index++) {
-              Prop2 = GetProperty(Prop, config[Index].newName);
-              if (!Prop2 && config[Index].oldName) {
-                Prop2 = GetProperty(Prop, config[Index].oldName);
+            gSettings.FixDsdt = 0;
+            for (Index = 0; Index < sizeof(FixesConfig)/sizeof(FixesConfig[0]); Index++) {
+              Prop2 = GetProperty(Prop, FixesConfig[Index].newName);
+              if (!Prop2 && FixesConfig[Index].oldName) {
+                Prop2 = GetProperty(Prop, FixesConfig[Index].oldName);
               }
               if (IsPropertyTrue(Prop2)) {
-                gSettings.FixDsdt |= config[Index].bitData;
+                gSettings.FixDsdt |= FixesConfig[Index].bitData;
               }
             }
-
-            /*
-            Prop2 = GetProperty (Prop, "NewWay_80000000");
-            if (Prop2 != NULL && IsPropertyTrue (Prop2)) {
-              gSettings.FixDsdt |= FIX_NEW_WAY;
-            } */
           }
-
         }
         DBG (" - final DSDT Fix mask=%08x\n", gSettings.FixDsdt);
 
@@ -5279,6 +5317,7 @@ GetUserSettings(
             gSettings.GenerateAPSN = TRUE;
             gSettings.GenerateAPLF = TRUE;
             gSettings.GeneratePluginType = TRUE;
+
           } else if (IsPropertyFalse (Prop2)) {
             // all Generate off
             gSettings.GeneratePStates = FALSE;
@@ -5286,6 +5325,7 @@ GetUserSettings(
             gSettings.GenerateAPSN = FALSE;
             gSettings.GenerateAPLF = FALSE;
             gSettings.GeneratePluginType = FALSE;
+
           } else if (Prop2->type == kTagTypeDict) {
             // custom Generate, with backward compatible defaults
             Prop = GetProperty (Prop2, "PStates");
@@ -5301,11 +5341,11 @@ GetUserSettings(
             }
             Prop = GetProperty (Prop2, "APLF");
             if (Prop) {
-              gSettings.GenerateAPLF = IsPropertyTrue (Prop);
+                gSettings.GenerateAPLF = IsPropertyTrue (Prop);
             }
             Prop = GetProperty (Prop2, "PluginType");
             if (Prop) {
-              gSettings.GeneratePluginType = IsPropertyTrue (Prop);
+                gSettings.GeneratePluginType = IsPropertyTrue (Prop);
             }
           }
         }
@@ -5380,8 +5420,8 @@ GetUserSettings(
         }
       }
 
-      Prop               = GetProperty (DictPointer, "DropMCFG");
-      gSettings.DropMCFG = IsPropertyTrue (Prop);
+ //     Prop               = GetProperty (DictPointer, "DropMCFG");
+ //     gSettings.DropMCFG = IsPropertyTrue (Prop);
 
       Prop = GetProperty (DictPointer, "ResetAddress");
       if (Prop) {
@@ -5435,7 +5475,7 @@ GetUserSettings(
           }
         }
       }
-
+      
       Prop = GetProperty (DictPointer, "AutoMerge");
       gSettings.AutoMerge  = IsPropertyTrue (Prop);
 
@@ -6007,6 +6047,17 @@ CHAR8 *GetOSVersion(IN LOADER_ENTRY *Entry)
               OSVersion = AllocateCopyPool (5, "10.8");
             } else if (AsciiStrStr (Prop->string, "Install%20Mac%20OS%20X%20Lion")) {
               OSVersion = AllocateCopyPool (5, "10.7");
+            }
+          }
+        }
+      } else {
+        InstallerPlist = L"\\macOS Install Data\\Locked Files\\Boot Files\\SystemVersion.plist";
+        if (FileExists (Entry->Volume->RootDir, InstallerPlist)) {
+          Status = egLoadFile (Entry->Volume->RootDir, InstallerPlist, (UINT8 **)&PlistBuffer, &PlistLen);
+          if (!EFI_ERROR (Status) && PlistBuffer != NULL && ParseXML (PlistBuffer, &Dict, 0) == EFI_SUCCESS) {
+            Prop = GetProperty (Dict, "ProductVersion");
+            if (Prop != NULL && Prop->string != NULL && Prop->string[0] != '\0') {
+              OSVersion = AllocateCopyPool (AsciiStrSize (Prop->string), Prop->string);
             }
           }
         }
@@ -6644,17 +6695,21 @@ SetDevices (
                       break;
                     }
                   }
-      /*            if (gSettings.DeInit) {
+                  if (gSettings.DeInit) {
                     for (j = 0; j < 4; j++) {
                       if (gGraphics[j].Handle == PCIdevice.DeviceHandle) {
-                 //       *(UINT32*)(gGraphics[j].Mmio + 0x48) = 0;
-                 //       *(UINT32*)(gGraphics[j].Mmio + 0x4C) = 0;
-                        *(UINT32*)(gGraphics[j].Mmio + R600_BIOS_0_SCRATCH) = 0x00810000;
+                        *(UINT32*)(gGraphics[j].Mmio + 0x6848) = 0; //FCTL
+                        *(UINT32*)(gGraphics[j].Mmio + 0x681C) = 0; //PSBH
+                        *(UINT32*)(gGraphics[j].Mmio + 0x6820) = 0; //SSBH
+                        *(UINT32*)(gGraphics[j].Mmio + 0x6808) = 0; //LTBC
+                        *(UINT32*)(gGraphics[j].Mmio + 0x6800) = 1; //GENA
+                        *(UINT32*)(gGraphics[j].Mmio + 0x6EF8) = 0; //MUMD
+     //                   *(UINT32*)(gGraphics[j].Mmio + R600_BIOS_0_SCRATCH) = 0x00810000;
                         DBG("Device %d deinited\n", j);
                       }
                     }
                   }
-*/
+
                   break;
 
                 case 0x8086:

@@ -53,36 +53,35 @@ extern void qsort(void *a, size_t n, size_t es, int (*cmp)(const void *, const v
 
 // Custom internal allocators for UEFI
 // rewrite by RehabMan
-
 void* lodepng_malloc(size_t size)
 {
-    size_t* p = AllocateZeroPool(size+sizeof(size_t));
-    if (!p) {
-        return NULL;
-    }
-    *p = size+sizeof(size_t);
-    return p+1;
+  size_t* p = AllocateZeroPool(size+sizeof(size_t));
+  if (!p) {
+    return NULL;
+  }
+  *p = size+sizeof(size_t);
+  return p+1;
 }
 
 void lodepng_free(void* ptr)
 {
-    if (ptr) {
-        FreePool((size_t*)ptr-1);
-    }
+  if (ptr)
+    FreePool((size_t*)ptr-1);
 }
 
 void* lodepng_realloc(void* ptr, size_t new_size)
 {
-    if (!ptr) {
-        return lodepng_malloc(new_size);
-    }
-    size_t* old_p = (size_t*)ptr-1;
-    size_t* new_p = ReallocatePool(*old_p, new_size+sizeof(size_t), old_p);
-    if (!new_p) {
-        return NULL;
-    }
-    *new_p = new_size+sizeof(size_t);
-    return new_p+1;
+  if (!ptr) {
+    // NULL pointer means just do malloc
+    return lodepng_malloc(new_size);
+  }
+  size_t* old_p = (size_t*)ptr-1;
+  size_t* new_p = ReallocatePool(*old_p, new_size+sizeof(size_t), old_p);
+  if (!new_p) {
+    return NULL;
+  }
+  *new_p = new_size+sizeof(size_t);
+  return new_p+1;
 }
 
 #if defined(_MSC_VER)

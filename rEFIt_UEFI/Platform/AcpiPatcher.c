@@ -33,7 +33,6 @@ Re-Work by Slice 2011.
 #define DMAR_SIGN        SIGNATURE_32('D','M','A','R')
 #define BGRT_SIGN        SIGNATURE_32('B','G','R','T')
 #define SLIC_SIGN        SIGNATURE_32('S','L','I','C')
-#define SSDT_SIGN        SIGNATURE_32('S','S','D','T')
 #define APPLE_OEM_ID        { 'A', 'P', 'P', 'L', 'E', ' ' }
 #define APPLE_OEM_TABLE_ID  { 'A', 'p', 'p', 'l', 'e', '0', '0', ' ' }
 #define APPLE_CREATOR_ID    { 'L', 'o', 'k', 'i' }
@@ -47,6 +46,7 @@ RSDT_TABLE    *Rsdt = NULL;
 XSDT_TABLE    *Xsdt = NULL;
 UINT32        XsdtOriginalEntryCount;
 UINTN         *XsdtReplaceSizes;
+
 
 UINT64      BiosDsdt;
 UINT32      BiosDsdtLen;
@@ -85,6 +85,8 @@ static void stripTrailingSpaces(CHAR8* sgn)
   }
   lastNonSpace[1] = 0;
 }
+
+
 
 // Slice: Signature compare function
 BOOLEAN tableSign(CHAR8 *table, CONST CHAR8 *sgn)
@@ -229,6 +231,7 @@ UINT32* ScanRSDT2(UINT32 Signature, UINT64 TableId, INTN MatchIndex)
   return NULL;
 }
 
+
 UINT32* ScanRSDT(UINT32 Signature, UINT64 TableId)
 {
   return ScanRSDT2(Signature, TableId, -1);
@@ -237,7 +240,7 @@ UINT32* ScanRSDT(UINT32 Signature, UINT64 TableId)
 UINT64* ScanXSDT2(UINT32 Signature, UINT64 TableId, INTN MatchIndex)
 {
   EFI_ACPI_DESCRIPTION_HEADER    *TableEntry;
-  UINTN              Index;
+  UINTN               Index;
   UINT32              EntryCount;
   CHAR8              *BasePtr;
   UINT64              Entry64;
@@ -268,9 +271,10 @@ UINT64* ScanXSDT(UINT32 Signature, UINT64 TableId)
   return ScanXSDT2(Signature, TableId, -1);
 }
 
+
 VOID GetAcpiTablesList()
 {
-  EFI_ACPI_DESCRIPTION_HEADER    *TableEntry;
+  EFI_ACPI_DESCRIPTION_HEADER   *TableEntry;
   UINTN                         Index;
   UINT32                        EntryCount;
   CHAR8                         *BasePtr;
@@ -290,6 +294,7 @@ VOID GetAcpiTablesList()
   DBG("Get Acpi Tables List ");
   if (Xsdt) {
     EntryCount = (Xsdt->Header.Length - sizeof (EFI_ACPI_DESCRIPTION_HEADER)) / sizeof(UINT64);
+
     BasePtr = (CHAR8*)(&(Xsdt->Entry));
     DBG("from XSDT:\n");
     for (Index = 0; Index < EntryCount; Index ++, BasePtr += sizeof(UINT64)) {
@@ -591,7 +596,7 @@ VOID PatchAllSSDT()
 
   // RehabMan: we want to patch only the SSDTs that were original or were loaded and merged
   EntryCount = XsdtOriginalEntryCount;
-  //EntryCount = (Xsdt->Header.Length - sizeof (EFI_ACPI_DESCRIPTION_HEADER)) / sizeof(UINT64);
+//  EntryCount = (Xsdt->Header.Length - sizeof (EFI_ACPI_DESCRIPTION_HEADER)) / sizeof(UINT64);
 
   BasePtr = (CHAR8*)(UINTN)(&(Xsdt->Entry));
   for (Index = 0; Index < EntryCount; Index++, BasePtr += sizeof(UINT64)) {
@@ -638,6 +643,7 @@ VOID PatchAllSSDT()
         gBS->FreePages(Entry64, EFI_SIZE_TO_PAGES(XsdtReplaceSizes[Index]));
         XsdtReplaceSizes[Index] = 0;
       }
+
       CopyMem ((VOID*)BasePtr, &ssdt, sizeof(UINT64));
       if ((gSettings.FixDsdt & FIX_HEADERS)) {
         PatchTableHeader((EFI_ACPI_DESCRIPTION_HEADER*)(UINTN)ssdt);
@@ -720,7 +726,7 @@ EFI_STATUS ReplaceOrInsertTable(VOID* TableEntry, UINTN Length, INTN MatchIndex)
   if (!TableEntry) {
     return EFI_NOT_FOUND;
   }
-
+  
   Status = gBS->AllocatePages (
                                AllocateMaxAddress,
                                EfiACPIReclaimMemory,
@@ -735,7 +741,7 @@ EFI_STATUS ReplaceOrInsertTable(VOID* TableEntry, UINTN Length, INTN MatchIndex)
     //insert/modify into RSDT
     if (Rsdt) {
       UINT32* entry = NULL;
-      if (hdr->Signature != SSDT_SIGN || MatchIndex != -1) {
+      if (hdr->Signature != EFI_ACPI_4_0_SECONDARY_SYSTEM_DESCRIPTION_TABLE_SIGNATURE || MatchIndex != -1) {
         // SSDT with target index or non-SSDT, try to find matching entry
         entry = ScanRSDT2(hdr->Signature, hdr->OemTableId, MatchIndex);
       }
@@ -752,16 +758,16 @@ EFI_STATUS ReplaceOrInsertTable(VOID* TableEntry, UINTN Length, INTN MatchIndex)
     //insert/modify into XSDT
     if (Xsdt) {
       UINT64* entry = NULL;
-      if (hdr->Signature != SSDT_SIGN || MatchIndex != -1) {
+      if (hdr->Signature != EFI_ACPI_4_0_SECONDARY_SYSTEM_DESCRIPTION_TABLE_SIGNATURE || MatchIndex != -1) {
         // SSDT with target index or non-SSDT, try to find matching entry
         entry = ScanXSDT2(hdr->Signature, hdr->OemTableId, MatchIndex);
       }
       if (entry) {
-          WriteUnaligned64(entry, (UINT64)BufferPtr);
-          UINTN Index = entry - &Xsdt->Entry;
-          if (XsdtReplaceSizes && Index < XsdtOriginalEntryCount) {
-            XsdtReplaceSizes[Index] = Length;  // mark as replaced, as it should be freed if patched later
-          }
+        WriteUnaligned64(entry, (UINT64)BufferPtr);
+        UINTN Index = entry - &Xsdt->Entry;
+        if (XsdtReplaceSizes && Index < XsdtOriginalEntryCount) {
+          XsdtReplaceSizes[Index] = Length;  // mark as replaced, as it should be freed if patched later
+        }
       } else {
         UINT64* XPtr = (UINT64*)((UINTN)Xsdt + Xsdt->Header.Length);
         // *XPtr = (UINT64)(UINTN)BufferPtr;
@@ -771,7 +777,6 @@ EFI_STATUS ReplaceOrInsertTable(VOID* TableEntry, UINTN Length, INTN MatchIndex)
       }
     }
   }
-
   return Status;
 }
 
@@ -1911,12 +1916,11 @@ EFI_STATUS PatchACPI(IN REFIT_VOLUME *Volume, CHAR8 *OSVersion)
     if (BiosDsdt) {
       newFadt->XDsdt = BiosDsdt;
       newFadt->Dsdt = (UINT32)BiosDsdt;
-    } else
-      if (newFadt->Dsdt) {
+    } else if (newFadt->Dsdt) {
         newFadt->XDsdt = (UINT64)(newFadt->Dsdt);
-      } else if (XDsdt) {
+    } else if (XDsdt) {
         newFadt->Dsdt = (UINT32)XDsdt;
-      }
+    }
 //    if (Facs) newFadt->FirmwareCtrl = (UINT32)(UINTN)Facs;
 //    else DBG("No FACS table ?!\n");
     if (newFadt->FirmwareCtrl) {
@@ -1932,6 +1936,9 @@ EFI_STATUS PatchACPI(IN REFIT_VOLUME *Volume, CHAR8 *OSVersion)
     if (GlobalConfig.SignatureFixup) {
       DBG(" SignatureFixup: 0x%x -> 0x%x\n", Facs->HardwareSignature, machineSignature);
       Facs->HardwareSignature = machineSignature;
+    } else {
+      DBG(" SignatureFixup: 0x%x -> 0\n", Facs->HardwareSignature);
+      Facs->HardwareSignature = 0;
     }
     //
     
@@ -2106,7 +2113,6 @@ EFI_STATUS PatchACPI(IN REFIT_VOLUME *Volume, CHAR8 *OSVersion)
       DropTable = DropTable->Next;
     }
   }
-
   // RehabMan: Save current Xsdt entry count, as PatchAllSSDT operates on only
   //  original SSDTs or SSDTs that were loaded/merged.
   // XsdtReplaceSizes array is used to keep track of allocations for the merged tables,
@@ -2195,7 +2201,7 @@ EFI_STATUS PatchACPI(IN REFIT_VOLUME *Volume, CHAR8 *OSVersion)
     }
 //    DBG("End: Processing Patched AML(s)\n");
   }
-
+  
   if (!gSettings.DropSSDT) {
     DbgHeader("PatchAllSSDT");
     PatchAllSSDT();
@@ -2207,6 +2213,7 @@ EFI_STATUS PatchACPI(IN REFIT_VOLUME *Volume, CHAR8 *OSVersion)
     FreePool(XsdtReplaceSizes);
     XsdtReplaceSizes = NULL;
   }
+
 
   //Slice - this is a time to patch MADT table.
 //  DBG("Fool proof: size of APIC NMI  = %d\n", sizeof(EFI_ACPI_2_0_LOCAL_APIC_NMI_STRUCTURE));

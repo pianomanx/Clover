@@ -388,7 +388,7 @@ SSDT_TABLE *generate_pss_ssdt(UINT8 FirstID, UINTN Number)
             aml_add_byte(scop, (UINT8)Aplf);
           }
         }
-        
+
         // Add CPUs
         for (i = 1; i < Number; i++) {
           

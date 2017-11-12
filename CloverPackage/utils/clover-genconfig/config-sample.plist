@@ -11,9 +11,9 @@
 	<dict>
 		<key>AutoMerge</key>
 		<true/>
-		<key>#DropMCFG</key>
-		<false/>
 		<key>#PatchAPIC</key>
+		<false/>
+		<key>AutoMerge</key>
 		<false/>
 		<key>#ResetAddress</key>
 		<string>0x64</string>
@@ -58,18 +58,8 @@
 				<key>WIFI</key>
 				<true/>
 			</dict>
-			<key>#Patches</key>
+			<key>Patches</key>
 			<array>
-				<dict>
-					<key>Comment</key>
-					<string>Remove battery device from desktop</string>
-					<key>Disabled</key>
-					<true/>
-					<key>Find</key>
-					<data>W4IeQkFUMQhfSElEDEHQDAoIX1VJRAEUCF9TVEEApAA=</data>
-					<key>Replace</key>
-					<data></data>
-				</dict>
 				<dict>
 					<key>Comment</key>
 					<string>Add _SUN property for GIGE</string>
@@ -94,11 +84,31 @@
 					<key>Comment</key>
 					<string>Rename HDEF to AZAL</string>
 					<key>Disabled</key>
-					<false/>
+					<true/>
 					<key>Find</key>
 					<data>SERFRg==</data>
 					<key>Replace</key>
 					<data>QVpBTA==</data>
+				</dict>
+				<dict>
+					<key>Comment</key>
+					<string>Rename oem _DSM to ZDSM</string>
+					<key>Disabled</key>
+					<false/>
+					<key>Find</key>
+					<data>X0RTTQ==</data>
+					<key>Replace</key>
+					<data>WkRTTQ==</data>
+				</dict>
+				<dict>
+					<key>Comment</key>
+					<string>Rename HECI to IMEI</string>
+					<key>Disabled</key>
+					<false/>
+					<key>Find</key>
+					<data>SEVDSQ==</data>
+					<key>Replace</key>
+					<data>SU1FSQ==</data>
 				</dict>
 			</array>
 			<key>#Rtc8Allowed</key>
@@ -170,7 +180,7 @@
 				<key>FixUSB</key>
 				<true/>
 				<key>FixMutex</key>
-				<true/>
+				<false/>
 			</dict>
 			<key>Name</key>
 			<string>DSDT.aml</string>
@@ -210,6 +220,8 @@
 			<true/>
 			<key>#DropOem</key>
 			<true/>
+			<key>#NoOemTableId</key>
+			<false/>
 			<key>#EnableC2</key>
 			<false/>
 			<key>#EnableC4</key>
@@ -232,6 +244,8 @@
 			<integer>1</integer>
 			<key>#UseSystemIO</key>
 			<false/>
+			<key>#NoDynamicExtract</key>
+			<false/>
 			<key>Generate</key>
 			<dict>
 				<key>CStates</key>
@@ -239,27 +253,25 @@
 				<key>PStates</key>
 				<true/>
 				<key>#APLF</key>
-				<true/>
+				<false/>
 				<key>#APSN</key>
-				<true/>
+				<false/>
 				<key>#PluginType</key>
-				<true/>
+				<false/>
 			</dict>
 		</dict>
 	</dict>
 	<key>Boot</key>
 	<dict>
-		<key>##Arguments</key>
-		<string>kext-dev-mode=1 rootless=0</string>
 		<key>#Arguments</key>
-		<string>-v arch=x86_64 slide=0 darkwake=0</string>
+		<string>slide=0 darkwake=0</string>
 		<key>#LegacyBiosDefaultEntry</key>
 		<integer>0</integer>
 		<key>#XMPDetection</key>
 		<string>-1</string>
 		<key>Debug</key>
 		<false/>
-		<key>DefaultLoader</key>
+		<key>#DefaultLoader</key>
 		<string>boot.efi</string>
 		<key>DefaultVolume</key>
 		<string>LastBootedVolume</string>
@@ -276,6 +288,8 @@
 		<key>SkipHibernateTimeout</key>
 		<false/>
 		<key>StrictHibernate</key>
+		<false/>
+		<key>SignatureFixup</key>
 		<false/>
 		<key>Timeout</key>
 		<integer>5</integer>

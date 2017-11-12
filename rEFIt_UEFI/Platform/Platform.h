@@ -731,6 +731,7 @@ struct DEV_PROPERTY {
   TAG_TYPE      ValueType;
 };
 
+
 typedef struct CUSTOM_LOADER_ENTRY CUSTOM_LOADER_ENTRY;
 struct CUSTOM_LOADER_ENTRY {
   CUSTOM_LOADER_ENTRY     *Next;
@@ -810,11 +811,12 @@ struct ACPI_PATCHED_AML
 // syscl - Side load kext
 typedef struct SIDELOAD_KEXT SIDELOAD_KEXT;
 struct SIDELOAD_KEXT {
-    SIDELOAD_KEXT  *Next;
-    SIDELOAD_KEXT  *PlugInList;
-    CHAR16         *FileName;
-    CHAR16         *MatchOS;
-    INPUT_ITEM     MenuItem;
+  SIDELOAD_KEXT  *Next;
+  SIDELOAD_KEXT  *PlugInList;
+  CHAR16         *FileName;
+  CHAR16         *MatchOS;
+  CHAR16         *Version;
+  INPUT_ITEM     MenuItem;
 };
 
 // SysVariables
@@ -949,7 +951,8 @@ typedef struct {
   UINT8                   MinMultiplier;
   UINT8                   MaxMultiplier;
   UINT8                   PluginType;
-  BOOLEAN                 DropMCFG;
+//  BOOLEAN                 DisableAPSNAPLF;
+//  BOOLEAN                 DropMCFG;
 
   //Injections
   BOOLEAN                 StringInjector;
@@ -974,6 +977,7 @@ typedef struct {
   BOOLEAN                 InjectIntel;
   BOOLEAN                 InjectATI;
   BOOLEAN                 InjectNVidia;
+  BOOLEAN                 DeInit;
   BOOLEAN                 LoadVBios;
   BOOLEAN                 PatchVBios;
   VBIOS_PATCH_BYTES       *PatchVBiosBytes;
@@ -1079,7 +1083,6 @@ typedef struct {
   BOOLEAN                 Rtc8Allowed;
   BOOLEAN                 ForceHPET;
   BOOLEAN                 ResetHDA;
-  BOOLEAN                 DeInit;  //for tests
   UINT32                  DisableFunctions;
 
   //Patch DSDT arbitrary
@@ -1487,6 +1490,7 @@ typedef struct {
 #define CARDLIST_SIGNATURE SIGNATURE_32('C','A','R','D')
 
 
+
 //extern CHAR8                          *msgbuf;
 //extern CHAR8                          *msgCursor;
 extern APPLE_SMBIOS_STRUCTURE_POINTER SmbiosTable;
@@ -1691,12 +1695,6 @@ IsValidGuidAsciiString (
   IN CHAR8 *Str
   );
 
-#if 0
-EFI_STATUS
-StrToGuid2 (
-  IN      CHAR16   *Str,
-     OUT  EFI_GUID *Guid);
-#endif
 
 EFI_STATUS
 StrToGuidLE (

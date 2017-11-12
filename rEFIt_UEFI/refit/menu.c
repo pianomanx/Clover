@@ -398,8 +398,8 @@ VOID FillInputs(BOOLEAN New)
   InputItems[InputItemsCount++].BValue = gSettings.KernelAndKextPatches.KPAppleRTC;
   InputItems[InputItemsCount].ItemType = BoolValue; //48
   InputItems[InputItemsCount++].BValue = gSettings.KernelAndKextPatches.KPKernelPm;
-  InputItems[InputItemsCount].ItemType = BoolValue; //49
-  InputItems[InputItemsCount++].BValue = gSettings.DropMCFG;
+  InputItems[InputItemsCount].ItemType = BoolValue; //49 //not used
+  InputItems[InputItemsCount++].BValue = TRUE; //gSettings.DropMCFG;
 
   InputItems[InputItemsCount].ItemType = Decimal;  //50
   if (New) {
@@ -676,6 +676,9 @@ VOID FillInputs(BOOLEAN New)
 
   InputItems[InputItemsCount].ItemType = BoolValue; //113
   InputItems[InputItemsCount++].BValue = gSettings.AutoMerge;
+  InputItems[InputItemsCount].ItemType = BoolValue; //114
+  InputItems[InputItemsCount++].BValue = gSettings.DeInit;
+
 
   //menu for drop table
   if (gSettings.ACPIDropTables) {
@@ -901,7 +904,7 @@ VOID ApplyInputs(VOID)
   }
   i++; //49
   if (InputItems[i].Valid) {
-    gSettings.DropMCFG = InputItems[i].BValue;
+//    gSettings.DropMCFG = InputItems[i].BValue;
   }
 
   i++; //50
@@ -1263,6 +1266,10 @@ VOID ApplyInputs(VOID)
   i++; //113
   if (InputItems[i].Valid) {
     gSettings.AutoMerge = InputItems[i].BValue;
+  }
+  i++; //114
+  if (InputItems[i].Valid) {
+    gSettings.DeInit = InputItems[i].BValue;
   }
 
   if (NeedSave) {
@@ -2481,7 +2488,7 @@ UINTN RunGenericMenu(IN REFIT_MENU_SCREEN *Screen, IN MENU_STYLE_FUNC StyleFunc,
           Status = egSaveFile(NULL, VBIOS_BIN, (UINT8*)(UINTN)0xc0000, 0x20000);
         }
         break;
-			/* just a sample code
+/* just a sample code
       case SCAN_F7:
         Status = egMkDir(SelfRootDir,  L"EFI\\CLOVER\\new_folder");
         DBG("create folder %r\n", Status);
@@ -2502,9 +2509,6 @@ UINTN RunGenericMenu(IN REFIT_MENU_SCREEN *Screen, IN MENU_STYLE_FUNC StyleFunc,
  //this way screen is dirty
         break;
 
-      case SCAN_F8:
-        gSettings.DeInit = TRUE;
-        break;
   */
       case SCAN_F9:
         SetNextScreenMode(1);
@@ -4059,6 +4063,9 @@ REFIT_MENU_ENTRY  *SubMenuGraphics()
     if ((gGraphics[i].Vendor == Ati) || (gGraphics[i].Vendor == Intel)) {
       AddMenuItem(SubScreen, 109, "DualLink:", TAG_INPUT, TRUE);
     }
+    if (gGraphics[i].Vendor == Ati) {
+      AddMenuItem(SubScreen, 114, "DeInit:", TAG_INPUT, TRUE);
+    }
 
     AddMenuItem(SubScreen, Ven, "FakeID:", TAG_INPUT, TRUE);
 
@@ -4204,7 +4211,7 @@ REFIT_MENU_ENTRY  *SubMenuKextPatches()
   return Entry;  
 }
 
-REFIT_MENU_ENTRY  *SubMenuKextBlockInjection(CHAR16* uni_sysVer)
+REFIT_MENU_ENTRY  *SubMenuKextBlockInjection(CHAR16* UniSysVer)
 {
   REFIT_MENU_ENTRY     *Entry;
   REFIT_MENU_SCREEN    *SubScreen;
@@ -4213,7 +4220,7 @@ REFIT_MENU_ENTRY  *SubMenuKextBlockInjection(CHAR16* uni_sysVer)
   SIDELOAD_KEXT        *Kext = NULL;
   CHAR8                sysVer[17]; //RehabMan: logic below uses max index of 16, so buffer must be 17
 
-  UnicodeStrToAsciiStrS(uni_sysVer, sysVer, 16);
+  UnicodeStrToAsciiStrS(UniSysVer, sysVer, 16);
   for (i = 0; i < 16; i++) {
     if (sysVer[i] == '\0') {
       sysVer[i+0] = '-';
@@ -4225,9 +4232,9 @@ REFIT_MENU_ENTRY  *SubMenuKextBlockInjection(CHAR16* uni_sysVer)
   NewEntry(&Entry, &SubScreen, ActionEnter, SCREEN_KEXT_INJECT, sysVer);
   AddMenuInfoLine(SubScreen, PoolPrint(L"Choose/check kext to disable:"));
   while (Kext) {
-    if (StrStr(Kext->MatchOS, uni_sysVer) != NULL) {
+    if (StrStr(Kext->MatchOS, UniSysVer) != NULL) {
       InputBootArgs = AllocateZeroPool(sizeof(REFIT_INPUT_DIALOG));
-      InputBootArgs->Entry.Title = PoolPrint(L"%s", Kext->FileName);
+      InputBootArgs->Entry.Title = PoolPrint(L"%s, v.%s", Kext->FileName, Kext->Version);
       InputBootArgs->Entry.Tag = TAG_INPUT;
       InputBootArgs->Entry.Row = 0xFFFF; //cursor
       InputBootArgs->Item = &(Kext->MenuItem);
@@ -4238,7 +4245,7 @@ REFIT_MENU_ENTRY  *SubMenuKextBlockInjection(CHAR16* uni_sysVer)
       SIDELOAD_KEXT *plugInKext = Kext->PlugInList;
       while (plugInKext) {
         InputBootArgs = AllocateZeroPool(sizeof(REFIT_INPUT_DIALOG));
-        InputBootArgs->Entry.Title = PoolPrint(L"  |-- %s", plugInKext->FileName);
+        InputBootArgs->Entry.Title = PoolPrint(L"  |-- %s, v.%s", plugInKext->FileName, plugInKext->Version);
         InputBootArgs->Entry.Tag = TAG_INPUT;
         InputBootArgs->Entry.Row = 0xFFFF; //cursor
         InputBootArgs->Item = &(plugInKext->MenuItem);
@@ -4262,7 +4269,7 @@ LOADER_ENTRY *SubMenuKextInjectMgmt(LOADER_ENTRY *Entry)
   CHAR16             *kextDir = NULL;
   UINTN              i;
   CHAR8              ShortOSVersion[8];
-  CHAR16            *uni_sysVer = NULL;
+  CHAR16            *UniSysVer = NULL;
   CHAR8             *ChosenOS =Entry->OSVersion;
 
   NewEntry((REFIT_MENU_ENTRY**)&SubEntry, &SubScreen, ActionEnter, SCREEN_SYSTEM, "Block injected kexts->");
@@ -4281,18 +4288,18 @@ LOADER_ENTRY *SubMenuKextInjectMgmt(LOADER_ENTRY *Entry)
         break;
       }
     }
-    uni_sysVer = PoolPrint(L"%a", ShortOSVersion);
+    UniSysVer = PoolPrint(L"%a", ShortOSVersion);
 
     AddMenuInfoLine(SubScreen, PoolPrint(L"Block injected kexts for target version of macOS: %a", ShortOSVersion));
     if ((kextDir = GetOSVersionKextsDir(ShortOSVersion))) {
-      AddMenuEntry(SubScreen, SubMenuKextBlockInjection(uni_sysVer));
+      AddMenuEntry(SubScreen, SubMenuKextBlockInjection(UniSysVer));
       FreePool(kextDir);
     }
     if ((kextDir = GetOtherKextsDir())) {
       AddMenuEntry(SubScreen, SubMenuKextBlockInjection(L"Other"));
       FreePool(kextDir);
     }
-    FreePool(uni_sysVer);
+    FreePool(UniSysVer);
   }
   AddMenuEntry(SubScreen, &MenuEntryReturn);
   return SubEntry;
@@ -5069,9 +5076,10 @@ UINTN RunMainMenu(IN REFIT_MENU_SCREEN *Screen, IN INTN DefaultSelection, OUT RE
       gSettings.FlagsBits = ((LOADER_ENTRY*)MainChosenEntry)->Flags;
 //      DBG(" MainChosenEntry with FlagsBits = 0x%x\n", gSettings.FlagsBits);
 
-      FreePool(TmpArgs);
-      TmpArgs = NULL;
-
+      if (TmpArgs) {
+        FreePool(TmpArgs);
+        TmpArgs = NULL;
+      }      
       SubMenuExit = 0;
       while (!SubMenuExit) {
         //running details menu
@@ -5108,8 +5116,8 @@ UINTN RunMainMenu(IN REFIT_MENU_SCREEN *Screen, IN INTN DefaultSelection, OUT RE
             while (!NextMenuExit) {
               NextMenuExit = RunGenericMenu(TempChosenEntry->SubScreen, Style, &NextEntryIndex, &NextChosenEntry);
               if (NextMenuExit == MENU_EXIT_ESCAPE || NextChosenEntry->Tag == TAG_RETURN) {
-                NextMenuExit = MENU_EXIT_ENTER;
                 SubMenuExit = 0;
+                NextMenuExit = MENU_EXIT_ENTER;
                 break;
               }
 //              DBG(" get NextChosenEntry FlagsBits = 0x%x\n", ((LOADER_ENTRY*)NextChosenEntry)->Flags);
