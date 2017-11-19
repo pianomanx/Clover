@@ -43,7 +43,12 @@
 
 #include "Platform.h"
 
-#define ALIGN_64 __attribute__((__aligned__(8)))
+#if defined(_MSC_VER)
+  #define ALIGN_64 __declspec(align(8))
+#else
+  # define ALIGN_64 __attribute__((__aligned__(8)))
+#endif
+
 #define DEFINE_EMB_DATA(ico) UINT8 ALIGN_64 const ico[] =
 #define DEFINE_EMB_SIZE(ico) UINTN const ico##_size = sizeof(ico);
 //REVIEW: const would be more useful if the cast was not needed, but that
@@ -115,7 +120,9 @@ VOID egCopyPlane(IN UINT8 *SrcPlanePtr, IN UINT8 *DestPlanePtr, IN UINTN PixelCo
 
 EG_IMAGE * egDecodeBMP(IN UINT8 *FileData, IN UINTN FileDataLength, IN UINTN IconSize, IN BOOLEAN WantAlpha);
 EG_IMAGE * egDecodeICNS(IN UINT8 *FileData, IN UINTN FileDataLength, IN UINTN IconSize, IN BOOLEAN WantAlpha);
-//EG_IMAGE * egDecodePNG(IN UINT8 *FileData, IN UINTN FileDataLength, IN UINTN IconSize, IN BOOLEAN WantAlpha);
+#if defined(LODEPNG)
+EG_IMAGE * egDecodePNG(IN UINT8 *FileData, IN UINTN FileDataLength, IN BOOLEAN WantAlpha);
+#endif
 
 //VOID egEncodeBMP(IN EG_IMAGE *Image, OUT UINT8 **FileData, OUT UINTN *FileDataLength);
 

@@ -183,7 +183,7 @@ static struct FIX_CONFIG { const CHAR8* oldName; const CHAR8* newName; UINT32 bi
     { "AddHDMI_8000000", "AddHDMI", FIX_HDMI },
     { "FixRegions_10000000", "FixRegions", FIX_REGIONS },
     { "FixHeaders_20000000", "FixHeaders", FIX_HEADERS },
-    { NULL, "FixMutex", FIX_MUTEX },
+    { NULL, "FixMutex", FIX_MUTEX }
 };
 
 
@@ -1272,6 +1272,7 @@ FillinKextPatches (IN OUT KERNEL_AND_KEXT_PATCHES *Patches,
         
         Dict = GetProperty (Prop2, "Disabled");
         Patches->BootPatches[Patches->NrBoots].MenuItem.BValue   = !IsPropertyTrue (Dict);
+        Patches->BootPatches[Patches->NrBoots].MenuItem.ItemType = BoolValue;
         
         TmpData    = GetDataSetting (Prop2, "Find", &FindLen);
         TmpPatch   = GetDataSetting (Prop2, "Replace", &ReplaceLen);
@@ -1334,6 +1335,9 @@ IsPatchEnabled (CHAR8 *MatchOSEntry, CHAR8 *CurrOS)
   mos = GetStrArraySeparatedByChar(MatchOSEntry, ',');
   if (!mos) {
     return TRUE; //memory fails -> anyway the patch enabled
+  }
+  if (AsciiStrStr(mos->array[0], "All") != NULL) {
+    return TRUE;
   }
   
   for (i = 0; i < mos->count; ++i) {
@@ -4386,7 +4390,7 @@ ParseSMBIOSSettings(
 
   Prop = GetProperty (DictPointer, "PlatformFeature");
   if (Prop != NULL) {
-    gPlatformFeature = (UINT64)GetPropertyInteger(Prop, gPlatformFeature);
+    gPlatformFeature = (UINT64)GetPropertyInteger(Prop, (INTN)gPlatformFeature);
 /*
     if (PF == gPlatformFeature) {
       DBG ("Found same PlatformFeature in clover and config\n");
@@ -4827,31 +4831,31 @@ GetUserSettings(
                 DEV_PROPERTY *Property = &gSettings.AddProperties[Index];
 
                 if (AsciiStriCmp (Prop2->string,        "ATI") == 0) {
-                  Property->Device = DEV_ATI;
+                  Property->Device = (UINT32)DEV_ATI;
                 } else if (AsciiStriCmp (Prop2->string, "NVidia") == 0) {
-                  Property->Device = DEV_NVIDIA;
+                  Property->Device = (UINT32)DEV_NVIDIA;
                 } else if (AsciiStriCmp (Prop2->string, "IntelGFX") == 0) {
-                  Property->Device = DEV_INTEL;
+                  Property->Device = (UINT32)DEV_INTEL;
                 } else if (AsciiStriCmp (Prop2->string, "LAN") == 0) {
-                  Property->Device = DEV_LAN;
+                  Property->Device = (UINT32)DEV_LAN;
                 } else if (AsciiStriCmp (Prop2->string, "WIFI") == 0) {
-                  Property->Device = DEV_WIFI;
+                  Property->Device = (UINT32)DEV_WIFI;
                 } else if (AsciiStriCmp (Prop2->string, "Firewire") == 0) {
-                  Property->Device = DEV_FIREWIRE;
+                  Property->Device = (UINT32)DEV_FIREWIRE;
                 } else if (AsciiStriCmp (Prop2->string, "SATA") == 0) {
-                  Property->Device = DEV_SATA;
+                  Property->Device = (UINT32)DEV_SATA;
                 } else if (AsciiStriCmp (Prop2->string, "IDE") == 0) {
-                  Property->Device = DEV_IDE;
+                  Property->Device = (UINT32)DEV_IDE;
                 } else if (AsciiStriCmp (Prop2->string, "HDA") == 0) {
-                  Property->Device = DEV_HDA;
+                  Property->Device = (UINT32)DEV_HDA;
                 } else if (AsciiStriCmp (Prop2->string, "HDMI") == 0) {
-                  Property->Device = DEV_HDMI;
+                  Property->Device = (UINT32)DEV_HDMI;
                 } else if (AsciiStriCmp (Prop2->string, "LPC") == 0) {
-                  Property->Device = DEV_LPC;
+                  Property->Device = (UINT32)DEV_LPC;
                 } else if (AsciiStriCmp (Prop2->string, "SmBUS") == 0) {
-                  Property->Device = DEV_SMBUS;
+                  Property->Device = (UINT32)DEV_SMBUS;
                 } else if (AsciiStriCmp (Prop2->string, "USB") == 0) {
-                  Property->Device = DEV_USB;
+                  Property->Device = (UINT32)DEV_USB;
                 } else {
                   DBG (" unknown device, ignored\n", i);
                   continue;
@@ -5305,10 +5309,6 @@ GetUserSettings(
       Dict2 = GetProperty (DictPointer, "SSDT");
       if (Dict2) {
         Prop2 = GetProperty (Dict2, "Generate");
-        // backward compatibility, APFS, APLF, PluginType follow PStates
-        gSettings.GenerateAPSN = gSettings.GeneratePStates;
-        gSettings.GenerateAPLF = gSettings.GeneratePStates;
-        gSettings.GeneratePluginType = gSettings.GeneratePStates;
         if (Prop2 != NULL) {
           if (IsPropertyTrue (Prop2)) {
             // all Generate on
@@ -5341,11 +5341,11 @@ GetUserSettings(
             }
             Prop = GetProperty (Prop2, "APLF");
             if (Prop) {
-                gSettings.GenerateAPLF = IsPropertyTrue (Prop);
+              gSettings.GenerateAPLF = IsPropertyTrue (Prop);
             }
             Prop = GetProperty (Prop2, "PluginType");
             if (Prop) {
-                gSettings.GeneratePluginType = IsPropertyTrue (Prop);
+              gSettings.GeneratePluginType = IsPropertyTrue (Prop);
             }
           }
         }
@@ -5942,6 +5942,7 @@ GetUserSettings(
     if (gBootChanged) {
       DictPointer = GetProperty (Dict, "KernelAndKextPatches");
       if (DictPointer != NULL) {
+        DBG("refill kernel patches bcoz gBootChanged\n");
         FillinKextPatches ((KERNEL_AND_KEXT_PATCHES *)(((UINTN)&gSettings) + OFFSET_OF(SETTINGS_DATA, KernelAndKextPatches)), DictPointer);
       }
     } else {
@@ -6060,6 +6061,17 @@ CHAR8 *GetOSVersion(IN LOADER_ENTRY *Entry)
               OSVersion = AllocateCopyPool (AsciiStrSize (Prop->string), Prop->string);
             }
           }
+        } else {
+          InstallerPlist = L"\\com.apple.boot.R\\SystemVersion.plist";
+          if (FileExists (Entry->Volume->RootDir, InstallerPlist)) {
+            Status = egLoadFile (Entry->Volume->RootDir, InstallerPlist, (UINT8 **)&PlistBuffer, &PlistLen);
+            if (!EFI_ERROR (Status) && PlistBuffer != NULL && ParseXML (PlistBuffer, &Dict, 0) == EFI_SUCCESS) {
+              Prop = GetProperty (Dict, "ProductVersion");
+              if (Prop != NULL && Prop->string != NULL && Prop->string[0] != '\0') {
+                OSVersion = AllocateCopyPool (AsciiStrSize (Prop->string), Prop->string);
+              }
+            }
+          }
         }
       }
     }
@@ -6168,13 +6180,18 @@ GetRootUUID (IN  REFIT_VOLUME *Volume)
   }
 
   SystemPlistR = L"\\com.apple.boot.R\\Library\\Preferences\\SystemConfiguration\\com.apple.Boot.plist";
-  HasRock      = FileExists (Volume->RootDir,     SystemPlistR);
+  if (FileExists (Volume->RootDir, SystemPlistR)) {
+    HasRock      = FileExists (Volume->RootDir,     SystemPlistR);
+  } else {
+    SystemPlistR = L"\\com.apple.boot.R\\com.apple.Boot.plist";
+    HasRock      = FileExists (Volume->RootDir,     SystemPlistR);
+  }
 
   SystemPlistP = L"\\com.apple.boot.P\\Library\\Preferences\\SystemConfiguration\\com.apple.Boot.plist";
   HasPaper     = FileExists (Volume->RootDir,    SystemPlistP);
 
   SystemPlistS = L"\\com.apple.boot.S\\Library\\Preferences\\SystemConfiguration\\com.apple.Boot.plist";
-  HasScissors  = FileExists (Volume->RootDir, SystemPlistS);
+  HasScissors  = FileExists (Volume->RootDir,    SystemPlistS);
 
   PlistBuffer = NULL;
   // Playing Rock, Paper, Scissors to chose which settings to load.
@@ -7115,7 +7132,8 @@ SetFSInjection (
     FSInject->AddStringToList(Blacklist, L"\\System\\Library\\Caches\\com.apple.kext.caches\\Startup\\kernelcache");
     FSInject->AddStringToList(Blacklist, L"\\System\\Library\\Caches\\com.apple.kext.caches\\Startup\\Extensions.mkext");
     FSInject->AddStringToList(Blacklist, L"\\System\\Library\\Extensions.mkext");
-  //  FSInject->AddStringToList(Blacklist, L"\\System\\Library\\PrelinkedKernels\\prelinkedkernel");
+    //FSInject->AddStringToList(Blacklist, L"\\System\\Library\\PrelinkedKernels\\prelinkedkernel");
+    //FSInject->AddStringToList(Blacklist, L"\\com.apple.boot.R\\prelinkedkernel");
     FSInject->AddStringToList(Blacklist, L"\\com.apple.recovery.boot\\kernelcache");
     FSInject->AddStringToList(Blacklist, L"\\com.apple.recovery.boot\\Extensions.mkext");
     FSInject->AddStringToList(Blacklist, L"\\.IABootFiles\\kernelcache");

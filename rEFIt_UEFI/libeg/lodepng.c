@@ -917,7 +917,8 @@ unsigned lodepng_huffman_code_lengths(unsigned* lengths, const unsigned* frequen
     }
   }
 
-  for(i = 0; i != numcodes; ++i) lengths[i] = 0;
+  //for(i = 0; i != numcodes; ++i) lengths[i] = 0;
+  ZeroMem(lengths, sizeof(unsigned) * numcodes);
 
   /*ensure at least two present symbols. There should be at least one symbol
   according to RFC 1951 section 3.2.7. Some decoders incorrectly require two. To
@@ -6342,7 +6343,13 @@ unsigned eglodepng_encode(unsigned char** out, size_t* outsize, const unsigned c
 #ifdef LODEPNG_COMPILE_DECODER
 unsigned eglodepng_decode(unsigned char** out, size_t* w, size_t* h, const unsigned char* in, size_t insize)
 {
-  return lodepng_decode32(out, (unsigned*)w, (unsigned*)h, in, insize);
+  unsigned _w, _h, _r;
+  _r = lodepng_decode32(out, &_w, &_h, in, insize);
+  if (!_r) {
+    if (w) *w = (size_t) _w;
+    if (h) *h = (size_t) _h;
+  }
+  return _r;
 }
 // EXPORT FOR CLOVER <==
 
