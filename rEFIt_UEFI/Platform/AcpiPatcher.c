@@ -37,6 +37,8 @@ Re-Work by Slice 2011.
 #define APPLE_OEM_TABLE_ID  { 'A', 'p', 'p', 'l', 'e', '0', '0', ' ' }
 #define APPLE_CREATOR_ID    { 'L', 'o', 'k', 'i' }
 
+#define IGNORE_INDEX    (-1) // index ignored for matching (not ignored for >= 0)
+
 CONST CHAR8  oemID[6]       = APPLE_OEM_ID;
 CONST CHAR8  oemTableID[8]  = APPLE_OEM_TABLE_ID;
 CONST CHAR8  creatorID[4]   = APPLE_CREATOR_ID;
@@ -219,11 +221,10 @@ UINT32* ScanRSDT2(UINT32 Signature, UINT64 TableId, INTN MatchIndex)
   EntryCount = (Rsdt->Header.Length - sizeof(EFI_ACPI_DESCRIPTION_HEADER)) / sizeof(UINT32);
   EntryPtr = &Rsdt->Entry;
   for (Index = 0; Index < EntryCount; Index++, EntryPtr++) {
-    TableEntry = (EFI_ACPI_DESCRIPTION_HEADER*)((UINTN)(*EntryPtr));
-    if (((Signature == 0) || (TableEntry->Signature == Signature)) &&
-      ((TableId == 0) || (TableEntry->OemTableId == TableId))) {
-      if (-1 == MatchIndex || Count == MatchIndex) {
-        return EntryPtr; //point to TableEntry entry
+    TableEntry = (EFI_ACPI_DESCRIPTION_HEADER*)(UINTN)*EntryPtr;
+    if (0 == Signature || TableEntry->Signature == Signature) {
+      if ((0 == TableId || TableEntry->OemTableId == TableId) && (IGNORE_INDEX == MatchIndex || Count == MatchIndex)) {
+        return EntryPtr; //pointer to the TableEntry entry
       }
       ++Count;
     }
@@ -234,7 +235,7 @@ UINT32* ScanRSDT2(UINT32 Signature, UINT64 TableId, INTN MatchIndex)
 
 UINT32* ScanRSDT(UINT32 Signature, UINT64 TableId)
 {
-  return ScanRSDT2(Signature, TableId, -1);
+  return ScanRSDT2(Signature, TableId, IGNORE_INDEX);
 }
 
 UINT64* ScanXSDT2(UINT32 Signature, UINT64 TableId, INTN MatchIndex)
@@ -252,13 +253,12 @@ UINT64* ScanXSDT2(UINT32 Signature, UINT64 TableId, INTN MatchIndex)
 
   EntryCount = (Xsdt->Header.Length - sizeof (EFI_ACPI_DESCRIPTION_HEADER)) / sizeof(UINT64);
   BasePtr = (CHAR8*)(&(Xsdt->Entry));
-  for (Index = 0; Index < EntryCount; Index ++, BasePtr+=sizeof(UINT64)) {
-    CopyMem (&Entry64, (VOID*)BasePtr, sizeof(UINT64)); //value from BasePtr->
-    TableEntry = (EFI_ACPI_DESCRIPTION_HEADER *)((UINTN)(Entry64));
-    if (((Signature == 0) || (TableEntry->Signature == Signature)) &&
-      ((TableId == 0) || (TableEntry->OemTableId == TableId))) {
-      if (-1 == MatchIndex || Count == MatchIndex) {
-        return (UINT64 *)BasePtr; //pointer to the TableEntry entry
+  for (Index = 0; Index < EntryCount; Index++, BasePtr += sizeof(UINT64)) {
+    CopyMem(&Entry64, BasePtr, sizeof Entry64); //value from BasePtr->
+    TableEntry = (EFI_ACPI_DESCRIPTION_HEADER*)(UINTN)Entry64;
+    if (0 == Signature || TableEntry->Signature == Signature) {
+      if ((0 == TableId || TableEntry->OemTableId == TableId) && (IGNORE_INDEX == MatchIndex || Count == MatchIndex)) {
+        return (UINT64*)BasePtr; //pointer to the TableEntry entry
       }
       ++Count;
     }
@@ -268,7 +268,7 @@ UINT64* ScanXSDT2(UINT32 Signature, UINT64 TableId, INTN MatchIndex)
 
 UINT64* ScanXSDT(UINT32 Signature, UINT64 TableId)
 {
-  return ScanXSDT2(Signature, TableId, -1);
+  return ScanXSDT2(Signature, TableId, IGNORE_INDEX);
 }
 
 
@@ -701,7 +701,7 @@ INTN IndexFromFileName(CHAR16* FileName)
   // FileName must start as "XXXX-number...", such as "SSDT-9.aml", or "SSDT-11-SaSsdt.aml"
 
   // search for '-'
-  INTN Result = -1;
+  INTN Result = IGNORE_INDEX;
   CHAR16* temp = FileName;
   for (; *temp != 0 && *temp != '-'; temp++);
   if ('-' == *temp && 4 == temp-FileName) {
@@ -741,7 +741,7 @@ EFI_STATUS ReplaceOrInsertTable(VOID* TableEntry, UINTN Length, INTN MatchIndex)
     //insert/modify into RSDT
     if (Rsdt) {
       UINT32* entry = NULL;
-      if (hdr->Signature != EFI_ACPI_4_0_SECONDARY_SYSTEM_DESCRIPTION_TABLE_SIGNATURE || MatchIndex != -1) {
+      if (hdr->Signature != EFI_ACPI_4_0_SECONDARY_SYSTEM_DESCRIPTION_TABLE_SIGNATURE || MatchIndex != IGNORE_INDEX) {
         // SSDT with target index or non-SSDT, try to find matching entry
         entry = ScanRSDT2(hdr->Signature, hdr->OemTableId, MatchIndex);
       }
@@ -758,12 +758,13 @@ EFI_STATUS ReplaceOrInsertTable(VOID* TableEntry, UINTN Length, INTN MatchIndex)
     //insert/modify into XSDT
     if (Xsdt) {
       UINT64* entry = NULL;
-      if (hdr->Signature != EFI_ACPI_4_0_SECONDARY_SYSTEM_DESCRIPTION_TABLE_SIGNATURE || MatchIndex != -1) {
+      if (hdr->Signature != EFI_ACPI_4_0_SECONDARY_SYSTEM_DESCRIPTION_TABLE_SIGNATURE || MatchIndex != IGNORE_INDEX) {
         // SSDT with target index or non-SSDT, try to find matching entry
         entry = ScanXSDT2(hdr->Signature, hdr->OemTableId, MatchIndex);
       }
       if (entry) {
         WriteUnaligned64(entry, (UINT64)BufferPtr);
+        //REVIEW: same as: UINTN Index = entry - &Xsdt->Entry;
         UINTN Index = entry - (UINT64 *)(((UINT8 *)Xsdt) + OFFSET_OF(XSDT_TABLE, Entry));
         if (XsdtReplaceSizes && Index < XsdtOriginalEntryCount) {
           XsdtReplaceSizes[Index] = Length;  // mark as replaced, as it should be freed if patched later
@@ -895,9 +896,9 @@ STATIC UINT8 NameCSDT2[] = {0x80, 0x43, 0x53, 0x44, 0x54};
 
 //UINT32 get_size(UINT8 * An, UINT32 ); // Let borrow from FixBiosDsdt.
 
-static CHAR16* GenerateFileName(CHAR16* FileNamePrefix, UINTN SsdtCount, UINTN ChildCount, CHAR8 OemTableId[9])
-// ChildCount == -1 indicates normal SSDT
-// SsdtCount == -1 indicates dynamic SSDT in DSDT
+static CHAR16* GenerateFileName(CHAR16* FileNamePrefix, INTN SsdtCount, INTN ChildCount, CHAR8 OemTableId[9])
+// ChildCount == IGNORE_INDEX indicates normal SSDT
+// SsdtCount == IGNORE_INDEX indicates dynamic SSDT in DSDT
 // otherwise is child SSDT from normal SSDT
 {
   CHAR16* FileName;
@@ -908,10 +909,10 @@ static CHAR16* GenerateFileName(CHAR16* FileNamePrefix, UINTN SsdtCount, UINTN C
     Suffix[0] = '-';
     CopyMem(Suffix+1, OemTableId, 9);
   }
-  if (-1 == ChildCount) {
+  if (IGNORE_INDEX == ChildCount) {
     // normal SSDT
     FileName = PoolPrint(L"%sSSDT-%d%a.aml", FileNamePrefix, SsdtCount, Suffix);
-  } else if (-1 == SsdtCount) {
+  } else if (IGNORE_INDEX == SsdtCount) {
     // dynamic SSDT in DSDT
     FileName = PoolPrint(L"%sSSDT-xDSDT_%d%a.aml", FileNamePrefix, ChildCount, Suffix);
   } else {
@@ -933,7 +934,7 @@ VOID DumpChildSsdt(EFI_ACPI_DESCRIPTION_HEADER *TableEntry, CHAR16 *DirName, CHA
   UINT8         *Entry;
   UINT8         *End;
   UINT8         *pacBody;
-  UINTN         ChildCount = 0;
+  INTN          ChildCount = 0;
 
   if (gSettings.NoDynamicExtract) {
     return;
@@ -1054,7 +1055,7 @@ VOID DumpChildSsdt(EFI_ACPI_DESCRIPTION_HEADER *TableEntry, CHAR16 *DirName, CHA
 /** Saves Table to disk as DirName\\FileName (DirName != NULL)
  *  or just prints basic table data to log (DirName == NULL).
  */
-EFI_STATUS DumpTable(EFI_ACPI_DESCRIPTION_HEADER *TableEntry, CHAR8 *CheckSignature, CHAR16 *DirName, CHAR16 *FileName, CHAR16 *FileNamePrefix, UINTN *SsdtCount)
+EFI_STATUS DumpTable(EFI_ACPI_DESCRIPTION_HEADER *TableEntry, CHAR8 *CheckSignature, CHAR16 *DirName, CHAR16 *FileName, CHAR16 *FileNamePrefix, INTN *SsdtCount)
 {
   EFI_STATUS    Status;
   CHAR8         Signature[5];
@@ -1125,7 +1126,7 @@ EFI_STATUS DumpTable(EFI_ACPI_DESCRIPTION_HEADER *TableEntry, CHAR8 *CheckSignat
   if (FileName == NULL) {
     // take the name from the signature
     if (TableEntry->Signature == EFI_ACPI_1_0_SECONDARY_SYSTEM_DESCRIPTION_TABLE_SIGNATURE && SsdtCount != NULL) {
-      FileName = GenerateFileName(FileNamePrefix, *SsdtCount, -1, OemTableId);
+      FileName = GenerateFileName(FileNamePrefix, *SsdtCount, IGNORE_INDEX, OemTableId);
       DumpChildSsdt(TableEntry, DirName, FileNamePrefix, *SsdtCount);
       *SsdtCount += 1;
     } else {
@@ -1151,7 +1152,7 @@ EFI_STATUS DumpTable(EFI_ACPI_DESCRIPTION_HEADER *TableEntry, CHAR8 *CheckSignat
 }
 
 /** Saves to disk (DirName != NULL) or prints to log (DirName == NULL) Fadt tables: Dsdt and Facs. */
-EFI_STATUS DumpFadtTables(EFI_ACPI_2_0_FIXED_ACPI_DESCRIPTION_TABLE *Fadt, CHAR16 *DirName, CHAR16 *FileNamePrefix, UINTN *SsdtCount)
+EFI_STATUS DumpFadtTables(EFI_ACPI_2_0_FIXED_ACPI_DESCRIPTION_TABLE *Fadt, CHAR16 *DirName, CHAR16 *FileNamePrefix, INTN *SsdtCount)
 {
   EFI_ACPI_DESCRIPTION_HEADER                   *TableEntry;
   EFI_ACPI_2_0_FIRMWARE_ACPI_CONTROL_STRUCTURE  *Facs;
@@ -1197,7 +1198,7 @@ EFI_STATUS DumpFadtTables(EFI_ACPI_2_0_FIXED_ACPI_DESCRIPTION_TABLE *Fadt, CHAR1
       return Status;
     }
     DBG("\n");
-    DumpChildSsdt(TableEntry, DirName, FileNamePrefix, ~(UINTN)0);
+    DumpChildSsdt(TableEntry, DirName, FileNamePrefix, IGNORE_INDEX);
   }
   //
   // Save Facs
@@ -1310,7 +1311,7 @@ VOID DumpTables(VOID *RsdPtrVoid, CHAR16 *DirName)
   CHAR8           *EntryPtr;
   UINTN           EntryCount;
   UINTN           Index;
-  UINTN           SsdtCount;
+  INTN            SsdtCount;
   CHAR16          *FileNamePrefix;
 
   //
