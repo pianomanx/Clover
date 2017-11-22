@@ -226,11 +226,12 @@ DEFINE SOURCERY_CYGWIN_TOOLS = /cygdrive/c/Program Files/CodeSourcery/Sourcery G
 #
 # Change to the location clang was built
 #
-#DEFINE CLANG_BIN = /usr/bin/
+DEFINE CLANG_BIN = /usr/bin/
+DEFINE LLVM_BIN = /usr/bin/
 #DEFINE CLANG_BIN = /opt/local/libexec/llvm-3.6/bin/
 
-DEFINE LLVM_BIN = ENV(HOME)/src/llvm-build/Release/bin/
-DEFINE CLANG_BIN = ENV(HOME)/src/llvm-build/Release/bin/
+#DEFINE LLVM_BIN = ENV(HOME)/src/llvm-build/Release/bin/
+#DEFINE CLANG_BIN = ENV(HOME)/src/llvm-build/Release/bin/
 
 ####################################################################################
 #
