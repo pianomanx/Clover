@@ -1689,6 +1689,36 @@ VOID        SaveOemDsdt(BOOLEAN FullPatch)
   FreePool(AcpiOemPath);
 }
 
+EFI_STATUS LoadPatchedAML(CHAR16* AcpiOemPath, CHAR16* PartName)
+{
+  CHAR16 FullName[256];
+  UINT8 *buffer = NULL;
+  UINTN bufferLen = 0;
+  EFI_STATUS Status;
+
+  UnicodeSPrint(FullName, sizeof(FullName), L"%s\\%s", AcpiOemPath, PartName);
+  Status = egLoadFile(SelfRootDir, FullName, &buffer, &bufferLen);
+  //REVIEW: memory leak... buffer
+  if (!EFI_ERROR(Status)) {
+    //before insert we should checksum it
+    if (buffer) {
+      EFI_ACPI_DESCRIPTION_HEADER* TableHeader = (EFI_ACPI_DESCRIPTION_HEADER*)buffer;
+      if (TableHeader->Length > 500 * kilo) {
+        DBG("wrong table\n");
+        return Status; //REVIEW: return value is ignored by caller, but...
+      }
+      TableHeader->Checksum = 0;
+      TableHeader->Checksum = (UINT8)(256-Checksum8((CHAR8*)buffer, TableHeader->Length));
+    }
+    if (!gSettings.AutoMerge)
+      Status = InsertTable(buffer, bufferLen);
+    else
+      Status = ReplaceOrInsertTable(buffer, bufferLen, IndexFromFileName(PartName));
+  }
+  DBG("%r\n", Status);
+  return Status;
+}
+
 EFI_STATUS PatchACPI(IN REFIT_VOLUME *Volume, CHAR8 *OSVersion)
 {
   EFI_STATUS                    Status = EFI_SUCCESS;
@@ -2129,7 +2159,6 @@ EFI_STATUS PatchACPI(IN REFIT_VOLUME *Volume, CHAR8 *OSVersion)
   }
 
   if (ACPIPatchedAML) {
-    CHAR16  FullName[256];
     DbgHeader("ACPIPatchedAML");
 //    DBG("Start: Processing Patched AML(s): ");
     if (gSettings.SortedACPICount) {
@@ -2145,27 +2174,8 @@ EFI_STATUS PatchACPI(IN REFIT_VOLUME *Volume, CHAR8 *OSVersion)
           ACPIPatchedAMLTmp = ACPIPatchedAMLTmp->Next;
         }
         if (!ACPIPatchedAMLTmp) { // NULL when not disabled
-          UnicodeSPrint(FullName, 512, L"%s\\%s", AcpiOemPath, gSettings.SortedACPI[Index]);
           DBG("Inserting table[%d]:%s from %s ... ", Index, gSettings.SortedACPI[Index], AcpiOemPath);
-          Status = egLoadFile(SelfRootDir, FullName, &buffer, &bufferLen);
-          //REVIEW: memory leak... buffer
-          if (!EFI_ERROR(Status)) {
-            //before insert we should checksum it
-            if (buffer) {
-              TableHeader = (EFI_ACPI_DESCRIPTION_HEADER*)buffer;
-              if (TableHeader->Length > 500 * kilo) {
-                DBG("wrong table\n");
-                continue;
-              }
-              TableHeader->Checksum = 0;
-              TableHeader->Checksum = (UINT8)(256-Checksum8((CHAR8*)buffer, TableHeader->Length));
-            }
-            if (!gSettings.AutoMerge)
-              Status = InsertTable(buffer, bufferLen);
-            else
-              Status = ReplaceOrInsertTable(buffer, bufferLen, IndexFromFileName(gSettings.SortedACPI[Index]));
-          }
-          DBG("%r\n", Status);
+          LoadPatchedAML(AcpiOemPath, gSettings.SortedACPI[Index]);
         }
       }
     } else {
@@ -2173,27 +2183,8 @@ EFI_STATUS PatchACPI(IN REFIT_VOLUME *Volume, CHAR8 *OSVersion)
       DBG("Unsorted\n");
       while (ACPIPatchedAMLTmp) {
         if (ACPIPatchedAMLTmp->MenuItem.BValue == FALSE) {
-          UnicodeSPrint(FullName, 512, L"%s\\%s", AcpiOemPath, ACPIPatchedAMLTmp->FileName);
           DBG("Inserting %s from %s ... ", ACPIPatchedAMLTmp->FileName, AcpiOemPath);
-          Status = egLoadFile(SelfRootDir, FullName, &buffer, &bufferLen);
-          //REVIEW: memory leak... buffer
-          if (!EFI_ERROR(Status)) {
-            //before insert we should checksum it
-            if (buffer) {
-              TableHeader = (EFI_ACPI_DESCRIPTION_HEADER*)buffer;
-              if (TableHeader->Length > 500 * kilo) {
-                DBG("wrong table\n");
-                continue;
-              }
-              TableHeader->Checksum = 0;
-              TableHeader->Checksum = (UINT8)(256-Checksum8((CHAR8*)buffer, TableHeader->Length));
-            }
-            if (!gSettings.AutoMerge)
-              Status = InsertTable(buffer, bufferLen);
-            else
-              Status = ReplaceOrInsertTable(buffer, bufferLen, IndexFromFileName(ACPIPatchedAMLTmp->FileName));
-          }
-          DBG("%r\n", Status);
+          LoadPatchedAML(AcpiOemPath, ACPIPatchedAMLTmp->FileName);
         } else {
           DBG("Disabled: %s, skip\n", ACPIPatchedAMLTmp->FileName);
         }
