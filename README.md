@@ -20,6 +20,21 @@ https://bitbucket.org/RehabMan/clover/downloads/
 
 ### RehabMan added features/fixes
 
+Released as Clover_v2.4k_r4318.RM-4429.43710d68.pkg on bitbucket, 2017-11-24:
+
+- fixed an issue with AutoMerge when SSDTs have the same OEM table ID
+
+- fixed an issue with AutoMerge when DropTables was used to drop one or more SSDTs
+
+- added addional diagnostics to the Clover bootlog for AutoMerge
+
+- internal: cleanup UINTN vs. INTN and -1 usage/portability regarding MatchIndex in AcpiPatcher.c
+
+- internal: fixed a few memory leaks and did some minor cleanup
+
+- updated to latest Clover svn (4318)
+
+
 Released as Clover_v2.4k_r4270.RM-4359.cc5db5ba.pkg on bitbucket, 2017-10-28:
 
 - added config.plist/ACPI/SSDT/NoDynamicExtract (boolean) option, default false.  When set true, this flag will disable extraction of dynamic SSDTs when using F4.  Dynamic SSDTs are rarely needed and usually just cause confusion (mistakenly putting them in ACPI/patched).
