@@ -1322,7 +1322,7 @@ VOID AboutRefit(VOID)
     AddMenuInfo(&AboutMenu, L"  cparm, rehabman, nms42, Sherlocks, Zenith432");
     AddMenuInfo(&AboutMenu, L"  stinga11, TheRacerMaster, solstice, SoThOr, DF");
     AddMenuInfo(&AboutMenu, L"  cecekpawon, Micky1979, Needy, joevt, ErmaC, vit9696");
-    AddMenuInfo(&AboutMenu, L"  ath, savvas, syscl");
+    AddMenuInfo(&AboutMenu, L"  ath, savvas, syscl, goodwin_c");
     AddMenuInfo(&AboutMenu, L"  projectosx.com, applelife.ru, insanelymac.com");
     AddMenuInfo(&AboutMenu, L"");
     AddMenuInfo(&AboutMenu, L"Running on:");
@@ -1739,7 +1739,7 @@ VOID InitSelection(VOID)
   */
 
   // Radio buttons
-  Buttons[0] = egLoadImage(ThemeDir, GetIconsExt(L"radio_button", L"png"), TRUE);
+  Buttons[0] = egLoadImage(ThemeDir, GetIconsExt(L"radio_button", L"png"), TRUE); //memory leak
   Buttons[1] = egLoadImage(ThemeDir, GetIconsExt(L"radio_button_selected", L"png"), TRUE);
   if (!Buttons[0]) {
     Buttons[0] = egDecodePNG(ACCESS_EMB_DATA(emb_radio_button), ACCESS_EMB_SIZE(emb_radio_button), TRUE);
@@ -4413,8 +4413,8 @@ REFIT_MENU_ENTRY  *SubMenuBinaries()
   AddMenuItem(SubScreen, 46,  "AppleIntelCPUPM Patch", TAG_INPUT, FALSE);
   AddMenuItem(SubScreen, 47,  "AppleRTC Patch", TAG_INPUT, FALSE);
   AddMenuItem(SubScreen, 61,  "Dell SMBIOS Patch", TAG_INPUT, FALSE);
+//  AddMenuItem(SubScreen, 115, "No Caches", TAG_INPUT, FALSE);
 //  AddMenuItem(SubScreen, 44,  "Kext patching allowed", TAG_INPUT, FALSE);
-  AddMenuItem(SubScreen, 115, "No Caches", TAG_INPUT, FALSE);
   AddMenuEntry(SubScreen, SubMenuKextPatches());
   AddMenuInfo(SubScreen, L"----------------------");
   AddMenuEntry(SubScreen, SubMenuBootPatches());
