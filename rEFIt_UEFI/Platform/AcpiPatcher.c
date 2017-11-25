@@ -2732,4 +2732,3 @@ EFI_STATUS PatchACPI_OtherOS(CHAR16* OsSubdir, BOOLEAN DropSSDT)
   if (PathPatched) FreePool(PathPatched);
     return EFI_SUCCESS;
 }
-
