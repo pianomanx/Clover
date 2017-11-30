@@ -2007,10 +2007,14 @@ Checksum8 (
   UINT32 len
   );
 
+void FixChecksum(EFI_ACPI_DESCRIPTION_HEADER* Table);
+
+#if 0 //REVIEW: not used
 BOOLEAN
 tableSign (
   CHAR8       *table,
   CONST CHAR8 *sgn);
+#endif
 
 VOID
 SaveOemDsdt (
