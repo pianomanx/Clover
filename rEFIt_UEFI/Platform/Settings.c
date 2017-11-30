@@ -5746,7 +5746,6 @@ GetUserSettings(
       Prop                 = GetProperty (DictPointer, "HWPEnable");
       if (Prop && IsPropertyTrue (Prop)) {
         gSettings.HWP = TRUE;
-        gSettings.GeneratePluginType = TRUE;
         AsmWriteMsr64 (MSR_IA32_PM_ENABLE, 1);
       }
       Prop                 = GetProperty (DictPointer, "HWPValue");
@@ -5942,6 +5941,25 @@ GetUserSettings(
   return EFI_SUCCESS;
 }
 
+static CHAR8 *SearchString (
+  IN  CHAR8       *Source,
+  IN  UINT64      SourceSize,
+  IN  CHAR8       *Search,
+  IN  UINTN       SearchSize
+  )
+{
+  CHAR8 *End = Source + SourceSize;
+
+  while (Source < End) {
+    if (CompareMem(Source, Search, SearchSize) == 0) {
+      return Source;
+    } else {
+      Source++;
+    }
+  }
+  return NULL;
+}
+
 CHAR8 *GetOSVersion(IN LOADER_ENTRY *Entry)
 {
   CHAR8      *OSVersion  = NULL;
@@ -6039,6 +6057,47 @@ CHAR8 *GetOSVersion(IN LOADER_ENTRY *Entry)
               OSVersion = AllocateCopyPool (AsciiStrSize (Prop->string), Prop->string);
             }
           }
+        } else {
+          // read ProductVersion/BuildVersion from ia.log
+          // implemented by Sherlocks
+          CHAR8  *i, *fileBuffer, *targetString;
+          CHAR8  *Res1 = AllocateZeroPool(5), *Res2 = AllocateZeroPool(7), *Res3 = AllocateZeroPool(6), *Res4 = AllocateZeroPool(7);
+          UINTN  fileLen = 0;
+          CHAR16 *InstallerLog = L"\\Mac OS X Install Data\\ia.log";
+          if (!FileExists (Entry->Volume->RootDir, InstallerLog)) {
+            InstallerLog = L"\\OS X Install Data\\ia.log";
+          }
+          if (FileExists (Entry->Volume->RootDir, InstallerLog)) {
+            Status = egLoadFile(Entry->Volume->RootDir, InstallerLog, (UINT8 **)&fileBuffer, &fileLen);
+            if (!EFI_ERROR (Status)) {
+              targetString = (CHAR8*) AllocateZeroPool(fileLen+1);
+              CopyMem((VOID*)targetString, (VOID*)fileBuffer, fileLen);
+              i = SearchString(targetString, fileLen, "Running OS Build: Mac OS X ", 27);
+              if (i[31] == ' ') {
+                AsciiSPrint (Res1, 5, "%c%c.%c\n", i[27], i[28], i[30]);
+                OSVersion = AllocateCopyPool (AsciiStrSize (Res1), Res1);
+                if (i[38] == ')') {
+                  AsciiSPrint (Res3, 6, "%c%c%c%c%c\n", i[33], i[34], i[35], i[36], i[37]);
+                  Entry->BuildVersion = AllocateCopyPool (AsciiStrSize (Res3), Res3);
+                } else if (i[39] == ')') {
+                  AsciiSPrint (Res4, 7, "%c%c%c%c%c%c\n", i[33], i[34], i[35], i[36], i[37], i[38]);
+                  Entry->BuildVersion = AllocateCopyPool (AsciiStrSize (Res4), Res4);
+                }
+              } else if (i[31] == '.') {
+                AsciiSPrint (Res2, 7, "%c%c.%c.%c\n", i[27], i[28], i[30], i[32]);
+                OSVersion = AllocateCopyPool (AsciiStrSize (Res2), Res2);
+                if (i[40] == ')') {
+                  AsciiSPrint (Res3, 6, "%c%c%c%c%c\n", i[35], i[36], i[37], i[38], i[39]);
+                  Entry->BuildVersion = AllocateCopyPool (AsciiStrSize (Res3), Res3);
+                } else if (i[41] == ')') {
+                  AsciiSPrint (Res4, 7, "%c%c%c%c%c%c\n", i[35], i[36], i[37], i[38], i[39], i[40]);
+                  Entry->BuildVersion = AllocateCopyPool (AsciiStrSize (Res4), Res4);
+                }
+              }
+              FreePool(fileBuffer);
+              FreePool(targetString);
+            }
+          }
         }
       }
     }
@@ -6086,7 +6145,7 @@ CHAR16
   if (OSVersion == NULL) {
     OSIconName = L"mac";
   } else if (AsciiStrStr (OSVersion, "10.13") != 0) {
-      // High Sierra
+    // High Sierra
     OSIconName = L"hsierra,mac";
   } else if (AsciiStrStr (OSVersion, "10.12") != 0) {
     // Sierra
@@ -6682,12 +6741,12 @@ SetDevices (
                   if (gSettings.DeInit) {
                     for (j = 0; j < 4; j++) {
                       if (gGraphics[j].Handle == PCIdevice.DeviceHandle) {
-                        *(UINT32*)(gGraphics[j].Mmio + 0x6848) = 0; //FCTL
-                        *(UINT32*)(gGraphics[j].Mmio + 0x681C) = 0; //PSBH
-                        *(UINT32*)(gGraphics[j].Mmio + 0x6820) = 0; //SSBH
-                        *(UINT32*)(gGraphics[j].Mmio + 0x6808) = 0; //LTBC
-                        *(UINT32*)(gGraphics[j].Mmio + 0x6800) = 1; //GENA
-                        *(UINT32*)(gGraphics[j].Mmio + 0x6EF8) = 0; //MUMD
+                        *(UINT32*)(gGraphics[j].Mmio + 0x6848) = 0; //EVERGREEN_GRPH_FLIP_CONTROL, 1<<0 SURFACE_UPDATE_H_RETRACE_EN
+                        *(UINT32*)(gGraphics[j].Mmio + 0x681C) = 0; //EVERGREEN_GRPH_PRIMARY_SURFACE_ADDRESS_HIGH
+                        *(UINT32*)(gGraphics[j].Mmio + 0x6820) = 0; //EVERGREEN_GRPH_SECONDARY_SURFACE_ADDRESS_HIGH
+                        *(UINT32*)(gGraphics[j].Mmio + 0x6808) = 0; //EVERGREEN_GRPH_LUT_10BIT_BYPASS_CONTROL, EVERGREEN_LUT_10BIT_BYPASS_EN            (1 << 8)
+                        *(UINT32*)(gGraphics[j].Mmio + 0x6800) = 1; //EVERGREEN_GRPH_ENABLE
+                        *(UINT32*)(gGraphics[j].Mmio + 0x6EF8) = 0; //EVERGREEN_MASTER_UPDATE_MODE
      //                   *(UINT32*)(gGraphics[j].Mmio + R600_BIOS_0_SCRATCH) = 0x00810000;
                         DBG("Device %d deinited\n", j);
                       }
@@ -7099,7 +7158,7 @@ SetFSInjection (
     /*
      From 10.7 to 10.9, status of directly restoring ESD files or update from Appstore cannot block kernel cache. because there are boot.efi and kernelcache file without kernel file.
      After macOS installed, boot.efi can call kernel file from S/L/Kernels.
-     For this reason, long time ago, chameleon's user restored ESD/Base System to made USB installer and added kernel file in root and custom kexts in S/L/E. then used "-f" option.
+     For this reason, long time ago, chameleon's user restored Base System.dmg to made USB installer and added kernel file in root and custom kexts in S/L/E. then used "-f" option.
      From 10.10+, boot.efi call only prelinkedkernel file without kernel file. we can never block only kernelcache.
      The use of these block caches is meaningless in modern macOS. Unlike the old days, we do not have to do the tedious task of putting the files needed for booting into the S/L/E.
      by Sherlocks, 2017.11
@@ -7130,7 +7189,7 @@ SetFSInjection (
     //FSInject->AddStringToList(Blacklist, L"\\macOS Install Data\\Locked Files\\Boot Files\\prelinkedkernel");
     // === Fusion Drive ===
     // 10.11
-    //FSInject->AddStringToList(Blacklist, L"\\com.apple.boot.S\\System\\Library\\PrelinkedKernels\prelinkedkernel");
+    //FSInject->AddStringToList(Blacklist, L"\\com.apple.boot.S\\System\\Library\\PrelinkedKernels\\prelinkedkernel");
     // 10.12+
     //FSInject->AddStringToList(Blacklist, L"\\com.apple.boot.R\\prelinkedkernel");
 
