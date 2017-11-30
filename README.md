@@ -20,6 +20,21 @@ https://bitbucket.org/RehabMan/clover/downloads/
 
 ### RehabMan added features/fixes
 
+Released as Clover_v2.4k_r4328.RM-4448.d22dddfd.pkg on bitbucket, 2017-11-31:
+
+- restored "without caches" option (AGAIN!)
+
+- fixed an issue with config.plist/ACPI/DSDT/Patches as it concerned non-merged SSDTs from ACPI/patched when there were NULL entries in XSDT
+
+- added code to deal correctly with NULL entries in XSDT and RSDT (related to above issue)
+
+- added code to deal with double-NULL (original Clover AcpiPatcher.c terminated the XSDT/RSDT at the position of double-NULL)
+
+- internal: lots of code cleanup/simplification in AcpiPatcher.c
+
+- updated to latest Clover svn (4328)
+
+
 Released as Clover_v2.4k_r4318.RM-4429.43710d68.pkg on bitbucket, 2017-11-24:
 
 - fixed an issue with AutoMerge when SSDTs have the same OEM table ID
