@@ -5396,9 +5396,7 @@ VOID FixBiosDsdt (UINT8* temp, EFI_ACPI_2_0_FIXED_ACPI_DESCRIPTION_TABLE* fadt, 
   // Finish DSDT patch and resize DSDT Length
   EFI_ACPI_DESCRIPTION_HEADER* Table = (EFI_ACPI_DESCRIPTION_HEADER*)temp;
   Table->Length = DsdtLen;
-
-  //CopyMem((UINT8*)((EFI_ACPI_DESCRIPTION_HEADER*)temp)->OemId, (UINT8*)BiosVendor, 6);
-  //DBG("orgBiosDsdtLen = 0x%08x\n", orgBiosDsdtLen);
+  //CopyMem(&Table->OemId, BiosVendor, 6);
   FixChecksum(Table);
 
   //DBG("========= Auto patch DSDT Finished ========\n");
