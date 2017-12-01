@@ -20,7 +20,16 @@ https://bitbucket.org/RehabMan/clover/downloads/
 
 ### RehabMan added features/fixes
 
-Released as Clover_v2.4k_r4328.RM-4448.d22dddfd.pkg on bitbucket, 2017-11-31:
+Released as Clover_v2.4k_r4330.RM-4456.06db6224.pkg on bitbucket, 2017-12-01:
+
+- a DropTables attempt to drop a merged table will be ignored (debug in Clover bootlog)
+
+- fixing bugs
+
+- updated to latest Clover svn (4330)
+
+
+Released as Clover_v2.4k_r4328.RM-4448.d22dddfd.pkg on bitbucket, 2017-11-31 (redacted):
 
 - restored "without caches" option (AGAIN!)
 
@@ -35,7 +44,7 @@ Released as Clover_v2.4k_r4328.RM-4448.d22dddfd.pkg on bitbucket, 2017-11-31:
 - updated to latest Clover svn (4328)
 
 
-Released as Clover_v2.4k_r4318.RM-4429.43710d68.pkg on bitbucket, 2017-11-24:
+Released as Clover_v2.4k_r4318.RM-4429.43710d68.pkg on bitbucket, 2017-11-24 (redacted):
 
 - fixed an issue with AutoMerge when SSDTs have the same OEM table ID
 
@@ -50,12 +59,12 @@ Released as Clover_v2.4k_r4318.RM-4429.43710d68.pkg on bitbucket, 2017-11-24:
 - updated to latest Clover svn (4318)
 
 
-Released as Clover_v2.4k_r4270.RM-4359.cc5db5ba.pkg on bitbucket, 2017-10-28:
+Released as Clover_v2.4k_r4270.RM-4359.cc5db5ba.pkg on bitbucket, 2017-10-28 (redacted):
 
 - added config.plist/ACPI/SSDT/NoDynamicExtract (boolean) option, default false.  When set true, this flag will disable extraction of dynamic SSDTs when using F4.  Dynamic SSDTs are rarely needed and usually just cause confusion (mistakenly putting them in ACPI/patched).
 
 
-Released as Clover_v2.4k_r4265.RM-4346.38d5ad43.zip on bitbucket, 2017-10-26:
+Released as Clover_v2.4k_r4265.RM-4346.38d5ad43.zip on bitbucket, 2017-10-26 (redacted):
 
 - internal: automatic calculation of embedded image/font sizes
 
