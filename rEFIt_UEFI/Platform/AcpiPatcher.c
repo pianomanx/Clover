@@ -387,9 +387,13 @@ void DropTableFromRSDT(UINT32 Signature, UINT64 TableId, UINT32 Length)
           (!Length || Table->Length == Length))) {
       continue;
     }
+    if (IsXsdtEntryMerged(IndexFromXsdtEntryPtr(Ptr))) {
+      DBG(" attempt to drop already merged table[%d]: %a  %a  %d ignored\n", IndexFromXsdtEntryPtr(Ptr), sign, OTID, (INT32)Table->Length);
+      continue;
+    }
     // drop matching table by simply replacing entry with NULL
     *Ptr = 0;
-    DBG(" Table: %a  %a  %d dropped\n", sign, OTID, (INT32)Table->Length);
+    DBG(" Table[%d]: %a  %a  %d dropped\n", IndexFromXsdtEntryPtr(Ptr), sign, OTID, (INT32)Table->Length);
   }
 }
 
