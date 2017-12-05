@@ -20,6 +20,11 @@ https://bitbucket.org/RehabMan/clover/downloads/
 
 ### RehabMan added features/fixes
 
+Released as Clover_v2.4k_r4334.RM-4467.cac64919.zip on bitbucket, 2017-12-05:
+
+- updated to latest Clover svn (4334)
+
+
 Released as Clover_v2.4k_r4330.RM-4456.06db6224.pkg on bitbucket, 2017-12-01:
 
 - a DropTables attempt to drop a merged table will be ignored (debug in Clover bootlog)
