@@ -20,7 +20,12 @@ https://bitbucket.org/RehabMan/clover/downloads/
 
 ### RehabMan added features/fixes
 
-Released as Clover_v2.4k_r4359.RM-4506.c5fc0346.zip on bitbucket, 2017-12-15:
+Released as Clover_v2.4k_r4359.RM-4506.7036cf0a.zip on bitbucket, 2017-12-15:
+
+- no change, just build identifiers (git commit hash) fixed due to git commit log snafu
+
+
+Released as Clover_v2.4k_r4359.RM-4506.c5fc0346.zip on bitbucket, 2017-12-15 (redacted):
 
 - fixed a bug when AutoMerge=true and SortedOrder specified would cause a merged table to be also treated as an add-on SSDT.  (Note: SortedOrder is not needed when using AutoMerge=true, but it should not result in duplicate table insertion)
 
