@@ -1787,7 +1787,12 @@ void LoadAllPatchedAML(CHAR16* AcpiOemPath, UINTN Pass)
           DBG("Inserting table[%d]:%s from %s: ", Index, gSettings.SortedACPI[Index], AcpiOemPath);
           if (LoadPatchedAML(AcpiOemPath, gSettings.SortedACPI[Index], Pass)) {
             // avoid inserting table again on second pass
-            ACPIPatchedAMLTmp->MenuItem.BValue = BVALUE_ATTEMPTED;
+            for (ACPI_PATCHED_AML* temp2 = ACPIPatchedAML; temp2; temp2 = temp2->Next) {
+              if (0 == StriCmp(temp2->FileName, gSettings.SortedACPI[Index])) {
+                temp2->MenuItem.BValue = BVALUE_ATTEMPTED;
+                break;
+              }
+            }
           }
         }
       }
