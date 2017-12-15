@@ -987,6 +987,9 @@ typedef struct {
   BOOLEAN                 LpcTune;
   UINT16                  DropOEM_DSM;
   UINT8                   *CustomEDID;
+  UINT16                  CustomEDIDsize;
+  UINT16                  EdidFixHorizontalSyncPulseWidth;
+  UINT8                   EdidFixVideoInputSignal;
 
   CHAR16                  FBName[16];
   UINT16                  VideoPorts;
@@ -1539,7 +1542,7 @@ extern CPU_STRUCTURE                  gCPUStructure;
 extern EFI_GUID                       gUuid;
 extern SLOT_DEVICE                    SlotDevices[];
 extern EFI_EDID_DISCOVERED_PROTOCOL   *EdidDiscovered;
-extern UINT8                          *gEDID;
+//extern UINT8                          *gEDID;
 extern UINT32                         mPropSize;
 extern UINT8                          *mProperties;
 extern CHAR8                          *gDeviceProperties;

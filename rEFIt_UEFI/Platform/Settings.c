@@ -41,7 +41,7 @@ HDA_PROPERTIES                  gAudios[4]; //no more then 4 Audio Controllers
 //SLOT_DEVICE                     Arpt;
 SLOT_DEVICE                     SlotDevices[16]; //assume DEV_XXX, Arpt=6
 EFI_EDID_DISCOVERED_PROTOCOL    *EdidDiscovered;
-UINT8                           *gEDID = NULL;
+//UINT8                           *gEDID = NULL;
 //EFI_GRAPHICS_OUTPUT_PROTOCOL    *GraphicsOutput;
 //UINT16                          gCPUtype;
 UINTN                           NGFX                        = 0; // number of GFX
@@ -2274,11 +2274,10 @@ GetEDIDSettings(TagPtr DictPointer)
           DBG (" Custom EDID has wrong length=%d\n", j);
         } else {
           DBG (" Custom EDID is ok\n");
+          gSettings.CustomEDIDsize = j;
           InitializeEdidOverride();
         }
-      } else {
-        //DBG (" No Custom EDID\n");
-      }
+      } 
       
       Prop = GetProperty (Dict, "VendorID");
       if (Prop) {
@@ -2290,6 +2289,18 @@ GetEDIDSettings(TagPtr DictPointer)
       if (Prop) {
         gSettings.ProductEDID = (UINT16)GetPropertyInteger(Prop, gSettings.ProductEDID);
         //DBG("  ProductID = 0x%04lx\n", gSettings.ProductEDID);
+      }
+
+      Prop = GetProperty (Dict, "HorizontalSyncPulseWidth");
+      if (Prop) {
+        gSettings.EdidFixHorizontalSyncPulseWidth = (UINT16)GetPropertyInteger(Prop, gSettings.EdidFixHorizontalSyncPulseWidth);
+        DBG("  EdidFixHorizontalSyncPulseWidth = 0x%04lx\n", gSettings.EdidFixHorizontalSyncPulseWidth);
+      }
+
+      Prop = GetProperty (Dict, "VideoInputSignal");
+      if (Prop) {
+        gSettings.EdidFixVideoInputSignal = (UINT8)GetPropertyInteger(Prop, gSettings.EdidFixVideoInputSignal);
+        DBG("  EdidFixVideoInputSignal = 0x%04lx\n", gSettings.EdidFixVideoInputSignal);
       }
     } else {
       //DBG ("Not Inject EDID\n");
@@ -2380,20 +2391,13 @@ GetEarlyUserSettings (
       }
 
       Prop = GetProperty (DictPointer, "Debug");
-      if (IsPropertyTrue (Prop)) {
-        GlobalConfig.DebugLog       = TRUE;
-      }
+      GlobalConfig.DebugLog       = IsPropertyTrue (Prop);
 
       Prop = GetProperty (DictPointer, "Fast");
-      if (IsPropertyTrue (Prop)) {
-        GlobalConfig.FastBoot       = TRUE;
-        DBG ("Fast option enabled\n");
-      }
+      GlobalConfig.FastBoot       = IsPropertyTrue (Prop);
 
       Prop = GetProperty (DictPointer, "NoEarlyProgress");
-      if (IsPropertyTrue (Prop)) {
-        GlobalConfig.NoEarlyProgress = TRUE;
-      }
+      GlobalConfig.NoEarlyProgress = IsPropertyTrue (Prop);
 
       if (SpecialBootMode) {
         GlobalConfig.FastBoot       = TRUE;
@@ -2401,17 +2405,14 @@ GetEarlyUserSettings (
       }
 
       Prop = GetProperty (DictPointer, "NeverHibernate");
-      if (IsPropertyTrue (Prop)) {
-        GlobalConfig.NeverHibernate = TRUE;
-      }
-      
+      GlobalConfig.NeverHibernate = IsPropertyTrue (Prop);
+
       Prop = GetProperty (DictPointer, "StrictHibernate");
-      if (IsPropertyTrue (Prop)) {
-        GlobalConfig.StrictHibernate = TRUE;
-      }
+      GlobalConfig.StrictHibernate = IsPropertyTrue (Prop);
+
       Prop = GetProperty (DictPointer, "HibernationFixup");
       if (Prop) {
-        GlobalConfig.HibernationFixup = IsPropertyTrue (Prop); //t will be set automatically
+        GlobalConfig.HibernationFixup = IsPropertyTrue (Prop); //it will be set automatically
       }
       
       Prop = GetProperty (DictPointer, "SignatureFixup");
@@ -6607,9 +6608,7 @@ GetDevices ()
 
 
 VOID
-SetDevices (
-            LOADER_ENTRY *Entry
-            )
+SetDevices (LOADER_ENTRY *Entry)
 {
   //  EFI_GRAPHICS_OUTPUT_MODE_INFORMATION  *modeInfo;
   EFI_STATUS          Status;
@@ -6708,34 +6707,137 @@ SetDevices (
 
               UINT32 LevelW = 0xC0000000;
               // syscl: set PWMMax base on platform
-              // 10: Sandy/Ivy 0x710
-              // 11: Haswell/Broadwell 0xad9
-              // 12: Skylake/KabyLake 0x56c (and some Haswell, example 0xa2e0008)
+              // Sherlocks: the Xeon CPU of some laptop has built-in graphics. ex. Xeon E3-1505M v5/Xeon E3-1535M
+              // 10: Sandy/Ivy 0x0710
+              // 11: Haswell/Broadwell 0x056c/0x07a1/0x0ad9/0x1499
+              // 12: Skylake/KabyLake 0x056c
               // 99: Other
               UINT32 LevelMaxW = 0;
-                
+
               switch (gCPUStructure.Model) {
-                  case CPU_MODEL_SANDY_BRIDGE:
-                  case CPU_MODEL_IVY_BRIDGE:
-                      LevelMaxW = 0x07100000;
-                      break;
-                      
-                  case CPU_MODEL_HASWELL:
-                  case CPU_MODEL_HASWELL_ULT:
-                  case CPU_MODEL_HASWELL_U5:
-                  case CPU_MODEL_CRYSTALWELL:
-                  case CPU_MODEL_BROADWELL_HQ:
-                      LevelMaxW = (gSettings.IgPlatform != (UINT32)0x0a2e0008) ? 0xad900000 : 0x56c00000;
-                      break;
-                      
-                  case CPU_MODEL_SKYLAKE_U:
-                  case CPU_MODEL_KABYLAKE1:
-                  case CPU_MODEL_KABYLAKE2:
-                      LevelMaxW = 0x56c00000;
-                      break;
-                      
-                  default:
-                      break;
+                case CPU_MODEL_SANDY_BRIDGE:
+                  if (gSettings.IgPlatform) {
+                    switch (gSettings.IgPlatform) {
+                      case (UINT32)0x00030010:
+                      case (UINT32)0x00050000:
+                        break;
+                      default:
+                        LevelMaxW = 0x07100000;
+                        break;
+                    }
+                  } else {
+                    LevelMaxW = 0x07100000;
+                  }
+                  break;
+
+                case CPU_MODEL_IVY_BRIDGE:
+                  LevelMaxW = 0x07100000;
+                  break;
+
+                case CPU_MODEL_HASWELL:
+                case CPU_MODEL_HASWELL_ULT:
+                case CPU_MODEL_CRYSTALWELL:
+                  if (gSettings.IgPlatform) {
+                    switch (gSettings.IgPlatform) {
+                      case (UINT32)0x04060000:
+                      case (UINT32)0x0c060000:
+                      case (UINT32)0x04160000:
+                      case (UINT32)0x0c160000:
+                      case (UINT32)0x04260000:
+                      case (UINT32)0x0c260000:
+                      case (UINT32)0x0d260000:
+                      case (UINT32)0x0d220003:
+                        LevelMaxW = 0x14990000;
+                        break;
+                      case (UINT32)0x0a160000:
+                      case (UINT32)0x0a260000:
+                      case (UINT32)0x0a260005:
+                      case (UINT32)0x0a260006:
+                        LevelMaxW = 0x0ad90000;
+                        break;
+                      case (UINT32)0x0d260007:
+                        LevelMaxW = 0x07a10000;
+                        break;
+                      case (UINT32)0x0a2e0008:
+                        LevelMaxW = 0x056c0000;
+                        break;
+                      case (UINT32)0x04120004:
+                      case (UINT32)0x0412000b:
+                        break;
+                      default:
+                        LevelMaxW = 0x056c0000;
+                        break;
+                    }
+                  } else {
+                    LevelMaxW = 0x056c0000;
+                  }
+                  break;
+
+                case CPU_MODEL_HASWELL_U5:    // Broadwell Mobile
+                case CPU_MODEL_BROADWELL_HQ:
+                  if (gSettings.IgPlatform) {
+                    switch (gSettings.IgPlatform) {
+                      case (UINT32)0x16060000:
+                      case (UINT32)0x160e0000:
+                      case (UINT32)0x16160000:
+                      case (UINT32)0x161e0000:
+                      case (UINT32)0x16220000:
+                      case (UINT32)0x16260000:
+                      case (UINT32)0x162b0000:
+                      case (UINT32)0x16260004:
+                      case (UINT32)0x162b0004:
+                      case (UINT32)0x16220007:
+                      case (UINT32)0x16260008:
+                      case (UINT32)0x162b0008:
+                        LevelMaxW = 0x14990000;
+                        break;
+                      case (UINT32)0x16260005:
+                      case (UINT32)0x16260006:
+                        LevelMaxW = 0x0ad90000;
+                        break;
+                      case (UINT32)0x16120003:
+                        LevelMaxW = 0x07a10000;
+                        break;
+                      case (UINT32)0x160e0001:
+                      case (UINT32)0x161e0001:
+                      case (UINT32)0x16060002:
+                      case (UINT32)0x16160002:
+                      case (UINT32)0x16220002:
+                      case (UINT32)0x16260002:
+                      case (UINT32)0x162b0002:
+                        LevelMaxW = 0x056c0000;
+                        break;
+                      default:
+                        LevelMaxW = 0x056c0000;
+                        break;
+                    }
+                  } else {
+                    LevelMaxW = 0x056c0000;
+                  }
+                  break;
+
+                case CPU_MODEL_SKYLAKE_U:
+                case CPU_MODEL_SKYLAKE_D:
+                  if (gSettings.IgPlatform) {
+                    switch (gSettings.IgPlatform) {
+                      case (UINT32)0x19120001:
+                        break;
+                      default:
+                        LevelMaxW = 0x056c0000;
+                        break;
+                    }
+                  } else {
+                    LevelMaxW = 0x056c0000;
+                  }
+                  break;
+
+                case CPU_MODEL_KABYLAKE1:    // Mobile
+                case CPU_MODEL_KABYLAKE2:    // Desktop
+                  LevelMaxW = 0x056c0000;
+                  break;
+
+                default:
+                  break;
               }
               UINT32 IntelDisable = 0x03;
 
@@ -6798,15 +6900,17 @@ SetDevices (
                     if (gSettings.IntelMaxValue) {
                       LevelMaxW = gSettings.IntelMaxValue << 16;
                     }
-                    /*Status = */PciIo->Mem.Write(
-                                                  PciIo,
-                                                  EfiPciIoWidthUint32,
-                                                  0,
-                                                  0xC8254,
-                                                  1,
-                                                  &LevelMaxW
-                                                  );
+                    if (LevelMaxW) {
+                      /*Status = */PciIo->Mem.Write(
+                                                    PciIo,
+                                                    EfiPciIoWidthUint32,
+                                                    0,
+                                                    0xC8254,
+                                                    1,
+                                                    &LevelMaxW
+                                                    );
 
+                    }
                   }
                   if (gSettings.FakeIntel == 0x00008086) {
                     PciIo->Pci.Write (PciIo, EfiPciIoWidthUint32, 0x50, 1, &IntelDisable);
