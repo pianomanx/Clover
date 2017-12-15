@@ -17,6 +17,10 @@ Pre-built Clover from my master branch is available on Bitbucket:
 
 https://bitbucket.org/RehabMan/clover/downloads/
 
+### Known Problems
+
+Currently, the CloverThemeManager.app option in the installer does not work correctly (an empty app will be installed).  The CloverThemeManager.app is actually present in the built pkg file, but it is not installing properly.  You can use the sourceforge Clover installer to get it, or extract it with Pacifist.  For investigation later.
+
 
 ### RehabMan added features/fixes
 
