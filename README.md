@@ -20,6 +20,15 @@ https://bitbucket.org/RehabMan/clover/downloads/
 
 ### RehabMan added features/fixes
 
+Released as Clover_v2.4k_r4359.RM-4503.86e25a09.zip on bitbucket, 2017-12-15:
+
+- fixed a bug with config.plist/ACPI/DSDT/Fixes/FixHeaders (NUL characters should not have been translated to spaces)
+
+- fixed problems with AutoMerge=true when table headers needed fixing (header fixing was causing problems with table id comparisons)... note that the above bug (where table headers were unecessarily being modified), exposed this bug a bit easier/more often.
+
+- updated to latest Clover svn (4359)
+
+
 Released as Clover_v2.4k_r4334.RM-4467.cac64919.zip on bitbucket, 2017-12-05:
 
 - updated to latest Clover svn (4334)
