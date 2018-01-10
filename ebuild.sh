@@ -930,7 +930,7 @@ MainPostBuildScript() {
       echo "Copy Optional drivers:"
       # drivers64
       # Ps2KeyboardDxe Ps2MouseAbsolutePointerDxe
-      binArray=( NvmExpressDxe Ps2MouseDxe UsbMouseDxe VBoxExt2 VBoxExt4 VBoxIso9600 XhciDxe UsbKbDxe HashServiceFix)
+      binArray=( NvmExpressDxe Ps2MouseDxe VBoxExt2 VBoxExt4 VBoxIso9600 XhciDxe HashServiceFix)
       for efi in "${binArray[@]}"
       do
         copyBin "$BUILD_DIR_ARCH"/$efi.efi "$CLOVER_PKG_DIR"/drivers-Off/drivers64/$efi-64.efi
@@ -945,7 +945,7 @@ MainPostBuildScript() {
       fi
 
       # drivers64UEFI      
-      binArray=( CsmVideoDxe EmuVariableUefi OsxAptioFix2Drv OsxAptioFixDrv OsxLowMemFixDrv PartitionDxe Fat )
+      binArray=( CsmVideoDxe EmuVariableUefi OsxAptioFix2Drv OsxAptioFixDrv OsxLowMemFixDrv PartitionDxe UsbMouseDxe  UsbKbDxe Fat )
       for efi in "${binArray[@]}"
       do
         copyBin "$BUILD_DIR_ARCH"/$efi.efi "$CLOVER_PKG_DIR"/drivers-Off/drivers64UEFI/$efi-64.efi

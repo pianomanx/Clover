@@ -2274,7 +2274,7 @@ GetEDIDSettings(TagPtr DictPointer)
           DBG (" Custom EDID has wrong length=%d\n", j);
         } else {
           DBG (" Custom EDID is ok\n");
-          gSettings.CustomEDIDsize = j;
+          gSettings.CustomEDIDsize = (UINT16)j;
           InitializeEdidOverride();
         }
       } 
@@ -5745,7 +5745,7 @@ GetUserSettings(
       gSettings.SavingMode = (UINT8)GetPropertyInteger (Prop, 0xFF); //the default value means not set
 
       Prop                 = GetProperty (DictPointer, "HWPEnable");
-      if (Prop && IsPropertyTrue (Prop)) {
+      if (Prop && IsPropertyTrue (Prop) && (gCPUStructure.Model >= CPU_MODEL_SKYLAKE_U)) {
         gSettings.HWP = TRUE;
         AsmWriteMsr64 (MSR_IA32_PM_ENABLE, 1);
       }
@@ -7119,7 +7119,7 @@ SaveSettings ()
 		
         // for sandy bridge or newer
         // to match ExternalClock 25 MHz like real mac, divide BusSpeed by 4
-        gCPUStructure.ExternalClock = gSettings.BusSpeed / 4;
+        gCPUStructure.ExternalClock = (gSettings.BusSpeed + 3) / 4;
         //DBG("Corrected ExternalClock: %d MHz\n", (INT32)(DivU64x32(gCPUStructure.ExternalClock, kilo)));
         break;
     }
@@ -7135,7 +7135,7 @@ SaveSettings ()
   // to determine the use of Table 132
   if (gSettings.QPI) {
     gSettings.SetTable132 = TRUE;
-    DBG ("QPI: use Table 132\n");
+//    DBG ("QPI: use Table 132\n");
   }
   else {
     switch (gCPUStructure.Model) {
