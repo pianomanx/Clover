@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-11-02 07:19+0300\n"
+"POT-Creation-Date: 2018-01-16 21:38+0300\n"
 "PO-Revision-Date: 2015-09-24 20:27+0000\n"
 "Last-Translator: Taylan <taylan__@hotmail.com>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -569,82 +569,77 @@ msgstr ""
 "Çoğu UEFI önyükleme donanımsal NVRAM kullanır fakat bazı durumlarda bu sürücü gereklidir.\n"
 "Sadece yüklü olmadığında problem yaşıyorsanız kullanınız."
 
-#. type: "OsxAptioFixDrv-64_description"
+#. type: "AptioMemoryFix_description"
 #: Resources/templates/Localizable.strings:102
+#: Resources/templates/Localizable.strings:103
 #, no-wrap
 msgid "64bit driver to fix Memory problems on UEFI firmware such as AMI Aptio"
 msgstr "AMI Aptio gibi UEFI Firmware'lerdeki bellek sorunlarını çözen 64bit sürücü"
 
 #. type: "OsxLowMemFixDrv-64_description"
-#: Resources/templates/Localizable.strings:103
+#: Resources/templates/Localizable.strings:104
 #, no-wrap
 msgid "Simplified variant of OsxAptioFixDrv, 64bit (do not use both together)"
 msgstr "Sadeleştirilmiş OsxAptioFixDrv türevi, 64bit (ikisini birden kullanmayın)"
 
 #. type: "PartitionDxe-64_description"
-#: Resources/templates/Localizable.strings:104
+#: Resources/templates/Localizable.strings:105
 #, no-wrap
 msgid "64bit driver to support non-usual partition maps such as: hybrid GPT/MBR or Apple Partition Map."
 msgstr "Melez GPT/MBR veya Apple Partition Map gibi alışıldık olmayan bölümleri desteklemek için 64bit sürücü."
 
 #. type: "SMCHelper-64_description"
-#: Resources/templates/Localizable.strings:105
+#: Resources/templates/Localizable.strings:106
 #, no-wrap
 msgid "Restore SMC keys left in nvram by FakeSMC"
 msgstr ""
 
 #. type: "AppleEvent-64_description"
-#: Resources/templates/Localizable.strings:106
+#: Resources/templates/Localizable.strings:107
 #, no-wrap
 msgid "Create AppleEvent protocol for FileVault2"
 msgstr ""
 
 #. type: "AppleKeyAggregator-64_description"
-#: Resources/templates/Localizable.strings:107
+#: Resources/templates/Localizable.strings:108
 #, no-wrap
 msgid "Support for boot UI dialog for FileVault2"
 msgstr ""
 
 #. type: "FirmwareVolume-64_description"
-#: Resources/templates/Localizable.strings:108
+#: Resources/templates/Localizable.strings:109
 #, no-wrap
 msgid "Create FirmwareVolume with cursor images"
 msgstr ""
 
 #. type: "AppleImageCodec-64_description"
-#: Resources/templates/Localizable.strings:109
+#: Resources/templates/Localizable.strings:110
 #, no-wrap
 msgid "For decode PNG and BMP images in boot UI"
 msgstr ""
 
 #. type: "AppleUITheme-64_description"
-#: Resources/templates/Localizable.strings:110
+#: Resources/templates/Localizable.strings:111
 #, no-wrap
 msgid "Create boot UI Themes support"
 msgstr ""
 
 #. type: "HashServiceFix-64_description"
-#: Resources/templates/Localizable.strings:111
+#: Resources/templates/Localizable.strings:112
 #, no-wrap
 msgid "Fix Hash support if absent in native UEFI BIOS"
 msgstr ""
 
 #. type: "UsbKbDxe-64_description"
-#: Resources/templates/Localizable.strings:112
+#: Resources/templates/Localizable.strings:113
 #, no-wrap
 msgid "Keyboard driver for boot UI support"
 msgstr ""
 
 #. type: "AppleGraphicsConfig-64_description"
-#: Resources/templates/Localizable.strings:113
-#, no-wrap
-msgid "Create optional AppleGraphicsConfig protocol"
-msgstr ""
-
-#. type: "OSInfo-64_description"
 #: Resources/templates/Localizable.strings:114
 #, no-wrap
-msgid "Inform user about version of macOS (optional)"
+msgid "Create optional AppleGraphicsConfig protocol"
 msgstr ""
 
 #. type: "Themes_title"

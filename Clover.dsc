@@ -515,6 +515,7 @@
 #!ifndef CLANG
   Clover/OsxAptioFixDrv/OsxAptioFixDrv.inf
   Clover/OsxAptioFixDrv/OsxAptioFix2Drv.inf
+  Clover/OsxAptioFixDrv/OsxAptioFix3Drv.inf
   Clover/OsxLowMemFixDrv/OsxLowMemFixDrv.inf
 #!endif  
   #Clover/OsxAptioFixDrv/OsxAptioFixDrv.inf {
@@ -577,9 +578,9 @@
   DEFINE SECURE_BOOT_FLAG = -DENABLE_SECURE_BOOT
 !endif
 
-!ifdef ANDX86
+#!ifdef ANDX86
   DEFINE ANDX86_FLAG = -DANDX86
-!endif
+#!endif
 
 #!ifdef LODEPNG
   DEFINE LODEPNG_FLAG = -DLODEPNG
