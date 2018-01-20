@@ -1029,33 +1029,43 @@ static VOID ScanDriverDir(IN CHAR16 *Path, OUT EFI_HANDLE **DriversToConnect, OU
   EFI_HANDLE              *DriversArr;
   INTN                    i;
   BOOLEAN                 Skip;
+  UINT8                   AptioBlessed;
+  STATIC CHAR16 CONST * CONST AptioNames[] = {
+    L"AptioMemoryFix",
+    L"AptioFix3Drv",
+    L"AptioFix2Drv",
+    L"AptioFixDrv",
+    L"LowMemFix"
+  };
+  STATIC UINT8 CONST AptioIndices[] = {
+    OFFSET_OF(DRIVERS_FLAGS, AptioMemFixLoaded),
+    OFFSET_OF(DRIVERS_FLAGS, AptioFix3Loaded),
+    OFFSET_OF(DRIVERS_FLAGS, AptioFix2Loaded),
+    OFFSET_OF(DRIVERS_FLAGS, AptioFixLoaded),
+    OFFSET_OF(DRIVERS_FLAGS, MemFixLoaded)
+  };
 
   DriversArrSize = 0;
   DriversArrNum = 0;
   DriversArr = NULL;
 
 //only one driver with highest priority will obtain status "Loaded"
-  do {
-    if (FileExists(SelfRootDir, PoolPrint(L"%s\\%a", Path, "AptioMemoryFix.efi"))) {
-      gDriversFlags.AptioMemFixLoaded = TRUE;
+  DirIterOpen(SelfRootDir, Path, &DirIter);
+#define BOOLEAN_AT_INDEX(k) (*(BOOLEAN*)((UINTN)&gDriversFlags + AptioIndices[(k)]))
+  for (i = 0; i != ARRAY_SIZE(AptioIndices); ++i)
+    BOOLEAN_AT_INDEX(i) = FALSE;
+  AptioBlessed = (UINT8) ARRAY_SIZE(AptioNames);
+  while (DirIterNext(&DirIter, 2, L"*.efi", &DirEntry)) {
+    for (i = 0; i != ARRAY_SIZE(AptioNames); ++i)
+      if (StrStr(DirEntry->FileName, AptioNames[i]) != NULL)
+        break;
+    if (((UINT8) i) >= AptioBlessed)
+      continue;
+    AptioBlessed = (UINT8) i;
+    if (!i)
       break;
-    }
-    if (FileExists(SelfRootDir, PoolPrint(L"%s\\%a", Path, "OsxAptioFix3Drv-64.efi"))) {
-      gDriversFlags.AptioFix3Loaded = TRUE;
-      break;
-    }
-    if (FileExists(SelfRootDir, PoolPrint(L"%s\\%a", Path, "OsxAptioFix2Drv-64.efi"))) {
-      gDriversFlags.AptioFix2Loaded = TRUE;
-      break;
-    }
-    if (FileExists(SelfRootDir, PoolPrint(L"%s\\%a", Path, "OsxAptioFixDrv-64.efi"))) {
-      gDriversFlags.AptioFixLoaded = TRUE;
-      break;
-    }
-    if (FileExists(SelfRootDir, PoolPrint(L"%s\\%a", Path, "OsxLowMemFixDrv-64.efi"))) {
-      gDriversFlags.MemFixLoaded = TRUE;
-    }
-  } while (FALSE);
+  }
+  DirIterClose(&DirIter);
 
   // look through contents of the directory
   DirIterOpen(SelfRootDir, Path, &DirIter);
@@ -1072,23 +1082,17 @@ static VOID ScanDriverDir(IN CHAR16 *Path, OUT EFI_HANDLE **DriversToConnect, OU
     }
 
     // either AptioMem, AptioFix* or LowMemFix exclusively
-    if (StrStr(DirEntry->FileName, L"AptioFix3Drv") != NULL) {
-      if (!gDriversFlags.AptioFix3Loaded) { //for example the driver exists but have low priority
-        continue; //if other driver loaded then skip this
-      }
-    } else if (StrStr(DirEntry->FileName, L"AptioFix2Drv") != NULL) {
-      if (!gDriversFlags.AptioFix2Loaded) {
-        continue; //if other driver loaded then skip this
-      }
-    } else if (StrStr(DirEntry->FileName, L"AptioFixDrv") != NULL) {
-      if (!gDriversFlags.AptioFixLoaded) {
-        continue; //if other driver loaded then skip this
-      }
-    } else if (StrStr(DirEntry->FileName, L"LowMemFix") != NULL) {
-      if (!gDriversFlags.MemFixLoaded) {
-        continue; //if other driver loaded then skip this
-      }
-    } //didn't check AptioMemoryFix, if present then it loaded
+    for (i = 0; i != ARRAY_SIZE(AptioNames); ++i)
+      if (StrStr(DirEntry->FileName, AptioNames[i]) != NULL)
+        break;
+    if (i != ARRAY_SIZE(AptioNames)) {
+      if (((UINT8) i) != AptioBlessed)
+        continue;
+      if (AptioBlessed < (UINT8) ARRAY_SIZE(AptioIndices))
+        BOOLEAN_AT_INDEX(AptioBlessed) = TRUE;
+      AptioBlessed = (UINT8) ARRAY_SIZE(AptioNames);
+    }
+#undef BOOLEAN_AT_INDEX
 
     UnicodeSPrint(FileName, 512, L"%s\\%s", Path, DirEntry->FileName);
     Status = StartEFIImage(FileDevicePath(SelfLoadedImage->DeviceHandle, FileName),
