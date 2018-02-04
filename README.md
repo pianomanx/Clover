@@ -25,6 +25,15 @@ Currently N/A.
 
 ### RehabMan added features/fixes
 
+Released as Clover_v2.4k_r4398.RM-4578.541fa44f.zip on bitbucket, 2018-02-04:
+
+- updated to latest Clover svn (4398)
+
+- now includes AptioMemoryFix.efi
+
+- reverted change that omits OsxFatBinaryDrv-64.efi (this EFI driver is needed by Snow Leopard and Lion)
+
+
 Released as Clover_v2.4k_r4359.RM-4506.7036cf0a.zip on bitbucket, 2017-12-15:
 
 - no change, just build identifiers (git commit hash) fixed due to git commit log snafu
