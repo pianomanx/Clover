@@ -25,6 +25,13 @@ Currently N/A.
 
 ### RehabMan added features/fixes
 
+Released as Clover_v2.4k_r4423.RM-4614.cf0897a3.zip on bitbucket, 2018-04-01:
+
+- updated to latest Clover svn (4423)
+
+- updated AptioMemoryFix.efi (built from latest sources)
+
+
 Released as Clover_v2.4k_r4398.RM-4578.541fa44f.zip on bitbucket, 2018-02-04:
 
 - updated to latest Clover svn (4398)
