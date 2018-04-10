@@ -943,6 +943,7 @@ typedef struct {
   BOOLEAN                 EnableC6;
   BOOLEAN                 EnableISS;
   BOOLEAN                 SlpSmiEnable;
+  BOOLEAN                 FixHeaders;
   UINT16                  C3Latency;
   BOOLEAN                 smartUPS;
   BOOLEAN                 PatchNMI;
