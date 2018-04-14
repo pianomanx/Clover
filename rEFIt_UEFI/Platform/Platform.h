@@ -96,6 +96,8 @@ Headers collection for procedures
 
 #define MAX_NUM_DEVICES  64
 
+#define HEIGHT_2K 1100
+
 /* Decimal powers: */
 #define kilo (1000ULL)
 #define Mega (kilo * kilo)
@@ -975,7 +977,7 @@ typedef struct {
   UINT32                  FakeIMEI;  //106
 
   //Graphics
-  UINT16                  PCIRootUID;
+//  UINT16                  PCIRootUID;
   BOOLEAN                 GraphicsInjector;
   BOOLEAN                 InjectIntel;
   BOOLEAN                 InjectATI;
@@ -1623,7 +1625,7 @@ FixBiosDsdt (
 
 VOID
 GetBiosRegions (
-  EFI_ACPI_2_0_FIXED_ACPI_DESCRIPTION_TABLE *fadt
+  UINT8  *buffer
   );
 
 INT32
