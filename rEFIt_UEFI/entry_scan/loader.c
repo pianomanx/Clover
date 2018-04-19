@@ -695,7 +695,7 @@ STATIC VOID AddDefaultMenu(IN LOADER_ENTRY *Entry)
   UINT64            VolumeSize;
   EFI_GUID          *Guid = NULL;
   BOOLEAN           KernelIs64BitOnly;
-//  UINT64            os_version = AsciiOSVersionToUint64(Entry->OSVersion);
+  UINT64            os_version = AsciiOSVersionToUint64(Entry->OSVersion);
 
   if (Entry == NULL) {
     return;
