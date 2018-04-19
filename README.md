@@ -25,6 +25,11 @@ Currently N/A.
 
 ### RehabMan added features/fixes
 
+Released as Clover_v2.4k_r4444.RM-4652.c1f8602f.zip on bitbucket, 2018-04-19:
+
+- update to latest Clover svn (4444)
+
+
 Released as Clover_v2.4k_r4423.RM-4614.cf0897a3.zip on bitbucket, 2018-04-01:
 
 - updated to latest Clover svn (4423)
