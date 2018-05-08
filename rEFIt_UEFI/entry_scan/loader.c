@@ -1102,7 +1102,7 @@ VOID ScanLoader(VOID)
                  FileExists(Volume->RootDir, L"\\com.apple.boot.P\\System\\Library\\PrelinkedKernels\\prelinkedkernel") ||
                  FileExists(Volume->RootDir, L"\\com.apple.boot.S\\System\\Library\\PrelinkedKernels\\prelinkedkernel")) {
         if (StriStr(Volume->VolName, L"Recovery") != NULL) {
-          // FileVault
+          // FileVault of HFS+
           // TODO: need info for 10.11 and lower
           AddLoaderEntry(MACOSX_LOADER_PATH, NULL, L"macOS FileVault", Volume, NULL, OSTYPE_OSX, 0); // 10.12+
         } else {
@@ -1428,13 +1428,13 @@ VOID ScanLoader(VOID)
       AddLoaderEntry(BOOT_LOADER_PATH, L"", L"UEFI optical", Volume, NULL, OSTYPE_OTHER, 0);
     }
     //     DBG("search for internal UEFI\n");
-//    if (Volume->DiskKind == DISK_KIND_INTERNAL) {
-//      AddLoaderEntry(BOOT_LOADER_PATH, L"", L"UEFI internal", Volume, NULL, OSTYPE_OTHER, 0);
-//    }
+    if (Volume->DiskKind == DISK_KIND_INTERNAL) {
+      AddLoaderEntry(BOOT_LOADER_PATH, L"", L"UEFI internal", Volume, NULL, OSTYPE_OTHER, OSFLAG_HIDDEN);
+    }
     //    DBG("search for external UEFI\n");
-//    if (Volume->DiskKind == DISK_KIND_EXTERNAL) {
-//      AddLoaderEntry(BOOT_LOADER_PATH, L"", L"UEFI external", Volume, NULL, OSTYPE_OTHER, 0);
-//    }
+    if (Volume->DiskKind == DISK_KIND_EXTERNAL) {
+      AddLoaderEntry(BOOT_LOADER_PATH, L"", L"UEFI external", Volume, NULL, OSTYPE_OTHER, OSFLAG_HIDDEN);
+    }
   }
 
 }
