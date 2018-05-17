@@ -727,10 +727,12 @@ typedef struct {
 typedef struct DEV_PROPERTY DEV_PROPERTY; //yyyy
 struct DEV_PROPERTY {
   UINT32        Device;
+  EFI_DEVICE_PATH_PROTOCOL* DevicePath;
   CHAR8         *Key;
   CHAR8         *Value;
   UINTN         ValueLen;
-  DEV_PROPERTY  *Next;
+  DEV_PROPERTY  *Next;   //next device or next property
+  DEV_PROPERTY  *Child;  // property list of the device
   CHAR8         *Label;
   INPUT_ITEM    MenuItem;
   TAG_TYPE      ValueType;
@@ -898,7 +900,7 @@ typedef struct {
   CHAR8                   Language[16];
   CHAR8                   BootArgs[256];
   CHAR16                  CustomUuid[40];
-  
+
   CHAR16                  *DefaultVolume;
   CHAR16                  *DefaultLoader;
 //Boot
@@ -907,7 +909,7 @@ typedef struct {
 //Monitor
   BOOLEAN                 IntelMaxBacklight;
   UINT16                  VendorEDID;
-  UINT16                  ProductEDID;  
+  UINT16                  ProductEDID;
   UINT16                  BacklightLevel;
   BOOLEAN                 BacklightLevelConfig;
   BOOLEAN                 IntelBacklight;
@@ -958,6 +960,7 @@ typedef struct {
   UINT8                   MaxMultiplier;
   UINT8                   PluginType;
 //  BOOLEAN                 DropMCFG;
+  BOOLEAN                 FixMCFG;
 
   //Injections
   BOOLEAN                 StringInjector;
@@ -1125,7 +1128,7 @@ typedef struct {
 
   //BlackListed kexts
   CHAR16                  BlockKexts[64];
-    
+
   // Disable inject kexts
 //  UINT32                  DisableInjectKextCount;
 //  CHAR16                  **DisabledInjectKext;
@@ -1141,11 +1144,11 @@ typedef struct {
   CHAR8                   **PatchDsdtLabel; //yyyy
   CHAR8                   **PatchDsdtTgt;
   INPUT_ITEM              *PatchDsdtMenuItem;
-  
+
   //other
   UINT32                  IntelMaxValue;
 
-  // boot.efi 
+  // boot.efi
   UINT32 OptionsBits;
   UINT32 FlagsBits;
   UINT32 UIScale;
@@ -1975,6 +1978,8 @@ CHAR8
   UINT32 subsys_id,
   CARDLIST * nvcard
   );
+
+UINT32 PciAddrFromDevicePath(EFI_DEVICE_PATH_PROTOCOL* DevicePath);
 
 VOID
 FillCardList(
