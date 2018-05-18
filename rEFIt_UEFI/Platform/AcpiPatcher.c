@@ -487,8 +487,8 @@ VOID PatchAllTables()
   UINT32 Count = XsdtTableCount();
   UINT64* Ptr = XsdtEntryPtrFromIndex(0);
   UINT64* EndPtr = XsdtEntryPtrFromIndex(Count);
-  BOOLEAN Patched = FALSE;
   for (; Ptr < EndPtr; Ptr++) {
+    BOOLEAN Patched = FALSE;
     EFI_ACPI_DESCRIPTION_HEADER* Table = (EFI_ACPI_DESCRIPTION_HEADER*)(UINTN)ReadUnaligned64(Ptr);
     if (!Table) {
       // skip NULL entry
@@ -497,10 +497,6 @@ VOID PatchAllTables()
     if (EFI_ACPI_3_0_FIXED_ACPI_DESCRIPTION_TABLE_SIGNATURE == Table->Signature) {
       // may be also EFI_ACPI_4_0_MULTIPLE_APIC_DESCRIPTION_TABLE_SIGNATURE?
       continue; // will be patched elsewhere
-    }
-    if (!CheckTableHeader(Table)) {
-      // header does not need patching
-      continue;
     }
     if (IsXsdtEntryMerged(IndexFromXsdtEntryPtr(Ptr))) {
       // table header already patched
@@ -511,7 +507,7 @@ VOID PatchAllTables()
     EFI_PHYSICAL_ADDRESS BufferPtr = EFI_SYSTEM_TABLE_MAX_ADDRESS;
     EFI_STATUS Status = gBS->AllocatePages(AllocateMaxAddress,
                                            EfiACPIReclaimMemory,
-                                           EFI_SIZE_TO_PAGES(Len + 19),
+                                           EFI_SIZE_TO_PAGES(Len + 4096),
                                            &BufferPtr);
     if(EFI_ERROR(Status)) {
       //DBG(" ... not patched\n");
@@ -520,12 +516,12 @@ VOID PatchAllTables()
     EFI_ACPI_DESCRIPTION_HEADER* NewTable = (EFI_ACPI_DESCRIPTION_HEADER*)(UINTN)BufferPtr;
     CopyMem(NewTable, Table, Len);
     if ((gSettings.FixDsdt & FIX_HEADERS) || gSettings.FixHeaders) {
-      CopyMem(NewTable, Table, Len);
-      PatchTableHeader(NewTable);
-      Patched = TRUE;
+      if (CheckTableHeader(NewTable)) {
+        PatchTableHeader(NewTable);
+        Patched = TRUE;
+      }
     }
     if (NewTable->Signature == EFI_ACPI_4_0_SECONDARY_SYSTEM_DESCRIPTION_TABLE_SIGNATURE) {
-      CopyMem(NewTable, Table, Len);
       if (gSettings.PatchDsdtNum > 0) {
         //DBG("Patching SSDT:\n");
         UINT32 i;
@@ -548,20 +544,24 @@ VOID PatchAllTables()
       NewTable->Length = Len;
       RenameDevices((UINT8*)NewTable);
       GetBiosRegions((UINT8*)NewTable);  //take Regions from SSDT even if they will be dropped
-      Patched = TRUE;;
+      Patched = TRUE;
     }
     if (NewTable->Signature == MCFG_SIGN && gSettings.FixMCFG) {
       INTN Len1 = ((Len + 4 - 1) / 16 + 1) * 16 - 4;
-      CopyMem(NewTable, Table, Len1); //Len increased but less then EFI_PAGE
+      CopyMem(NewTable, Table, Len1); //Len increased but less than EFI_PAGE
       NewTable->Length = Len1;
       Patched = TRUE;
     }
     if (Patched) {
+      // in case we need to free it, keep track of table size
+      SaveMergedXsdtEntrySize(IndexFromXsdtEntryPtr(Ptr), Len + 4096);
+
+      // write patched table pointer into the XSDT
       WriteUnaligned64(Ptr, BufferPtr);
       FixChecksum(NewTable);
     }
     else {
-      gBS->FreePages(BufferPtr, EFI_SIZE_TO_PAGES(Len + 19));
+      gBS->FreePages(BufferPtr, EFI_SIZE_TO_PAGES(Len + 4096));
     }
   }
 }
