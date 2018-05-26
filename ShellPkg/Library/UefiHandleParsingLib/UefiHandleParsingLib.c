@@ -2706,7 +2706,7 @@ GetBestLanguageForDriver (
   IN BOOLEAN      Iso639Language
   )
 {
-  CHAR8                         *LanguageVariable;
+  CHAR8                         *LanguageVariable = NULL;
   CHAR8                         *BestLanguage;
 
   GetVariable2 (Iso639Language ? L"Lang" : L"PlatformLang", &gEfiGlobalVariableGuid, (VOID**)&LanguageVariable, NULL);
@@ -2714,6 +2714,7 @@ GetBestLanguageForDriver (
   BestLanguage = GetBestLanguage(
                    SupportedLanguages,
                    Iso639Language,
+                   "",
                    (InputLanguage != NULL) ? InputLanguage : "",
                    (LanguageVariable != NULL) ? LanguageVariable : "",
                    SupportedLanguages,

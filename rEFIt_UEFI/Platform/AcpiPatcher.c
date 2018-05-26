@@ -219,7 +219,7 @@ void SaveMergedXsdtEntrySize(UINT32 Index, UINTN Size)
   if (XsdtReplaceSizes) {
     if (XsdtReplaceSizes[Index]) {
       // came from patched table in ACPI/patched, so free original pages
-      gBS->FreePages((EFI_PHYSICAL_ADDRESS)XsdtEntryFromIndex(Index), XsdtReplaceSizes[Index]);
+      gBS->FreePages((EFI_PHYSICAL_ADDRESS)(UINTN)XsdtEntryFromIndex(Index), XsdtReplaceSizes[Index]);
       XsdtReplaceSizes[Index] = 0;
     }
     XsdtReplaceSizes[Index] = EFI_SIZE_TO_PAGES(Size);
@@ -440,18 +440,24 @@ void DropTableFromXSDT(UINT32 Signature, UINT64 TableId, UINT32 Length)
 
 
 // by cecekpawon, edited by Slice, further edits by RehabMan
-VOID FixAsciiTableHeader(UINT8 *Str, UINTN Len)
+BOOLEAN FixAsciiTableHeader(UINT8 *Str, UINTN Len)
 {
+  BOOLEAN NonAscii = FALSE;
   UINT8* StrEnd = Str + Len;
   for (; Str < StrEnd; Str++) {
     if (!*Str) continue; // NUL is allowed
-    if (*Str < ' ')
+	if (*Str < ' ') {
       *Str = ' ';
-    else if (*Str > 0x7e)
+		NonAscii = TRUE;
+	}
+	else if (*Str > 0x7e) {
       *Str = '_';
+		NonAscii = TRUE;
   }
 }
-
+  return NonAscii;
+}
+/*
 BOOLEAN CheckNonAscii(UINT8 *Str, UINTN Len)
 {
   UINT8* StrEnd = Str + Len;
@@ -471,15 +477,17 @@ BOOLEAN CheckTableHeader(EFI_ACPI_DESCRIPTION_HEADER *Header)
           CheckNonAscii((UINT8*)&Header->OemTableId, 8) ||
           CheckNonAscii((UINT8*)&Header->OemId, 6));
 }
-
-VOID PatchTableHeader(EFI_ACPI_DESCRIPTION_HEADER *Header)
+*/
+BOOLEAN PatchTableHeader(EFI_ACPI_DESCRIPTION_HEADER *Header)
 {
+  BOOLEAN Ret1, Ret2, Ret3;
   if (!(gSettings.FixDsdt & FIX_HEADERS) && !gSettings.FixHeaders) {
-    return;
+    return FALSE;
   }
-  FixAsciiTableHeader((UINT8*)&Header->CreatorId, 4);
-  FixAsciiTableHeader((UINT8*)&Header->OemTableId, 8);
-  FixAsciiTableHeader((UINT8*)&Header->OemId, 6);
+  Ret1 = FixAsciiTableHeader((UINT8*)&Header->CreatorId, 4);
+  Ret2 = FixAsciiTableHeader((UINT8*)&Header->OemTableId, 8);
+  Ret3 = FixAsciiTableHeader((UINT8*)&Header->OemId, 6);
+  return (Ret1 || Ret2 || Ret3);
 }
 
 VOID PatchAllTables()
@@ -516,10 +524,7 @@ VOID PatchAllTables()
     EFI_ACPI_DESCRIPTION_HEADER* NewTable = (EFI_ACPI_DESCRIPTION_HEADER*)(UINTN)BufferPtr;
     CopyMem(NewTable, Table, Len);
     if ((gSettings.FixDsdt & FIX_HEADERS) || gSettings.FixHeaders) {
-      if (CheckTableHeader(NewTable)) {
-        PatchTableHeader(NewTable);
-        Patched = TRUE;
-      }
+      Patched = PatchTableHeader(NewTable);
     }
     if (NewTable->Signature == EFI_ACPI_4_0_SECONDARY_SYSTEM_DESCRIPTION_TABLE_SIGNATURE) {
       if (gSettings.PatchDsdtNum > 0) {

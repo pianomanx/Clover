@@ -128,7 +128,9 @@
   S3BootScriptLib|MdeModulePkg/Library/PiDxeS3BootScriptLib/DxeS3BootScriptLib.inf
   ExtractGuidedSectionLib|MdePkg/Library/DxeExtractGuidedSectionLib/DxeExtractGuidedSectionLib.inf
   PlatformHookLib|MdeModulePkg/Library/BasePlatformHookLibNull/BasePlatformHookLibNull.inf
+!ifdef NO_CLOVER_SHELL
   ShellLib|ShellPkg/Library/UefiShellLib/UefiShellLib.inf
+!endif
 
   #SerialPortLib|PcAtChipsetPkg/Library/SerialIoLib/SerialIoLib.inf
   SerialPortLib|MdePkg/Library/BaseSerialPortLibNull/BaseSerialPortLibNull.inf
@@ -154,6 +156,15 @@
   #
   MemLogLib|Clover/Library/MemLogLibDefault/MemLogLibDefault.inf
   VideoBiosPatchLib|Clover/Library/VideoBiosPatchLib/VideoBiosPatchLib.inf
+    
+!ifndef NO_CLOVER_SHELL
+  #Shell
+  ShellLib|Clover/ShellPkg/Library/UefiShellLib/UefiShellLib.inf
+  ShellCommandLib|Clover/ShellPkg/Library/UefiShellCommandLib/UefiShellCommandLib.inf
+  ShellCEntryLib|Clover/ShellPkg/Library/UefiShellCEntryLib/UefiShellCEntryLib.inf
+  HandleParsingLib|Clover/ShellPkg/Library/UefiHandleParsingLib/UefiHandleParsingLib.inf
+  BcfgCommandLib|Clover/ShellPkg/Library/UefiShellBcfgCommandLib/UefiShellBcfgCommandLib.inf
+!endif
 
 [LibraryClasses.common.DXE_CORE]
   HobLib|MdePkg/Library/DxeCoreHobLib/DxeCoreHobLib.inf
@@ -439,6 +450,7 @@
   Clover/Protocols/AppleUITheme/AppleUITheme.inf
   Clover/Protocols/HashServiceFix/HashServiceFix.inf
   Clover/Protocols/AppleKeyAggregator/AppleKeyAggregator.inf
+  
 
 !ifdef DEBUG_ON_SERIAL_PORT
 
@@ -483,31 +495,48 @@
   #Clover/Sample/Application/Sample.inf
   #Clover/gptsync/gptsync.inf
   Clover/bdmesg_efi/bdmesg.inf
+  
+!ifndef NO_CLOVER_SHELL
+  Clover/ShellPkg/Library/UefiShellNetwork1CommandsLib/UefiShellNetwork1CommandsLib.inf
+  Clover/ShellPkg/Library/UefiShellNetwork2CommandsLib/UefiShellNetwork2CommandsLib.inf
+
+  
+  Clover/ShellPkg/Application/Shell/Shell.inf {
+    <LibraryClasses>
+      NULL|Clover/ShellPkg/Library/UefiShellLevel2CommandsLib/UefiShellLevel2CommandsLib.inf
+      NULL|Clover/ShellPkg/Library/UefiShellLevel1CommandsLib/UefiShellLevel1CommandsLib.inf
+      NULL|Clover/ShellPkg/Library/UefiShellLevel3CommandsLib/UefiShellLevel3CommandsLib.inf
+!ifndef $(NO_SHELL_PROFILES)
+      NULL|Clover/ShellPkg/Library/UefiShellDriver1CommandsLib/UefiShellDriver1CommandsLib.inf
+      NULL|Clover/ShellPkg/Library/UefiShellInstall1CommandsLib/UefiShellInstall1CommandsLib.inf
+      NULL|Clover/ShellPkg/Library/UefiShellDebug1CommandsLib/UefiShellDebug1CommandsLib.inf
+      NULL|Clover/ShellPkg/Library/UefiShellNetwork1CommandsLib/UefiShellNetwork1CommandsLib.inf
+      NULL|Clover/ShellPkg/Library/UefiShellNetwork2CommandsLib/UefiShellNetwork2CommandsLib.inf
+!ifdef $(INCLUDE_DP)
+      NULL|Clover/ShellPkg/Library/UefiDpLib/UefiDpLib.inf
+!endif #$(INCLUDE_DP)
+!ifdef $(INCLUDE_TFTP_COMMAND)
+      NULL|Clover/ShellPkg/Library/UefiShellTftpCommandLib/UefiShellTftpCommandLib.inf
+!endif #$(INCLUDE_TFTP_COMMAND)
+!endif #$(NO_SHELL_PROFILES)
+  }
+!endif
+
 
 !ifdef DEBUG_ON_SERIAL_PORT
-
 	Clover/rEFIt_UEFI/refit.inf {
-
 	#
      # Enable debug output.
      #
-
 	<PcdsFixedAtBuild>
-
 		gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0x07
-
 		gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0xFFFFFFFF
-
 	<LibraryClasses>
-
 		SerialPortLib|MdeModulePkg/Library/BaseSerialPortLib16550/BaseSerialPortLib16550.inf
-
 		DebugLib|MdePkg/Library/BaseDebugLibSerialPort/BaseDebugLibSerialPort.inf
-
 	DebugPrintErrorLevelLib|MdePkg/Library/BaseDebugPrintErrorLevelLib/BaseDebugPrintErrorLevelLib.inf
 	}
 !else
-
 	Clover/rEFIt_UEFI/refit.inf {
     <LibraryClasses>
       BaseMemoryLib|MdePkg/Library/UefiMemoryLib/UefiMemoryLib.inf

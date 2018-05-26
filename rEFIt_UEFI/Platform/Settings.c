@@ -284,23 +284,25 @@ ParseACPIName(CHAR8 *String)
 	ACPI_NAME_LIST* Next = NULL;
 	INTN i, j, Len, pos0, pos1;
 	Len = AsciiStrLen(String);
-
+//  DBG("parse ACPI name: %a\n", String);
 	if (Len > 0) 	{
-		//Parse forward but put in stack "_SB.PCI0.RP02.PXSX"
+		//Parse forward but put in stack LIFO "_SB.PCI0.RP02.PXSX"  -1,3,8,13,18
 		pos0 = -1;
 		while (pos0 < Len) {
 			List = AllocateZeroPool(sizeof(ACPI_NAME_LIST));
 			List->Next = Next;
+			List->Name = AllocateZeroPool(5);
 			pos1 = pos0 + 1;
-			while ((pos1 < Len) && String[pos1] != ',') pos1++; // -1,3,8,13,18
-      if ((pos1 == Len) || (String[pos1] == ',')) { //new position
-				for (i = pos0 + 1, j = 0; i < pos1; i++, j++) {
-					List->Name[j] = String[i];
-				}
-				while (j < 4) List->Name[j++] = '_';  //extend by '_' up to 4 symbols
-				List->Name[4] = '\0';
-			}
-			pos0 = pos1;
+			while ((pos1 < Len) && String[pos1] != '.') pos1++; // 3,8,13,18
+  //    if ((pos1 == Len) || (String[pos1] == ',')) { //always
+			for (i = pos0 + 1, j = 0; i < pos1; i++) {
+			  List->Name[j++] = String[i];
+      }
+			while (j < 4) List->Name[j++] = '_';  //extend by '_' up to 4 symbols
+			List->Name[4] = '\0';
+//		}
+//      DBG("string between [%d,%d]: %a\n", pos0, pos1, List->Name);
+			pos0 = pos1; //comma or zero@end
 			Next = List;
 		}
 	}
@@ -4485,7 +4487,7 @@ GetUserSettings(
 
   Dict              = CfgDict;
   if (Dict != NULL) {
-//    DBG ("Loading main settings\n");
+    //    DBG ("Loading main settings\n");
     DbgHeader ("GetUserSettings");
 
     // Boot settings.
@@ -4589,10 +4591,7 @@ GetUserSettings(
       }
 
       Prop = GetProperty (DictPointer, "DualLink");
-      if (Prop != NULL) {
-        gSettings.DualLink = (UINT32)GetPropertyInteger (Prop, gSettings.DualLink);
-        //DBG ("DualLink: %d\n", gSettings.DualLink);
-      }
+      gSettings.DualLink = (UINT32)GetPropertyInteger (Prop, gSettings.DualLink);
 
       //InjectEDID - already done in earlysettings
       //No! Take again
@@ -4633,129 +4632,135 @@ GetUserSettings(
 
       Prop = GetProperty (DictPointer, "Properties");
       if (Prop != NULL) {
-		  if (Prop->type == kTagTypeString) {
+        if (Prop->type == kTagTypeString) {
 
-        EFI_PHYSICAL_ADDRESS  BufferPtr = EFI_SYSTEM_TABLE_MAX_ADDRESS; //0xFE000000;
-        UINTN strlength  = AsciiStrLen(Prop->string);
-        cDeviceProperties = AllocateZeroPool(strlength + 1);
-        AsciiStrCpyS(cDeviceProperties, strlength + 1, Prop->string);
-        //-------
-        Status = gBS->AllocatePages (
-                                     AllocateMaxAddress,
-                                     EfiACPIReclaimMemory,
-                                     EFI_SIZE_TO_PAGES (strlength) + 1,
-                                     &BufferPtr
-                                     );
+          EFI_PHYSICAL_ADDRESS  BufferPtr = EFI_SYSTEM_TABLE_MAX_ADDRESS; //0xFE000000;
+          UINTN strlength  = AsciiStrLen(Prop->string);
+          cDeviceProperties = AllocateZeroPool(strlength + 1);
+          AsciiStrCpyS(cDeviceProperties, strlength + 1, Prop->string);
+          //-------
+          Status = gBS->AllocatePages (
+                                       AllocateMaxAddress,
+                                       EfiACPIReclaimMemory,
+                                       EFI_SIZE_TO_PAGES (strlength) + 1,
+                                       &BufferPtr
+                                       );
 
-			  if (!EFI_ERROR(Status)) {
-          cProperties = (UINT8*)(UINTN)BufferPtr;
-          cPropSize   = (UINT32)(strlength >> 1);
-				  cPropSize = hex2bin(cDeviceProperties, cProperties, cPropSize);
-				  DBG("Injected EFIString of length %d\n", cPropSize);
+          if (!EFI_ERROR(Status)) {
+            cProperties = (UINT8*)(UINTN)BufferPtr;
+            cPropSize   = (UINT32)(strlength >> 1);
+            cPropSize = hex2bin(cDeviceProperties, cProperties, cPropSize);
+            DBG("Injected EFIString of length %d\n", cPropSize);
+          }
+          //---------
         }
-        //---------
+        else if (Prop->type == kTagTypeDict) {
+          //analyze dict-array
+          INTN   i, Count = GetTagCount(Prop);
+          gSettings.AddProperties = AllocateZeroPool(Count * sizeof(DEV_PROPERTY));
+          DEV_PROPERTY *DevPropDevice;
+          DEV_PROPERTY *DevProps;
+          DEV_PROPERTY **Child;
+
+          if (Count > 0) {
+            DBG("Add %d devices:\n", Count);
+
+            for (i = 0; i < Count; i++) {
+              Prop2 = NULL;
+              EFI_DEVICE_PATH_PROTOCOL* DevicePath = NULL;
+              if (!EFI_ERROR(GetElement(Prop, i, &Prop2))) {  //take a <key> with DevicePath
+                if ((Prop2 != NULL) && (Prop2->type == kTagTypeKey)) {
+                  CHAR16* DevicePathStr = PoolPrint(L"%a", Prop2->string);
+                  //         DBG("Device: %s\n", DevicePathStr);
+                  DevicePath = ConvertTextToDevicePath(DevicePathStr); //TODO
+                  FreePool(DevicePathStr);
+                }
+                else continue;
+                //Create Device node
+                DevPropDevice = gSettings.ArbProperties;
+                gSettings.ArbProperties = AllocateZeroPool(sizeof(DEV_PROPERTY));
+                gSettings.ArbProperties->Next = DevPropDevice; //next device
+                gSettings.ArbProperties->Child = NULL;
+                gSettings.ArbProperties->Device = 0; //to differ from arbitrary
+                gSettings.ArbProperties->DevicePath = DevicePath; //this is pointer
+                gSettings.ArbProperties->Label = AllocateCopyPool(AsciiStrSize(Prop2->string), Prop2->string);
+                Child = &(gSettings.ArbProperties->Child);
+
+                Prop2 = Prop2->tag; //take a <dict> for this device
+                if ((Prop2 != NULL) && (Prop2->type == kTagTypeDict)) {
+                  INTN j, PropCount = 0;
+                  PropCount = GetTagCount(Prop2);  //properties count for this device
+                  //         DBG("Add %d properties:\n", PropCount);
+                  for (j = 0; j < PropCount; j++) {
+                    TagPtr Prop3 = NULL;
+                    DevProps = *Child;
+                    *Child = AllocateZeroPool(sizeof(DEV_PROPERTY));
+                    (*Child)->Next = DevProps;
+
+                    if (EFI_ERROR(GetElement(Prop2, j, &Prop3))) {  // Prop3 -> <key>
+                      continue;
+                    }
+                    if ((Prop3 != NULL) && (Prop3->type == kTagTypeKey) &&
+                        (Prop3->string != NULL)
+                        ) {
+                      if (Prop3->string[0] != '#') {
+                        (*Child)->MenuItem.BValue = TRUE;
+                        (*Child)->Key = AllocateCopyPool(AsciiStrSize(Prop3->string), Prop3->string);
+                      }
+                      else {
+                        (*Child)->MenuItem.BValue = FALSE;
+                        (*Child)->Key = AllocateCopyPool(AsciiStrSize(Prop3->string) - 1, Prop3->string + 1);
+                      }
+
+                      Prop3 = Prop3->tag; //expected value
+                      //    DBG("<key>%a\n  <value> type %d\n", (*Child)->Key, Prop3->type);
+                      if (Prop3 && (Prop3->type == kTagTypeString) && Prop3->string) {
+                        //first suppose it is Ascii string
+                        (*Child)->Value = AllocateCopyPool(AsciiStrSize(Prop3->string), Prop3->string);
+                        (*Child)->ValueLen = AsciiStrLen(Prop3->string) + 1;
+                        (*Child)->ValueType = kTagTypeString;
+                      }
+                      else if (Prop3 && (Prop3->type == kTagTypeInteger)) {
+                        (*Child)->Value = AllocatePool(4);
+                        CopyMem((*Child)->Value, &(Prop3->string), 4);
+                        (*Child)->ValueLen = 4;
+                        (*Child)->ValueType = kTagTypeInteger;
+                      }
+                      else if (Prop3 && (Prop3->type == kTagTypeTrue)) {
+                        (*Child)->Value = AllocateZeroPool(4);
+                        (*Child)->Value[0] = TRUE;
+                        (*Child)->ValueLen = 1;
+                        (*Child)->ValueType = kTagTypeTrue;
+                      }
+                      else if (Prop3 && (Prop3->type == kTagTypeFalse)) {
+                        (*Child)->Value = AllocateZeroPool(4);
+                        //(*Child)->Value[0] = FALSE;
+                        (*Child)->ValueLen = 1;
+                        (*Child)->ValueType = kTagTypeFalse;
+                      }
+                      else if (Prop3 && (Prop3->type == kTagTypeData)) {
+                        UINTN Size = Prop3->dataLen;
+                        //     (*Child)->Value = GetDataSetting(Prop3, "Value", &Size);  //TODO
+                        CHAR8* Data = AllocateZeroPool(Size);
+                        CopyMem(Data, Prop3->data, Size);
+                        (*Child)->Value = Data;
+                        (*Child)->ValueLen = Size;
+                        (*Child)->ValueType = kTagTypeData;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
-		  else if (Prop->type == kTagTypeDict) {
-			  //analyze dict-array
-			  INTN   i, Count = GetTagCount(Prop);
-			  gSettings.AddProperties = AllocateZeroPool(Count * sizeof(DEV_PROPERTY));
-			  DEV_PROPERTY *DevPropDevice;
-			  DEV_PROPERTY *DevProps;
-			  DEV_PROPERTY **Child;
 
-			  if (Count > 0) {
-				  DBG("Add %d devices:\n", Count);
+      Prop  = GetProperty (DictPointer, "InjectLAN");
+      gSettings.LANInjection = IsPropertyTrue (Prop);
 
-				  for (i = 0; i < Count; i++) {
-					  Prop2 = NULL;
-					  EFI_DEVICE_PATH_PROTOCOL* DevicePath = NULL;
-					  if (!EFI_ERROR(GetElement(Prop, i, &Prop2))) {  //take a <key> with DevicePath
-						 if ((Prop2 != NULL) && (Prop2->type == kTagTypeKey)) {
-							 CHAR16* DevicePathStr = PoolPrint(L"%a", Prop2->string);
-							 DBG("Device: %s\n", DevicePathStr);
-							 DevicePath = ConvertTextToDevicePath(DevicePathStr); //TODO
-							 FreePool(DevicePathStr);
-						 }
-						 else continue;
-						 //Create Device node
-						 DevPropDevice = gSettings.ArbProperties;
-						 gSettings.ArbProperties = AllocateZeroPool(sizeof(DEV_PROPERTY));
-						 gSettings.ArbProperties->Next = DevPropDevice; //next device
-						 gSettings.ArbProperties->Child = NULL;
-						 gSettings.ArbProperties->Device = 0; //to differ from arbitrary
-						 gSettings.ArbProperties->DevicePath = DevicePath; //this is pointer
-						 gSettings.ArbProperties->Label = AllocateCopyPool(AsciiStrSize(Prop2->string), Prop2->string);
-						 Child = &(gSettings.ArbProperties->Child);
-
-						 Prop2 = Prop2->tag; //take a <dict> for this device
- 						 if ((Prop2 != NULL) && (Prop2->type == kTagTypeDict)) {
-							 INTN j, PropCount = 0;
-							 PropCount = GetTagCount(Prop2);  //properties count for this device
-							 DBG("Add %d properties:\n", PropCount);
-							 for (j = 0; j < PropCount; j++) {
-								 TagPtr Prop3 = NULL;
-								 DevProps = *Child;
-								 *Child = AllocateZeroPool(sizeof(DEV_PROPERTY));
-								 (*Child)->Next = DevProps;
-
-								 if (EFI_ERROR(GetElement(Prop2, j, &Prop3))) {  // Prop3 -> <key>
-									 continue;
-								 }
-								 if ((Prop3 != NULL) && (Prop3->type == kTagTypeKey) &&
-									 (Prop3->string != NULL)
-									 ) {
-									 if (Prop3->string[0] != '#') {
-										 (*Child)->MenuItem.BValue = TRUE;
-										 (*Child)->Key = AllocateCopyPool(AsciiStrSize(Prop3->string), Prop3->string);
-									 }
-									 else {
-										 (*Child)->MenuItem.BValue = FALSE;
-										 (*Child)->Key = AllocateCopyPool(AsciiStrSize(Prop3->string) - 1, Prop3->string + 1);
-									 }
-
-									 Prop3 = Prop3->tag; //expected value
-               //    DBG("<key>%a\n  <value> type %d\n", (*Child)->Key, Prop3->type);
-									 if (Prop3 && (Prop3->type == kTagTypeString) && Prop3->string) {
-										 //first suppose it is Ascii string
-										 (*Child)->Value = AllocateCopyPool(AsciiStrSize(Prop3->string), Prop3->string);
-										 (*Child)->ValueLen = AsciiStrLen(Prop3->string) + 1;
-										 (*Child)->ValueType = kTagTypeString;
-									 }
-									 else if (Prop3 && (Prop3->type == kTagTypeInteger)) {
-										 (*Child)->Value = AllocatePool(4);
-										 CopyMem((*Child)->Value, &(Prop3->string), 4);
-										 (*Child)->ValueLen = 4;
-										 (*Child)->ValueType = kTagTypeInteger;
-									 }
-									 else if (Prop3 && (Prop3->type == kTagTypeTrue)) {
-										 (*Child)->Value = AllocateZeroPool(4);
-										 (*Child)->Value[0] = TRUE;
-										 (*Child)->ValueLen = 1;
-										 (*Child)->ValueType = kTagTypeTrue;
-									 }
-									 else if (Prop3 && (Prop3->type == kTagTypeFalse)) {
-										 (*Child)->Value = AllocateZeroPool(4);
-										 //(*Child)->Value[0] = FALSE;
-										 (*Child)->ValueLen = 1;
-										 (*Child)->ValueType = kTagTypeFalse;
-									 }
-									 else if (Prop3 && (Prop3->type == kTagTypeData)) {
-										 UINTN Size = Prop3->dataLen;
-								//		 (*Child)->Value = GetDataSetting(Prop3, "Value", &Size);  //TODO
-										 CHAR8* Data = AllocateZeroPool(Size);
-										 CopyMem(Data, Prop3->data, Size);
-										 (*Child)->Value = Data;
-										 (*Child)->ValueLen = Size;
-										 (*Child)->ValueType = kTagTypeData;
-									 }
-								 }
-							 }
-						 }
-					  }
-				  }
-			  }
-		  }
-      }
+      Prop  = GetProperty (DictPointer, "InjectHDMI");
+      gSettings.HDMIInjection = IsPropertyTrue (Prop);
 
       Prop  = GetProperty (DictPointer, "NoDefaultProperties");
       gSettings.NoDefaultProperties = IsPropertyTrue (Prop);
@@ -4847,7 +4852,7 @@ GetUserSettings(
                     //gSettings.ArbProperties->Value[0] = FALSE;
                     gSettings.ArbProperties->ValueLen = 1;
                     gSettings.ArbProperties->ValueType = kTagTypeFalse;
-                 } else {
+                  } else {
                     //else  data
                     gSettings.ArbProperties->Value = GetDataSetting (Dict3, "Value", &Size);
                     gSettings.ArbProperties->ValueLen = Size;
@@ -4864,97 +4869,97 @@ GetUserSettings(
             FreePool(Label);
           } //for() devices
         }
-//        gSettings.NrAddProperties = 0xFFFE;
+        //        gSettings.NrAddProperties = 0xFFFE;
       }
       //can use AddProperties with ArbProperties
-        Prop = GetProperty (DictPointer, "AddProperties");
-        if (Prop != NULL) {
-          INTN i, Count = GetTagCount (Prop);
-          INTN Index = 0;  //begin from 0 if second enter
+      Prop = GetProperty (DictPointer, "AddProperties");
+      if (Prop != NULL) {
+        INTN i, Count = GetTagCount (Prop);
+        INTN Index = 0;  //begin from 0 if second enter
 
-          if (Count > 0) {
-            DBG ("Add %d properties:\n", Count);
-            gSettings.AddProperties = AllocateZeroPool (Count * sizeof(DEV_PROPERTY));
+        if (Count > 0) {
+          DBG ("Add %d properties:\n", Count);
+          gSettings.AddProperties = AllocateZeroPool (Count * sizeof(DEV_PROPERTY));
 
-            for (i = 0; i < Count; i++) {
-              UINTN Size = 0;
-              DBG (" - [%02d]:", i);
-              if (EFI_ERROR (GetElement (Prop, i, &Dict2))) {
-                DBG (" continue\n");
-                continue;
-              }
-
-              if (Dict2 == NULL) {
-                DBG (" break\n", i);
-                break;
-              }
-
-              Prop2 = GetProperty (Dict2, "Device");
-              if (Prop2 && (Prop2->type == kTagTypeString) && Prop2->string) {
-                DEV_PROPERTY *Property = &gSettings.AddProperties[Index];
-
-                if (AsciiStriCmp (Prop2->string,        "ATI") == 0) {
-                  Property->Device = (UINT32)DEV_ATI;
-                } else if (AsciiStriCmp (Prop2->string, "NVidia") == 0) {
-                  Property->Device = (UINT32)DEV_NVIDIA;
-                } else if (AsciiStriCmp (Prop2->string, "IntelGFX") == 0) {
-                  Property->Device = (UINT32)DEV_INTEL;
-                } else if (AsciiStriCmp (Prop2->string, "LAN") == 0) {
-                  Property->Device = (UINT32)DEV_LAN;
-                } else if (AsciiStriCmp (Prop2->string, "WIFI") == 0) {
-                  Property->Device = (UINT32)DEV_WIFI;
-                } else if (AsciiStriCmp (Prop2->string, "Firewire") == 0) {
-                  Property->Device = (UINT32)DEV_FIREWIRE;
-                } else if (AsciiStriCmp (Prop2->string, "SATA") == 0) {
-                  Property->Device = (UINT32)DEV_SATA;
-                } else if (AsciiStriCmp (Prop2->string, "IDE") == 0) {
-                  Property->Device = (UINT32)DEV_IDE;
-                } else if (AsciiStriCmp (Prop2->string, "HDA") == 0) {
-                  Property->Device = (UINT32)DEV_HDA;
-                } else if (AsciiStriCmp (Prop2->string, "HDMI") == 0) {
-                  Property->Device = (UINT32)DEV_HDMI;
-                } else if (AsciiStriCmp (Prop2->string, "LPC") == 0) {
-                  Property->Device = (UINT32)DEV_LPC;
-                } else if (AsciiStriCmp (Prop2->string, "SmBUS") == 0) {
-                  Property->Device = (UINT32)DEV_SMBUS;
-                } else if (AsciiStriCmp (Prop2->string, "USB") == 0) {
-                  Property->Device = (UINT32)DEV_USB;
-                } else {
-                  DBG (" unknown device, ignored\n", i);
-                  continue;
-                }
-              }
-
-              DBG (" %a", Prop2->string);
-
-              Prop2 = GetProperty (Dict2, "Key");
-              if (Prop2 && (Prop2->type == kTagTypeString) && Prop2->string) {
-                gSettings.AddProperties[Index].Key = AllocateCopyPool (AsciiStrSize (Prop2->string), Prop2->string);
-              }
-
-              Prop2 = GetProperty (Dict2, "Value");
-              if (Prop2 && (Prop2->type == kTagTypeString) && Prop2->string) {
-                //first suppose it is Ascii string
-                gSettings.AddProperties[Index].Value = AllocateCopyPool (AsciiStrSize (Prop2->string), Prop2->string);
-                gSettings.AddProperties[Index].ValueLen = AsciiStrLen (Prop2->string) + 1;
-              } else if (Prop2 && (Prop2->type == kTagTypeInteger)) {
-                gSettings.AddProperties[Index].Value = AllocatePool (4);
-                CopyMem (gSettings.AddProperties[Index].Value, &(Prop2->string), 4);
-                gSettings.AddProperties[Index].ValueLen = 4;
-              } else {
-                //else  data
-                gSettings.AddProperties[Index].Value = GetDataSetting (Dict2, "Value", &Size);
-                gSettings.AddProperties[Index].ValueLen = Size;
-              }
-
-              DBG (", len: %d\n", gSettings.AddProperties[Index].ValueLen);
-
-              ++Index;
+          for (i = 0; i < Count; i++) {
+            UINTN Size = 0;
+            DBG (" - [%02d]:", i);
+            if (EFI_ERROR (GetElement (Prop, i, &Dict2))) {
+              DBG (" continue\n");
+              continue;
             }
 
-            gSettings.NrAddProperties = Index;
+            if (Dict2 == NULL) {
+              DBG (" break\n", i);
+              break;
+            }
+
+            Prop2 = GetProperty (Dict2, "Device");
+            if (Prop2 && (Prop2->type == kTagTypeString) && Prop2->string) {
+              DEV_PROPERTY *Property = &gSettings.AddProperties[Index];
+
+              if (AsciiStriCmp (Prop2->string,        "ATI") == 0) {
+                Property->Device = (UINT32)DEV_ATI;
+              } else if (AsciiStriCmp (Prop2->string, "NVidia") == 0) {
+                Property->Device = (UINT32)DEV_NVIDIA;
+              } else if (AsciiStriCmp (Prop2->string, "IntelGFX") == 0) {
+                Property->Device = (UINT32)DEV_INTEL;
+              } else if (AsciiStriCmp (Prop2->string, "LAN") == 0) {
+                Property->Device = (UINT32)DEV_LAN;
+              } else if (AsciiStriCmp (Prop2->string, "WIFI") == 0) {
+                Property->Device = (UINT32)DEV_WIFI;
+              } else if (AsciiStriCmp (Prop2->string, "Firewire") == 0) {
+                Property->Device = (UINT32)DEV_FIREWIRE;
+              } else if (AsciiStriCmp (Prop2->string, "SATA") == 0) {
+                Property->Device = (UINT32)DEV_SATA;
+              } else if (AsciiStriCmp (Prop2->string, "IDE") == 0) {
+                Property->Device = (UINT32)DEV_IDE;
+              } else if (AsciiStriCmp (Prop2->string, "HDA") == 0) {
+                Property->Device = (UINT32)DEV_HDA;
+              } else if (AsciiStriCmp (Prop2->string, "HDMI") == 0) {
+                Property->Device = (UINT32)DEV_HDMI;
+              } else if (AsciiStriCmp (Prop2->string, "LPC") == 0) {
+                Property->Device = (UINT32)DEV_LPC;
+              } else if (AsciiStriCmp (Prop2->string, "SmBUS") == 0) {
+                Property->Device = (UINT32)DEV_SMBUS;
+              } else if (AsciiStriCmp (Prop2->string, "USB") == 0) {
+                Property->Device = (UINT32)DEV_USB;
+              } else {
+                DBG (" unknown device, ignored\n", i);
+                continue;
+              }
+            }
+
+            DBG (" %a", Prop2->string);
+
+            Prop2 = GetProperty (Dict2, "Key");
+            if (Prop2 && (Prop2->type == kTagTypeString) && Prop2->string) {
+              gSettings.AddProperties[Index].Key = AllocateCopyPool (AsciiStrSize (Prop2->string), Prop2->string);
+            }
+
+            Prop2 = GetProperty (Dict2, "Value");
+            if (Prop2 && (Prop2->type == kTagTypeString) && Prop2->string) {
+              //first suppose it is Ascii string
+              gSettings.AddProperties[Index].Value = AllocateCopyPool (AsciiStrSize (Prop2->string), Prop2->string);
+              gSettings.AddProperties[Index].ValueLen = AsciiStrLen (Prop2->string) + 1;
+            } else if (Prop2 && (Prop2->type == kTagTypeInteger)) {
+              gSettings.AddProperties[Index].Value = AllocatePool (4);
+              CopyMem (gSettings.AddProperties[Index].Value, &(Prop2->string), 4);
+              gSettings.AddProperties[Index].ValueLen = 4;
+            } else {
+              //else  data
+              gSettings.AddProperties[Index].Value = GetDataSetting (Dict2, "Value", &Size);
+              gSettings.AddProperties[Index].ValueLen = Size;
+            }
+
+            DBG (", len: %d\n", gSettings.AddProperties[Index].ValueLen);
+
+            ++Index;
           }
+
+          gSettings.NrAddProperties = Index;
         }
+      }
       //end AddProperties
 
       Prop = GetProperty (DictPointer, "FakeID");
@@ -5013,7 +5018,7 @@ GetUserSettings(
 
       Prop                = GetProperty (DictPointer, "AirportBridgeDeviceName");
       if (Prop && (Prop->type == kTagTypeString)) {
-          AsciiStrCpyS (gSettings.AirportBridgeDeviceName, sizeof(gSettings.AirportBridgeDeviceName), Prop->string);
+        AsciiStrCpyS (gSettings.AirportBridgeDeviceName, sizeof(gSettings.AirportBridgeDeviceName), Prop->string);
       }
 
       Prop2 = GetProperty (DictPointer, "Audio");
@@ -5483,8 +5488,8 @@ GetUserSettings(
         }
       }
 
- //     Prop               = GetProperty (DictPointer, "DropMCFG");
- //     gSettings.DropMCFG = IsPropertyTrue (Prop);
+      //     Prop               = GetProperty (DictPointer, "DropMCFG");
+      //     gSettings.DropMCFG = IsPropertyTrue (Prop);
 
       Prop = GetProperty (DictPointer, "ResetAddress");
       if (Prop) {
@@ -5563,7 +5568,7 @@ GetUserSettings(
               if (!EFI_ERROR (GetElement (Prop, i, &Prop2)) &&
                   (Prop2 != NULL) &&
                   (Prop2->type == kTagTypeString)
-              ) {
+                  ) {
                 gSettings.DisabledAML[gSettings.DisabledAMLCount++] = PoolPrint (L"%a", Prop2->string);
               }
             }
@@ -5571,33 +5576,33 @@ GetUserSettings(
         }
       }
 
-	  Prop = GetProperty(DictPointer, "RenameDevices");
-	  if (Prop && Prop->type == kTagTypeDict) {
-		  INTN   i, Count = GetTagCount(Prop);
-		  if (Count > 0) {
-			  gSettings.DeviceRenameCount = 0;
-			  gSettings.DeviceRename = AllocateZeroPool(Count * sizeof(ACPI_NAME_LIST));
-			  DBG("Devices to rename %d\n", Count);
-			  for (i = 0; i < Count; i++) {
-				  Prop2 = NULL;
-				  if (!EFI_ERROR(GetElement(Prop, i, &Prop2)) &&
-					  (Prop2 != NULL) &&
-					  (Prop2->type == kTagTypeKey)) {
-					  ACPI_NAME_LIST *List = ParseACPIName(Prop2->string);
-					  gSettings.DeviceRename[gSettings.DeviceRenameCount].Next = List;
-					  while (List) {
-						  DBG("%a:", List->Name);
-						  List = List->Next;
-					  }
-					  Prop2 = Prop2->tag;
-					  if (Prop2->type == kTagTypeString) {
-						  gSettings.DeviceRename[gSettings.DeviceRenameCount++].Name = AllocateCopyPool(5, Prop2->string);
-						  DBG("->will be renamed to %a\n", Prop2->string);
-					  }
-				  }
-			  }
-		  }
-	   }
+      Prop = GetProperty(DictPointer, "RenameDevices");
+      if (Prop && Prop->type == kTagTypeDict) {
+        INTN   i, Count = GetTagCount(Prop);
+        if (Count > 0) {
+          gSettings.DeviceRenameCount = 0;
+          gSettings.DeviceRename = AllocateZeroPool(Count * sizeof(ACPI_NAME_LIST));
+          DBG("Devices to rename %d\n", Count);
+          for (i = 0; i < Count; i++) {
+            Prop2 = NULL;
+            if (!EFI_ERROR(GetElement(Prop, i, &Prop2)) &&
+                (Prop2 != NULL) &&
+                (Prop2->type == kTagTypeKey)) {
+              ACPI_NAME_LIST *List = ParseACPIName(Prop2->string);
+              gSettings.DeviceRename[gSettings.DeviceRenameCount].Next = List;
+              while (List) {
+                DBG("%a:", List->Name);
+                List = List->Next;
+              }
+              Prop2 = Prop2->tag;
+              if (Prop2->type == kTagTypeString) {
+                gSettings.DeviceRename[gSettings.DeviceRenameCount++].Name = AllocateCopyPool(5, Prop2->string);
+                DBG("->will be renamed to %a\n", Prop2->string);
+              }
+            }
+          }
+        }
+      }
     }
 
     //*** SMBIOS ***//
@@ -5922,12 +5927,12 @@ GetUserSettings(
       // CsrActiveConfig
       Prop = GetProperty (DictPointer, "CsrActiveConfig");
       gSettings.CsrActiveConfig = (UINT32)GetPropertyInteger (Prop, 0x67); //the value 0xFFFF means not set
- //     SysVarsTmpCsrActiveConfig = gSettings.CsrActiveConfig;
+      //     SysVarsTmpCsrActiveConfig = gSettings.CsrActiveConfig;
 
       //BooterConfig
       Prop = GetProperty (DictPointer, "BooterConfig");
       gSettings.BooterConfig = (UINT16)GetPropertyInteger (Prop, 0); //the value 0 means not set
-//      SysVarsTmpBooterConfig = gSettings.BooterConfig;
+      //      SysVarsTmpBooterConfig = gSettings.BooterConfig;
 
     }
 
@@ -5967,7 +5972,7 @@ GetUserSettings(
             // if CustomUUID specified, then default for InjectSystemID=FALSE
             // to stay compatibile with previous Clover behaviour
             gSettings.InjectSystemID = FALSE;
-//            DBG("The UUID is valid\n");
+            //            DBG("The UUID is valid\n");
           }
         }
 
@@ -5976,7 +5981,7 @@ GetUserSettings(
         }
       }
       //else gUuid value from SMBIOS
- //     DBG("Finally use %g\n", &gUuid);
+      //     DBG("Finally use %g\n", &gUuid);
 
       Prop                     = GetProperty (DictPointer, "InjectSystemID");
       gSettings.InjectSystemID = gSettings.InjectSystemID ? !IsPropertyFalse(Prop) : IsPropertyTrue (Prop);
@@ -6002,29 +6007,29 @@ GetUserSettings(
       *(UINT32*)&gSettings.flagstate[0] = (UINT32)GetPropertyInteger (Prop, 0x80000000);
 
     }
-/*
- //Example
- <key>RMde</key>
- <array>
-   <string>char</string>
-   <data>
-     QQ==
-   </data>
- </array>
+    /*
+     //Example
+     <key>RMde</key>
+     <array>
+       <string>char</string>
+       <data>
+       QQ==
+       </data>
+     </array>
 
-    DictPointer = GetProperty (Dict, "SMCKeys");
-    if (DictPointer != NULL) {   //sss
-      TagPtr     Key, ValArray;
-      for (Key = DictPointer->tag; Key != NULL; Key = Key->tagNext) {
-        ValArray = Prop->tag;
-        if (Key->type != kTagTypeKey || ValArray == NULL) {
-          DBG (" ERROR: Tag is not <key>, type = %d\n", Key->type);
-          continue;
-        }
-       //....
-      }
-    }
-*/
+     DictPointer = GetProperty (Dict, "SMCKeys");
+     if (DictPointer != NULL) {   //sss
+       TagPtr     Key, ValArray;
+       for (Key = DictPointer->tag; Key != NULL; Key = Key->tagNext) {
+         ValArray = Prop->tag;
+         if (Key->type != kTagTypeKey || ValArray == NULL) {
+           DBG (" ERROR: Tag is not <key>, type = %d\n", Key->type);
+           continue;
+         }
+        //....
+       }
+     }
+     */
     /*
      {
      EFI_GUID AppleGuid;
@@ -6217,8 +6222,8 @@ CHAR8 *GetOSVersion(IN LOADER_ENTRY *Entry)
           if (Prop != NULL && Prop->string != NULL && Prop->string[0] != '\0') {
             Entry->BuildVersion = AllocateCopyPool (AsciiStrSize (Prop->string), Prop->string);
           }
-		  // In InstallInfo.plist, there is no a version key only when updating from AppStore in 10.13+
-		  // If use the startosinstall in 10.13+, this version key exists in InstallInfo.plist
+          // In InstallInfo.plist, there is no a version key only when updating from AppStore in 10.13+
+          // If use the startosinstall in 10.13+, this version key exists in InstallInfo.plist
           DictPointer = GetProperty (Dict, "System Image Info"); // 10.12+
           if (DictPointer != NULL) {
             Prop = GetProperty (DictPointer, "version");
@@ -6854,19 +6859,23 @@ SetDevices (LOADER_ENTRY *Entry)
   }
   while (Prop) {
 	  if (Prop->Device != 0) {
-		  Prop = Prop->Next;
+		  Prop = Prop->Next; //skip CustomProperties
 		  continue;
 	  }
 	  device = devprop_add_device_pci(string, NULL, Prop->DevicePath);
+    DBG("add device: %s\n", DevicePathToStr(Prop->DevicePath));
 	  Prop2 = Prop->Child;
 	  while (Prop2) {
 		  if (Prop2->MenuItem.BValue) {
-			  if (AsciiStrStr(Prop2->Key, "-platform-id") != NULL) {
-				  devprop_add_value(device, Prop2->Key, (UINT8*)&gSettings.IgPlatform, 4);
-			  }
-			  else {
+        if (AsciiStrStr(Prop2->Key, "-platform-id") != NULL) {
+          if (gSettings.IgPlatform == 0) {
+            CopyMem((UINT8*)&gSettings.IgPlatform, (UINT8*)Prop2->Value, Prop2->ValueLen);
+          }
+          devprop_add_value(device, Prop2->Key, (UINT8*)&gSettings.IgPlatform, 4);
+			  } else {
 				  devprop_add_value(device, Prop2->Key, (UINT8*)Prop2->Value, Prop2->ValueLen);
 			  }
+        DBG("   Add key=%a valuelen=%d\n", Prop2->Key, Prop2->ValueLen);
 		  }
 
 		  StringDirty = TRUE;
@@ -6909,6 +6918,7 @@ SetDevices (LOADER_ENTRY *Entry)
         PCIdevice.used                       = FALSE;
 
   //      if (gSettings.NrAddProperties == 0xFFFE) {  //yyyy it means Arbitrary
+//------------------
           Prop = gSettings.ArbProperties;  //check for additional properties
           device = NULL;
    /*       if (!string) {
@@ -6935,7 +6945,7 @@ SetDevices (LOADER_ENTRY *Entry)
             StringDirty = TRUE;
             Prop = Prop->Next;
           }
-
+//------------------
           if (PCIdevice.used) {
             DBG("custom properties for device %02x:%02x.%02x injected\n",
                 Bus, Device, Function);

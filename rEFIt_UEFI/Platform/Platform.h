@@ -1042,6 +1042,9 @@ typedef struct {
   BOOLEAN                 HighCurrent;
   BOOLEAN                 NameEH00;
   BOOLEAN                 NameXH00;
+  
+  BOOLEAN                 LANInjection;
+  BOOLEAN                 HDMIInjection;
 
   // LegacyBoot
   CHAR16                  LegacyBoot[32];
