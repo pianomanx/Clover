@@ -58,6 +58,9 @@ UINTN                           ThemesNum                   = 0;
 CHAR16                          *ThemesList[50]; //no more then 50 themes?
 UINTN                           ConfigsNum;
 CHAR16                          *ConfigsList[20];
+UINTN                           DsdtsNum;
+CHAR16                          *DsdtsList[20];
+
 
 // firmware
 BOOLEAN                         gFirmwareClover             = FALSE;
@@ -3107,7 +3110,39 @@ GetListOfConfigs ()
       DBG("- %s\n", DirEntry->FileName);
     }
   }
+  DirIterClose(&DirIter);
+}
+
+VOID
+GetListOfDsdts ()
+{
+  REFIT_DIR_ITER    DirIter;
+  EFI_FILE_INFO     *DirEntry;
+  INTN              NameLen;
+  CHAR16*     AcpiPath = PoolPrint(L"%s\\ACPI\\patched", OEMPath);
   
+  DsdtsNum = 0;
+  OldChosenDsdt = 0xFFFF;
+  
+  DirIterOpen(SelfRootDir, AcpiPath, &DirIter);
+  DbgHeader("Found DSDT tables");
+  while (DirIterNext(&DirIter, 2, L"DSDT*.aml", &DirEntry)) {
+    CHAR16  FullName[256];
+    if (DirEntry->FileName[0] == L'.') {
+      continue;
+    }
+    
+    UnicodeSPrint(FullName, 512, L"%s\\%s", AcpiPath, DirEntry->FileName);
+    if (FileExists(SelfRootDir, FullName)) {
+      if (StriCmp(DirEntry->FileName, gSettings.DsdtName) == 0) {
+        OldChosenDsdt = DsdtsNum;
+      }
+      NameLen = StrLen(DirEntry->FileName); //with ".aml"
+      DsdtsList[DsdtsNum] = (CHAR16*)AllocateCopyPool (NameLen * sizeof(CHAR16) + 2, DirEntry->FileName);
+      DsdtsList[DsdtsNum++][NameLen] = L'\0';
+      DBG("- %s\n", DirEntry->FileName);
+    }
+  }
   DirIterClose(&DirIter);
 }
 
@@ -4756,10 +4791,10 @@ GetUserSettings(
         }
       }
       
-      Prop  = GetProperty (DictPointer, "InjectLAN");
+      Prop  = GetProperty (DictPointer, "LANInjection");
       gSettings.LANInjection = IsPropertyTrue (Prop);
       
-      Prop  = GetProperty (DictPointer, "InjectHDMI");
+      Prop  = GetProperty (DictPointer, "HDMIInjection");
       gSettings.HDMIInjection = IsPropertyTrue (Prop);
       
       Prop  = GetProperty (DictPointer, "NoDefaultProperties");
@@ -6173,6 +6208,8 @@ CHAR8 *GetOSVersion(IN LOADER_ENTRY *Entry)
           if (Prop != NULL && Prop->string != NULL && Prop->string[0] != '\0') {
             if (AsciiStrStr (Prop->string, "Install%20OS%20X%20Mavericks.app")) {
               OSVersion = AllocateCopyPool (5, "10.9");
+            } else if (AsciiStrStr (Prop->string, "Install%20macOS%20Mojave") || AsciiStrStr (Prop->string, "Install%20macOS%2010.14%20Beta")) {
+              OSVersion = AllocateCopyPool (6, "10.14");
             } else if (AsciiStrStr (Prop->string, "Install%20macOS%20High%20Sierra") || AsciiStrStr (Prop->string, "Install%20macOS%2010.13")) {
               OSVersion = AllocateCopyPool (6, "10.13");
             } else if (AsciiStrStr (Prop->string, "Install%20macOS%20Sierra") || AsciiStrStr (Prop->string, "Install%20OS%20X%2010.12")) {
@@ -6375,6 +6412,8 @@ CHAR16
   CHAR16 *OSIconName;
   if (OSVersion == NULL) {
     OSIconName = L"mac";
+  } else if (AsciiStrStr (OSVersion, "10.14") != 0) {
+    OSIconName = L"moja,mac";
   } else if (AsciiStrStr (OSVersion, "10.13") != 0) {
     // High Sierra
     OSIconName = L"hsierra,mac";

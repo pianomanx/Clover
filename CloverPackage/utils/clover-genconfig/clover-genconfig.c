@@ -46,7 +46,7 @@ cc -o genconfig clover-genconfig.c gfxutil.c -framework CoreFoundation -framewor
 
 #include <err.h>
 #include <mach/mach_error.h>
-#define GFX 0
+#define GFX 1
 #if GFX
   #include "gfxutil.h"
 #endif
@@ -57,10 +57,10 @@ cc -o genconfig clover-genconfig.c gfxutil.c -framework CoreFoundation -framewor
 */
 
 // Prototypes
-static kern_return_t GetOFVariable(const char *name, CFTypeRef *valueRef);
+//static kern_return_t GetOFVariable(const char *name, CFTypeRef *valueRef);
 
 // Global Variables
-static io_registry_entry_t gEFI;
+static io_registry_entry_t gEFI __attribute__((used));
 static io_registry_entry_t gPlatform;
 static mach_port_t         masterPort;
 
@@ -180,19 +180,7 @@ void addInteger(CFMutableDictionaryRef dest, CFStringRef key, UInt64 value) {
     CFRelease(valueRef);
 }
 
-/*
-void addUUID(CFMutableDictionaryRef dest, CFStringRef key, EFI_GUID *uuid)
-{
-    assert(dest);
-    CFStringRef strValue = CFStringCreateWithFormat(kCFAllocatorDefault, NULL,
-                                                    CFSTR("%08tX-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X"),
-                                                    uuid->Data1, uuid->Data2, uuid->Data3,
-                                                    uuid->Data4[0], uuid->Data4[1],
-                                                    uuid->Data4[2], uuid->Data4[3], uuid->Data4[4], uuid->Data4[5], uuid->Data4[6], uuid->Data4[7]);
-    assert(strValue);
-    CFDictionaryAddValue( dest, key, strValue );
-    CFRelease(strValue);
-}*/
+
 void addUUID(CFMutableDictionaryRef dest, CFStringRef key, UInt8 *uuid)
 {
   SInt64 i = 0;
@@ -257,7 +245,7 @@ void dump_plist(CFMutableDictionaryRef properties) {
 //   Get the named firmware variable.
 //   Return the value in valueRef.
 //
-static kern_return_t GetOFVariable(const char *name, CFTypeRef *valueRef)
+static kern_return_t GetOFVariable(io_registry_entry_t entry, const char *name, CFTypeRef *valueRef)
 {
     CFStringRef nameRef = CFStringCreateWithCString(kCFAllocatorDefault, name,
                                                     kCFStringEncodingUTF8);
@@ -265,7 +253,7 @@ static kern_return_t GetOFVariable(const char *name, CFTypeRef *valueRef)
         errx(1, "Error creating CFString for key %s", name);
     }
 
-    *valueRef = IORegistryEntryCreateCFProperty(gPlatform, nameRef, 0, 0);
+    *valueRef = IORegistryEntryCreateCFProperty(entry, nameRef, 0, 0);
     CFRelease(nameRef);
     if (!*valueRef) {
         printf("value not found\n");
@@ -275,7 +263,99 @@ static kern_return_t GetOFVariable(const char *name, CFTypeRef *valueRef)
     return KERN_SUCCESS;
 }
 
-void PrintConfig(CFTypeRef data)
+void addGFXDictionary(CFMutableDictionaryRef dict, GFX_HEADER * gfx)
+{
+  CFMutableDictionaryRef items;
+  CFDataRef data = NULL;
+  //CFNumberRef number = NULL;
+  CFStringRef string = NULL;
+  CFStringRef key = NULL;
+  GFX_BLOCKHEADER *gfx_blockheader_tmp;
+  GFX_ENTRY *gfx_entry_tmp;
+//  uint64_t bigint;
+//  char hexstr[32];
+  char *dpath;
+  
+  // Create dictionary that will hold gfx data
+//  dict = CFDictionaryCreateMutable(kCFAllocatorDefault, 0 ,&kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+  
+  gfx_blockheader_tmp = gfx->blocks;
+  while(gfx_blockheader_tmp)
+  {
+    items = CFDictionaryCreateMutable(kCFAllocatorDefault, 0 ,&kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+    gfx_entry_tmp = gfx_blockheader_tmp->entries;
+    while(gfx_entry_tmp)
+    {
+      key = CFStringCreateWithCString(kCFAllocatorDefault, gfx_entry_tmp->key, kCFStringEncodingUTF8);
+      switch(gfx_entry_tmp->val_type)
+      {
+        case DATA_STRING:
+          string = CFStringCreateWithBytes(kCFAllocatorDefault,gfx_entry_tmp->val, gfx_entry_tmp->val_len-1, kCFStringEncodingASCII, false);
+          CFDictionarySetValue(items, key, string);
+          CFRelease(string);
+          CFRelease(key);
+          break;
+          /*
+        case DATA_INT8:
+          bigint = READ_UINT8(gfx_entry_tmp->val);
+          sprintf(hexstr,"0x%02llx",bigint);
+          string = CFStringCreateWithCString(kCFAllocatorDefault,hexstr, kCFStringEncodingASCII);
+          CFDictionarySetValue(items, key, string);
+          CFRelease(string);
+          CFRelease(key);
+          break;
+        case DATA_INT16:
+          bigint = READ_UINT16(gfx_entry_tmp->val);
+          sprintf(hexstr,"0x%04llx",bigint);
+          string = CFStringCreateWithCString(kCFAllocatorDefault,hexstr, kCFStringEncodingASCII);
+          CFDictionarySetValue(items, key, string);
+          CFRelease(string);
+          CFRelease(key);
+          break;
+        case DATA_INT32:
+          bigint = READ_UINT32(gfx_entry_tmp->val);
+          sprintf(hexstr,"0x%08llx",bigint);
+          string = CFStringCreateWithCString(kCFAllocatorDefault,hexstr, kCFStringEncodingASCII);
+          CFDictionarySetValue(items, key, string);
+          CFRelease(string);
+          CFRelease(key);
+          break;
+           */
+        default:
+        case DATA_BINARY:
+          data = CFDataCreate(kCFAllocatorDefault,gfx_entry_tmp->val, gfx_entry_tmp->val_len);
+          CFDictionarySetValue(items, key, data);
+          CFRelease(data);
+          CFRelease(key);
+          break;
+      }
+      gfx_entry_tmp = gfx_entry_tmp->next;
+    }
+    
+    dpath = ConvertDevicePathToAscii (gfx_blockheader_tmp->devpath, 1, 1);
+    if(dpath != NULL)
+    {
+      key = CFStringCreateWithCString(kCFAllocatorDefault, dpath, kCFStringEncodingUTF8);
+    }
+    else
+    {
+      printf("CreateGFXDictionary: error converting device path to text shorthand notation\n");
+      return;
+    }
+    
+    CFDictionarySetValue(dict, key, items);
+    
+    free(dpath);
+    CFRelease(key);
+    CFRelease(items);
+    gfx_blockheader_tmp = gfx_blockheader_tmp->next;
+  }
+  
+  return;
+}
+
+
+void PrintConfig(CFTypeRef data, GFX_HEADER * gfx)
 {
   const Byte *dataPtr = NULL;
   CFIndex    length = 0;
@@ -300,6 +380,14 @@ void PrintConfig(CFTypeRef data)
 //    errx(1, "Error the version of clover-genconfig didn't match current booted clover version");
     printf("Error the version of clover-genconfig didn't match current booted clover version\n");
     printf("len=%d sizeof=%d\n", (int)length, (int)sizeof(SETTINGS_DATA));
+#if defined(MDE_CPU_IA32)
+    printf("32 bit generator\n");
+#elif defined(MDE_CPU_X64)
+    printf("64 bit generator\n");
+#else
+    printf("xxx bit generator\n");
+#endif
+    return;
   }
 
   SETTINGS_DATA *s = (SETTINGS_DATA*)dataPtr;
@@ -310,20 +398,26 @@ void PrintConfig(CFTypeRef data)
                                                            &kCFTypeDictionaryKeyCallBacks,
                                                            &kCFTypeDictionaryValueCallBacks
                                                            );
+/*
   if (s->ConfigName != NULL) {
-    addUString(dict, CFSTR("ConfigName"), (const UniChar *)&s->ConfigName);
+    //ConfigName allocated in boot memory, impossible to show
+//    addUString(dict, CFSTR("ConfigName"), (const UniChar *)&s->ConfigName);
+    addString(dict, CFSTR("ConfigName"), "config1");
   } else {
     addString(dict, CFSTR("ConfigName"), "config");
   }
-
+*/
+  //This is possible since Clover 4511
+  addUString(dict, CFSTR("ConfigName"), (const UniChar *)&s->ConfigName);
   //Boot
   CFMutableDictionaryRef bootDict = addDict(dict, CFSTR("Boot"));
   addString(bootDict, CFSTR("Arguments"), s->BootArgs);
   addUString(bootDict, CFSTR("Legacy"), (const UniChar *)&s->LegacyBoot);
  // addUString(bootDict, CFSTR("LegacyEntry"), s->LegacyBiosCustomEntry);
   addInteger(bootDict, CFSTR("XMPDetection"), s->XMPDetection);
-  addUString(bootDict, CFSTR("DefaultVolume"), (const UniChar *)&s->DefaultVolume);
-  addUString(bootDict, CFSTR("DefaultLoader"), (const UniChar *)&s->DefaultLoader);
+  //impossible
+//  addUString(bootDict, CFSTR("DefaultVolume"), (const UniChar *)&s->DefaultVolume);
+//  addUString(bootDict, CFSTR("DefaultLoader"), (const UniChar *)&s->DefaultLoader);
   addBoolean(bootDict, CFSTR("Debug"), s->Debug);
   addString(bootDict, CFSTR("#Timeout"), "_NOT_SHOWN_");
   addBoolean(bootDict, CFSTR("Fast"), 0);
@@ -336,8 +430,6 @@ void PrintConfig(CFTypeRef data)
   addBoolean(bootDict, CFSTR("DisableCloverHotkeys"), s->DisableCloverHotkeys);
   addInteger(bootDict, CFSTR("#LegacyBiosDefaultEntry"), s->LegacyBiosDefaultEntry);
 
-
-
   // SystemParameters
   CFMutableDictionaryRef systemParametersDict = addDict(dict, CFSTR("SystemParameters"));
   addUString(systemParametersDict, CFSTR("CustomUUID"), (const UniChar *)&s->CustomUuid);
@@ -346,7 +438,6 @@ void PrintConfig(CFTypeRef data)
 //  addBoolean(systemParametersDict, CFSTR("InjectKexts"), 0);
   addString(systemParametersDict, CFSTR("#InjectKexts"), "Detect");
   addBoolean(systemParametersDict, CFSTR("NvidiaWeb"), s->NvidiaWeb);
-
 
   // GUI
   CFMutableDictionaryRef guiDict = addDict(dict, CFSTR("GUI"));
@@ -501,6 +592,11 @@ void PrintConfig(CFTypeRef data)
   addString(appPropDict, CFSTR("#Device"), "XXX");
   addString(appPropDict, CFSTR("#Key"), "AAPL,XXX");
   addHex(appPropDict, CFSTR("#Value"), 0xFFFF);
+  
+  CFMutableDictionaryRef propDict = addDict(pciDict, CFSTR("Properties"));
+  addGFXDictionary(propDict, gfx);
+  
+
 
   CFMutableDictionaryRef fakeIDDict = addDict(pciDict, CFSTR("FakeID"));
   addHex(fakeIDDict, CFSTR("ATI"), s->FakeATI);
@@ -676,6 +772,11 @@ void PrintConfig(CFTypeRef data)
   CFMutableArrayRef sortedArray = addArray(acpiDict, CFSTR("#SortedOrder"));
   addStringToArray(sortedArray, "SSDT-1.aml");
   addInteger(acpiDict, CFSTR("#Sorted ACPI tables Count"), s->SortedACPICount);
+  
+  CFMutableDictionaryRef renameDict = addDict(acpiDict, CFSTR("#RenameDevices"));
+  addString(renameDict, CFSTR("#_SB.PCI0.RP01.PXSX"), "ARPT");
+  addString(renameDict, CFSTR("_SB.PCI0.RP02.PXSX"), "XHC2");
+  
 
   // KernelAndKextPatches
   CFMutableDictionaryRef KernelAndKextPatchesDict = addDict(dict, CFSTR("KernelAndKextPatches"));
@@ -738,10 +839,12 @@ int main(int argc, char **argv)
 {
   kern_return_t       result;
 #if GFX
-  SETTINGS settings;
+  CFTypeRef devProp = NULL;
+//  SETTINGS settings;
   GFX_HEADER * gfx;
-
-  unsigned char * dp = NULL;
+  const unsigned char *dataPtr = NULL;
+  CFIndex    length = 0;
+  CFTypeID   typeID;
 #endif
 
   result = IOMasterPort(bootstrap_port, &masterPort);
@@ -750,14 +853,30 @@ int main(int argc, char **argv)
          mach_error_string(result));
   }
   
+#if GFX
   gEFI = IORegistryEntryFromPath(masterPort, "IODeviceTree:/efi");
   if (gEFI == 0) {
     errx(1, "EFI is not supported on this system");
   }
-  CFTypeRef devProp = NULL;
-  result = GetOFVariable("device-properties", &devProp);
-#if GFX
-  gfx =  parse_binary(devProp, settings);
+  
+  result = GetOFVariable(gEFI, "device-properties", &devProp);
+  //  int i;
+  
+  // Get the OF variable's type.
+  typeID = CFGetTypeID(devProp);
+  
+  if (typeID == CFDataGetTypeID()) {
+    length = CFDataGetLength(devProp);
+    if (length == 0)
+      return 0;
+    else
+      dataPtr = CFDataGetBytePtr(devProp);
+  } else {
+    printf("<INVALID> Type of properties\n");
+    return 0;
+  }
+
+  gfx =  parse_binary(dataPtr);
 #endif
   
   gPlatform = IORegistryEntryFromPath(masterPort, "IODeviceTree:/efi/platform");
@@ -765,15 +884,13 @@ int main(int argc, char **argv)
     errx(1, "EFI is not supported on this system");
   }
   CFTypeRef data = NULL;
-  result = GetOFVariable("Settings", &data);
+  result = GetOFVariable(gPlatform, "Settings", &data);
   if (result != KERN_SUCCESS) {
     errx(1, "Clover absent or too old : %s",
          mach_error_string(result));
   }
-  
-  
 
-  PrintConfig(data);
+  PrintConfig(data, gfx);
   CFRelease(data);
 
   IOObjectRelease(gPlatform);

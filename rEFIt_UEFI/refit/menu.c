@@ -65,6 +65,8 @@ extern UINTN            ThemesNum;
 extern CHAR16           *ThemesList[];
 extern UINTN            ConfigsNum;
 extern CHAR16           *ConfigsList[];
+extern UINTN            DsdtsNum;
+extern CHAR16           *DsdtsList[];
 extern CHAR8            *NonDetected;
 extern BOOLEAN          GetLegacyLanAddress;
 extern UINT8            gLanMac[4][6]; // their MAC addresses
@@ -177,6 +179,7 @@ UINTN  InputItemsCount = 0;
 
 INTN OldChosenTheme;
 INTN OldChosenConfig;
+INTN OldChosenDsdt;
 //INTN NewChosenTheme;
 
 BOOLEAN mGuiReady = FALSE;
@@ -681,6 +684,9 @@ VOID FillInputs(BOOLEAN New)
   InputItems[InputItemsCount++].BValue = gSettings.DeInit;
   InputItems[InputItemsCount].ItemType = BoolValue; //115
   InputItems[InputItemsCount++].BValue = gSettings.NoCaches;
+  InputItems[InputItemsCount].ItemType = RadioSwitch;  //116 - DSDT chooser
+  InputItems[InputItemsCount++].IValue = 116;
+
 
 
   //menu for drop table
@@ -1109,10 +1115,11 @@ VOID ApplyInputs(VOID)
       Status = GetUserSettings(SelfRootDir, dict);
       if (gConfigDict[2]) FreeTag(gConfigDict[2]);
       gConfigDict[2] = dict;
-      if (gSettings.ConfigName) {
+ /*     if (gSettings.ConfigName) {
         FreePool(gSettings.ConfigName);
-      }
-      gSettings.ConfigName = EfiStrDuplicate(ConfigsList[OldChosenConfig]);
+      } */
+      UnicodeSPrint(gSettings.ConfigName, 64, L"%s", ConfigsList[OldChosenConfig]);
+ //     gSettings.ConfigName = EfiStrDuplicate(ConfigsList[OldChosenConfig]);
       gBootChanged = TRUE;
       gThemeChanged = TRUE;
     }
@@ -1277,6 +1284,14 @@ VOID ApplyInputs(VOID)
   i++; //115
   if (InputItems[i].Valid) {
     gSettings.NoCaches = InputItems[i].BValue;
+  }
+  i++; //116
+  if (InputItems[i].Valid) {
+    if (OldChosenDsdt == 0xFFFF) {
+      UnicodeSPrint(gSettings.DsdtName, 64, L"BIOS.aml");
+    } else {
+      UnicodeSPrint(gSettings.DsdtName, 64, L"%s", DsdtsList[OldChosenDsdt]);
+    }
   }
 
   if (NeedSave) {
@@ -2016,7 +2031,7 @@ VOID FreeMenu(IN REFIT_MENU_SCREEN *Screen)
   INTN i;
   REFIT_MENU_ENTRY *Tentry = NULL;
 //TODO - here we must FreePool for a list of Entries, Screens, InputBootArgs
-  if (Screen->EntryCount > 0) {
+  if ((Screen != NULL) && (Screen->EntryCount > 0)) {
     for (i = 0; i < Screen->EntryCount; i++) {
       Tentry = Screen->Entries[i];
       if (Tentry->SubScreen) {
@@ -2041,7 +2056,7 @@ VOID FreeMenu(IN REFIT_MENU_SCREEN *Screen)
     FreePool(Screen->Entries);
     Screen->Entries = NULL;
   }
-  if (Screen->InfoLineCount > 0) {
+  if ((Screen != NULL) && (Screen->InfoLineCount > 0)) {
     for (i = 0; i < Screen->InfoLineCount; i++) {
       // TODO: call a user-provided routine for each element here
       FreePool(Screen->InfoLines[i]);
@@ -2129,9 +2144,13 @@ static UINTN InputDialog(IN REFIT_MENU_SCREEN *Screen, IN MENU_STYLE_FUNC  Style
       MenuExit = MENU_EXIT_ENTER;
     } else if (Item->ItemType == RadioSwitch) {
       if (Item->IValue == 3) {
-        OldChosenTheme = Pos;
+        OldChosenTheme = Pos? Pos - 1: 0xFFFF;
+ //       OldChosenTheme = Pos;
       } else if (Item->IValue == 90) {
         OldChosenConfig = Pos;
+      } else if (Item->IValue == 116) {
+        OldChosenDsdt = Pos? Pos - 1: 0xFFFF;
+   //     OldChosenDsdt = Pos;
       }
       MenuExit = MENU_EXIT_ENTER;
     } else if (Item->ItemType == CheckBit) {
@@ -2634,7 +2653,7 @@ static VOID TextMenuStyle(IN REFIT_MENU_SCREEN *Screen, IN SCROLL_STATE *State, 
 
 				if (TextMenuWidth < ItemWidth) {
           TextMenuWidth = ItemWidth;
-      }
+        }
       }
 
 			if (TextMenuWidth > ConWidth - 6) {
@@ -2643,7 +2662,9 @@ static VOID TextMenuStyle(IN REFIT_MENU_SCREEN *Screen, IN SCROLL_STATE *State, 
 
 			if (Screen->Entries[0]->Tag == TAG_SWITCH && ((REFIT_INPUT_DIALOG*)(Screen->Entries[0]))->Item->IValue == 90) {
 					j = OldChosenConfig;
-			}
+      } else if (Screen->Entries[0]->Tag == TAG_SWITCH && ((REFIT_INPUT_DIALOG*)(Screen->Entries[0]))->Item->IValue == 116) {
+        j = OldChosenDsdt;
+      }
 
       break;
 
@@ -2702,7 +2723,9 @@ static VOID TextMenuStyle(IN REFIT_MENU_SCREEN *Screen, IN SCROLL_STATE *State, 
 					// update chosen config
 					if (((REFIT_INPUT_DIALOG*)(Screen->Entries[i]))->Item->IValue == 90) {
 						OldChosenItem = OldChosenConfig;
-					}
+          } else if (((REFIT_INPUT_DIALOG*)(Screen->Entries[i]))->Item->IValue == 116) {
+            OldChosenItem = OldChosenDsdt;
+          }
 
 					StrCatS(ResultString, TITLE_MAX_LEN, (Screen->Entries[i]->Row == OldChosenItem) ? L": (*)" : L": ( )");
         }
@@ -2758,7 +2781,9 @@ static VOID TextMenuStyle(IN REFIT_MENU_SCREEN *Screen, IN SCROLL_STATE *State, 
 
 				if (((REFIT_INPUT_DIALOG*)(Screen->Entries[State->LastSelection]))->Item->IValue == 90) {
 					OldChosenItem = OldChosenConfig;
-				}
+        } else if (((REFIT_INPUT_DIALOG*)(Screen->Entries[State->LastSelection]))->Item->IValue == 116) {
+          OldChosenItem = OldChosenDsdt;
+        }
 
 				StrCatS(ResultString, TITLE_MAX_LEN,
 								(Screen->Entries[State->LastSelection]->Row == OldChosenItem) ? L": (*)" : L": ( )");
@@ -2791,7 +2816,9 @@ static VOID TextMenuStyle(IN REFIT_MENU_SCREEN *Screen, IN SCROLL_STATE *State, 
 
 				if (((REFIT_INPUT_DIALOG*)(Screen->Entries[State->CurrentSelection]))->Item->IValue == 90) {
 					OldChosenItem = OldChosenConfig;
-      }
+        } else if (((REFIT_INPUT_DIALOG*)(Screen->Entries[State->CurrentSelection]))->Item->IValue == 116) {
+          OldChosenItem = OldChosenDsdt;
+        }
 
 				StrCatS(ResultString, TITLE_MAX_LEN,
 								 (Screen->Entries[State->CurrentSelection]->Row == OldChosenItem) ? L": (*)" : L": ( )");
@@ -3174,11 +3201,17 @@ VOID GraphicsMenuStyle(IN REFIT_MENU_SCREEN *Screen, IN SCROLL_STATE *State, IN 
       //DBG("MENU_FUNCTION_INIT 1 EntriesPosY=%d VisibleHeight=%d\n", EntriesPosY, VisibleHeight);
       if (Screen->Entries[0]->Tag == TAG_SWITCH) {
         if (((REFIT_INPUT_DIALOG*)(Screen->Entries[0]))->Item->IValue == 3) {
-          if ((OldChosenTheme != 0xFFFF)) { //embedded theme
+   /*       if ((OldChosenTheme != 0xFFFF)) { //embedded theme
             j = OldChosenTheme;
-          }
+          } */
+          j = (OldChosenTheme == 0xFFFF) ? 0: OldChosenTheme + 1;
         } else if (((REFIT_INPUT_DIALOG*)(Screen->Entries[0]))->Item->IValue == 90) {
           j = OldChosenConfig;
+        } else if (((REFIT_INPUT_DIALOG*)(Screen->Entries[0]))->Item->IValue == 116) {
+      /*    if ((OldChosenDsdt != 0xFFFF)) { //embedded DSDT
+            j = OldChosenDsdt;
+          } */
+          j = (OldChosenDsdt == 0xFFFF) ? 0: OldChosenDsdt + 1;
         }
       }
       InitScroll(State, Screen->EntryCount, Screen->EntryCount, VisibleHeight, j);
@@ -3295,10 +3328,13 @@ VOID GraphicsMenuStyle(IN REFIT_MENU_SCREEN *Screen, IN SCROLL_STATE *State, IN 
         } else if (Entry->Tag == TAG_SWITCH) {
 
 					if (((REFIT_INPUT_DIALOG*)Entry)->Item->IValue == 3) {
-						OldChosenItem = OldChosenTheme;
+						//OldChosenItem = OldChosenTheme;
+            OldChosenItem = (OldChosenTheme == 0xFFFF) ? 0: OldChosenTheme + 1;
 					} else if (((REFIT_INPUT_DIALOG*)Entry)->Item->IValue == 90) {
 						OldChosenItem = OldChosenConfig;
-					}
+          } else if (((REFIT_INPUT_DIALOG*)Entry)->Item->IValue == 116) {
+            OldChosenItem =  (OldChosenDsdt == 0xFFFF) ? 0: OldChosenDsdt + 1;
+          }
 
           DrawMenuText(ResultString,
                        (i == State->CurrentSelection) ? MenuWidth : 0,
@@ -3357,10 +3393,13 @@ VOID GraphicsMenuStyle(IN REFIT_MENU_SCREEN *Screen, IN SCROLL_STATE *State, IN 
       } else if (EntryL->Tag == TAG_SWITCH) {
 
 				if (((REFIT_INPUT_DIALOG*)EntryL)->Item->IValue == 3) {
-					OldChosenItem = OldChosenTheme;
+					//OldChosenItem = OldChosenTheme;
+          OldChosenItem = (OldChosenTheme == 0xFFFF) ? 0: OldChosenTheme + 1;
 				} else if (((REFIT_INPUT_DIALOG*)EntryL)->Item->IValue == 90) {
 					OldChosenItem = OldChosenConfig;
-				}
+        } else if (((REFIT_INPUT_DIALOG*)EntryL)->Item->IValue == 116) {
+          OldChosenItem = (OldChosenDsdt == 0xFFFF) ? 0: OldChosenDsdt + 1;
+        }
 
         DrawMenuText(ResultString, 0, EntriesPosX + (TextHeight + TEXT_XMARGIN),
                      EntriesPosY + (State->LastSelection - State->FirstVisible) * TextHeight, 0xFFFF);
@@ -3382,9 +3421,11 @@ VOID GraphicsMenuStyle(IN REFIT_MENU_SCREEN *Screen, IN SCROLL_STATE *State, IN 
       TitleLen = StrLen(EntryC->Title);
       if (EntryC->Tag == TAG_SWITCH) {
         if (((REFIT_INPUT_DIALOG*)EntryC)->Item->IValue == 3) {
-          OldChosenItem = OldChosenTheme;
+          OldChosenItem = (OldChosenTheme == 0xFFFF) ? 0: OldChosenTheme + 1;;
         } else if (((REFIT_INPUT_DIALOG*)EntryC)->Item->IValue == 90) {
           OldChosenItem = OldChosenConfig;
+        } else if (((REFIT_INPUT_DIALOG*)EntryC)->Item->IValue == 116) {
+          OldChosenItem = (OldChosenDsdt == 0xFFFF) ? 0: OldChosenDsdt + 1;
         }
       }
 
@@ -4621,6 +4662,32 @@ REFIT_MENU_ENTRY  *SubMenuDSDTPatches()  //yyyy
   return Entry;
 }
 
+REFIT_MENU_ENTRY  *SubMenuDsdts()
+{
+  REFIT_MENU_ENTRY   *Entry;
+  REFIT_MENU_SCREEN  *SubScreen;
+  REFIT_INPUT_DIALOG *InputBootArgs;
+  UINTN               i;
+  
+  NewEntry(&Entry, &SubScreen, ActionEnter, SCREEN_THEME, "Dsdt name->");
+  
+  AddMenuInfoLine(SubScreen, L"Select a DSDT file:");
+  AddMenuItem(SubScreen, 116,  "BIOS.aml", TAG_SWITCH, FALSE);
+  
+  for (i = 0; i < DsdtsNum; i++) {
+    InputBootArgs = AllocateZeroPool(sizeof(REFIT_INPUT_DIALOG));
+    InputBootArgs->Entry.Title = PoolPrint(L"%s", DsdtsList[i]);
+    InputBootArgs->Entry.Tag = TAG_SWITCH;
+    InputBootArgs->Entry.Row = i + 1;
+    InputBootArgs->Item = &InputItems[116];
+    InputBootArgs->Entry.AtClick = ActionEnter;
+    InputBootArgs->Entry.AtRightClick = ActionDetails;
+    AddMenuEntry(SubScreen, (REFIT_MENU_ENTRY*)InputBootArgs);
+  }
+  AddMenuEntry(SubScreen, &MenuEntryReturn);
+  return Entry;
+}
+
 
 REFIT_MENU_ENTRY *SubMenuACPI()
 {
@@ -4635,8 +4702,9 @@ REFIT_MENU_ENTRY *SubMenuACPI()
   AddMenuInfoLine(SubScreen, PoolPrint(L"Choose options to patch ACPI"));
 
   AddMenuItem(SubScreen, 102, "Debug DSDT", TAG_INPUT, FALSE);
-  AddMenuItem(SubScreen, 1,   "DSDT name:", TAG_INPUT, TRUE);
-
+//  AddMenuItem(SubScreen, 1,   "DSDT name:", TAG_INPUT, TRUE);
+  
+  AddMenuEntry(SubScreen, SubMenuDsdts());
   AddMenuEntry(SubScreen, SubMenuDropTables());
   AddMenuEntry(SubScreen, SubMenuDropDSM());
   AddMenuEntry(SubScreen, SubMenuDsdtFix());
@@ -4682,7 +4750,7 @@ VOID CreateMenuProps(REFIT_MENU_SCREEN   *SubScreen, DEV_PROPERTY *Prop)
 
 }
 
-REFIT_MENU_ENTRY  *SubMenuCustomDevices() //yyyy
+REFIT_MENU_ENTRY  *SubMenuCustomDevices()
 {
   REFIT_MENU_ENTRY    *Entry;
   REFIT_MENU_SCREEN   *SubScreen;
@@ -4766,7 +4834,7 @@ REFIT_MENU_ENTRY  *SubMenuThemes()
     InputBootArgs = AllocateZeroPool(sizeof(REFIT_INPUT_DIALOG));
     InputBootArgs->Entry.Title = PoolPrint(L"%s", ThemesList[i]);
     InputBootArgs->Entry.Tag = TAG_SWITCH;
-    InputBootArgs->Entry.Row = i;
+    InputBootArgs->Entry.Row = i + 1;
     InputBootArgs->Item = &InputItems[3];
     InputBootArgs->Entry.AtClick = ActionEnter;
     InputBootArgs->Entry.AtRightClick = ActionDetails;

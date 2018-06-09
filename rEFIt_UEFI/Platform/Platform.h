@@ -1088,7 +1088,7 @@ typedef struct {
   BOOLEAN                 NeverDoRecovery;
 
   // Multi-config
-  CHAR16  *ConfigName;
+  CHAR16  ConfigName[30];
   CHAR16  *MainConfigName;
 
   //Drivers
@@ -1118,7 +1118,6 @@ typedef struct {
   BOOLEAN                 SlpWak;
   BOOLEAN                 UseIntelHDMI;
   UINT8                   AFGLowPowerState;
-
 
   // Table dropping
   ACPI_DROP_TABLE         *ACPIDropTables;
@@ -1599,6 +1598,7 @@ extern ACTION                          gAction;
 extern UINTN                           gItemID;
 extern INTN                            OldChosenTheme;
 extern INTN                            OldChosenConfig;
+extern INTN                            OldChosenDsdt;
 
 //CHAR8*   orgBiosDsdt;
 extern UINT64                          BiosDsdt;

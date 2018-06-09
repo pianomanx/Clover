@@ -903,14 +903,14 @@ MainPostBuildScript() {
       # Mandatory drivers
       echo "Copy Mandatory drivers:"
 #copyBin "$BUILD_DIR_ARCH"/FSInject.efi "$CLOVER_PKG_DIR"/EFI/CLOVER/drivers64/FSInject-64.efi
-      binArray=( FSInject AppleImageCodec AppleUITheme AppleKeyAggregator FirmwareVolume SMCHelper )
+      binArray=( FSInject AppleImageCodec AppleUITheme AppleKeyAggregator FirmwareVolume SMCHelper)
       for efi in "${binArray[@]}"
       do
         copyBin "$BUILD_DIR_ARCH"/$efi.efi "$CLOVER_PKG_DIR"/EFI/CLOVER/drivers64/$efi-64.efi
       done
 
 
-      binArray=( FSInject AppleImageCodec AppleUITheme AppleKeyAggregator FirmwareVolume SMCHelper DataHubDxe )
+      binArray=( FSInject AppleImageCodec AppleUITheme AppleKeyAggregator FirmwareVolume DataHubDxe SMCHelper)
       for efi in "${binArray[@]}"
       do
         copyBin "$BUILD_DIR_ARCH"/$efi.efi "$CLOVER_PKG_DIR"/EFI/CLOVER/drivers64UEFI/$efi-64.efi
@@ -924,17 +924,17 @@ MainPostBuildScript() {
       fi
 
       # Optional drivers
-      echo "Copy Optional drivers:"
+#echo "Copy Optional drivers:"
       # drivers64
       # Ps2KeyboardDxe Ps2MouseAbsolutePointerDxe
-      binArray=( NvmExpressDxe Ps2MouseDxe VBoxExt2 VBoxExt4 VBoxIso9600 XhciDxe HashServiceFix)
-      for efi in "${binArray[@]}"
-      do
-        copyBin "$BUILD_DIR_ARCH"/$efi.efi "$CLOVER_PKG_DIR"/drivers-Off/drivers64/$efi-64.efi
-      done
+#binArray=( )
+#for efi in "${binArray[@]}"
+#do
+#copyBin "$BUILD_DIR_ARCH"/$efi.efi "$CLOVER_PKG_DIR"/drivers-Off/drivers64/$efi-64.efi
+#done
 
       if [[ $M_NOGRUB -eq 0 ]]; then
-        binArray=( GrubEXFAT GrubISO9660 GrubNTFS GrubUDF )
+        binArray=( GrubEXFAT GrubISO9660 GrubNTFS GrubUDF XhciDxe)
         for efi in "${binArray[@]}"
         do
           copyBin "$BUILD_DIR_ARCH"/$efi.efi "$CLOVER_PKG_DIR"/drivers-Off/drivers64/$efi-64.efi
@@ -942,7 +942,7 @@ MainPostBuildScript() {
       fi
 
       # drivers64UEFI      
-      binArray=( CsmVideoDxe EmuVariableUefi OsxAptioFix3Drv OsxAptioFix2Drv OsxAptioFixDrv OsxFatBinaryDrv OsxLowMemFixDrv PartitionDxe UsbMouseDxe  UsbKbDxe Fat )
+      binArray=( CsmVideoDxe EmuVariableUefi OsxAptioFix3Drv OsxAptioFix2Drv OsxAptioFixDrv OsxFatBinaryDrv OsxLowMemFixDrv PartitionDxe UsbMouseDxe  UsbKbDxe Fat EnglishDxe NvmExpressDxe Ps2MouseDxe VBoxExt2 VBoxExt4 VBoxIso9600 HashServiceFix)
       for efi in "${binArray[@]}"
       do
         copyBin "$BUILD_DIR_ARCH"/$efi.efi "$CLOVER_PKG_DIR"/drivers-Off/drivers64UEFI/$efi-64.efi
@@ -958,6 +958,8 @@ MainPostBuildScript() {
         copyBin "${WORKSPACE}"/ShellBinPkg/MinUefiShell/X64/Shell.efi "$CLOVER_PKG_DIR"/EFI/CLOVER/tools/Shell64U.efi
       elif [[ "${EDK2SHELL:-}" == "FullShell" ]]; then
         copyBin "${WORKSPACE}"/ShellBinPkg/UefiShell/X64/Shell.efi "$CLOVER_PKG_DIR"/EFI/CLOVER/tools/Shell64U.efi
+      elif [[ "${EDK2SHELL:-}" == "Custom" ]]; then
+        "$BUILD_DIR_ARCH"/Shell.efi "$CLOVER_PKG_DIR"/EFI/CLOVER/tools/Shell64U.efi
       fi
     fi
 
