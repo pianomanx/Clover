@@ -41,7 +41,6 @@ cc -o genconfig clover-genconfig.c gfxutil.c -framework CoreFoundation -framewor
 #include "../../../rEFIt_UEFI/Platform/Platform.h"
 
 #include <IOKit/IOKitLib.h>
-#include <IOKit/IOKitKeys.h>
 #include <CoreFoundation/CoreFoundation.h>
 
 #include <err.h>
@@ -50,6 +49,9 @@ cc -o genconfig clover-genconfig.c gfxutil.c -framework CoreFoundation -framewor
 #if GFX
   #include "gfxutil.h"
 #endif
+
+/* from efidevp.c */
+extern CHAR8 *ConvertDevicePathToAscii (const struct _EFI_DEVICE_PATH_P_TAG  *DeviceNode, BOOLEAN DisplayOnly, BOOLEAN AllowShortcuts);
 
 /*
 #define offsetof(st, m) \
@@ -60,7 +62,7 @@ cc -o genconfig clover-genconfig.c gfxutil.c -framework CoreFoundation -framewor
 //static kern_return_t GetOFVariable(const char *name, CFTypeRef *valueRef);
 
 // Global Variables
-static io_registry_entry_t gEFI __attribute__((used));
+static io_registry_entry_t gEFI;
 static io_registry_entry_t gPlatform;
 static mach_port_t         masterPort;
 
@@ -859,7 +861,7 @@ int main(int argc, char **argv)
     errx(1, "EFI is not supported on this system");
   }
   
-  result = GetOFVariable(gEFI, "device-properties", &devProp);
+  /*result = */GetOFVariable(gEFI, "device-properties", &devProp);
   //  int i;
   
   // Get the OF variable's type.

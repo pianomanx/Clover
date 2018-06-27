@@ -53,9 +53,10 @@ typedef	double			  	DOUBLE;
  * hex = digit | "A" | "B" | "C" | "D" | "E" | "F" |
  *               "a" | "b" | "c" | "d" | "e" | "f"
  */
+#ifndef IS_HEX
 #define IS_HEX(x) ((IS_DIGIT(x)) || (((unsigned char)(x) >= 'a') && ((unsigned char)(x) <= 'f')) || \
 	    (((unsigned char)(x) >= 'A') && ((unsigned char)(x) <= 'F')))
-
+#endif
 /*
  * mark = "-" | "_" | "." | "!" | "~" | "*" | "'" | "(" | ")" | ";" | "/" | "?" | ":" | "@" | "&" | "=" | "+" | "$" | "," |
  * 	      "[" | "]"
@@ -194,7 +195,7 @@ int StrToBuf (unsigned char *Buf, unsigned int BufferLength, char *Str);
 int HexStringToBuf (unsigned char *Buf, unsigned int *Len, char *Str, unsigned int *ConvertedStrLen);
 
 // Determines if a Unicode character is a hexadecimal digit.
-int IsHexDigit (unsigned char *Digit, char Char);
+int IsCharHexDigit (unsigned char *Digit, char Char);
 
 void CatPrintf(char *target, const char *format, ...);
 

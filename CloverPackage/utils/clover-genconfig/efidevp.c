@@ -1,16 +1,12 @@
 #include <assert.h>
-#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
 #include <string.h>
-#include <sys/types.h>
-#include <CoreFoundation/CoreFoundation.h>            // (CFDictionary, ...)
-#include <IOKit/IOCFSerialize.h>                      // (IOCFSerialize, ...)
-#include <IOKit/IOKitLib.h>							  // (IOMasterPort, ...)
-
 #include "efidevp.h"
-#include "utils.h"
+
+/* From utils.c */
+extern void CatPrintf(char *target, const char *format, ...);
+extern void *MallocCopy(unsigned int size, void *buf);
 
 /*
  * Get parameter in a pair of parentheses follow the given node name.
@@ -228,7 +224,7 @@ EFI_DEVICE_PATH_P *UnpackDevicePath (EFI_DEVICE_PATH_P  *DevPath)
   }
 
   // Allocate space for the unpacked path
-  NewPath = (EFI_DEVICE_PATH_P *)calloc(Size, sizeof(UINT8));
+  NewPath = (EFI_DEVICE_PATH_P *)(UINT8*)calloc(Size, sizeof(UINT8));
   
   if (NewPath != NULL) 
   {
@@ -297,7 +293,7 @@ EFI_DEVICE_PATH_P*CreateDeviceNode (UINT8 NodeType, UINT8 NodeSubType, UINT16 No
     return NULL;
   }
 
-  Node = (EFI_DEVICE_PATH_P*) calloc ((UINT32) NodeLength, sizeof(UINT8));
+  Node = (EFI_DEVICE_PATH_P*) (UINT8*)calloc ((UINT32) NodeLength, sizeof(UINT8));
   if (Node != NULL) 
   {
     Node->Type    = NodeType;

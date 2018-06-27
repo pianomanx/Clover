@@ -4062,7 +4062,7 @@ InitTheme(
         } else {
           ThemeDict = LoadTheme (GlobalConfig.Theme);
           if (ThemeDict == NULL) {
-            DBG ("GlobalConfig: %s not found, get random theme %s\n", CONFIG_THEME_FILENAME, ThemesList[Rnd]);
+            DBG ("GlobalConfig: %s not found, get embedded theme\n", GlobalConfig.Theme);
             FreePool (GlobalConfig.Theme);
             GlobalConfig.Theme = NULL;
           }
@@ -4070,12 +4070,12 @@ InitTheme(
       }
     }
     // Try to get a theme
-    if (ThemeDict == NULL) {
+/*  if (ThemeDict == NULL) { //use embedded
       ThemeDict = LoadTheme (ThemesList[Rnd]);
       if (ThemeDict != NULL) {
         GlobalConfig.Theme = AllocateCopyPool (StrSize (ThemesList[Rnd]), ThemesList[Rnd]);
       }
-    }
+    } */
   } // ThemesNum>0
   
   
@@ -4083,6 +4083,7 @@ finish:
   if (!ThemeDict) {  // No theme could be loaded, use embedded
     DBG (" using embedded theme\n");
     GlobalConfig.Theme = NULL;
+    OldChosenTheme = 0xFFFF;
     if (ThemePath != NULL) {
       FreePool (ThemePath);
       ThemePath = NULL;
@@ -4792,7 +4793,7 @@ GetUserSettings(
       }
       
       Prop  = GetProperty (DictPointer, "LANInjection");
-      gSettings.LANInjection = IsPropertyTrue (Prop);
+      gSettings.LANInjection = !IsPropertyFalse (Prop);  //default = TRUE
       
       Prop  = GetProperty (DictPointer, "HDMIInjection");
       gSettings.HDMIInjection = IsPropertyTrue (Prop);
@@ -6177,7 +6178,7 @@ CHAR8 *GetOSVersion(IN LOADER_ENTRY *Entry)
          FileExists (Entry->Volume->RootDir, L"\\System\\Installation\\CDIS\\Mac OS X Installer.app") || // 10.6/10.7
          FileExists (Entry->Volume->RootDir, L"\\System\\Installation\\CDIS\\OS X Installer.app") || // 10.8 - 10.11
          FileExists (Entry->Volume->RootDir, L"\\System\\Installation\\CDIS\\macOS Installer.app") || // 10.12+
-         FileExists (Entry->Volume->RootDir, L"\\.IAPhysicalMedia"))) { // 10.13.4
+         FileExists (Entry->Volume->RootDir, L"\\.IAPhysicalMedia"))) { // 10.13.4+
           InstallerPlist = L"\\System\\Library\\CoreServices\\SystemVersion.plist";
         }
     if (FileExists (Entry->Volume->RootDir, InstallerPlist)) {
@@ -6413,6 +6414,7 @@ CHAR16
   if (OSVersion == NULL) {
     OSIconName = L"mac";
   } else if (AsciiStrStr (OSVersion, "10.14") != 0) {
+    // Mojave
     OSIconName = L"moja,mac";
   } else if (AsciiStrStr (OSVersion, "10.13") != 0) {
     // High Sierra
@@ -7477,7 +7479,7 @@ SaveSettings ()
   // to determine the use of Table 132
   if (gSettings.QPI) {
     gSettings.SetTable132 = TRUE;
-    //    DBG ("QPI: use Table 132\n");
+    //DBG ("QPI: use Table 132\n");
   }
   else {
     switch (gCPUStructure.Model) {
@@ -7632,7 +7634,7 @@ SetFSInjection (
      */
     
     // Installed/createinstallmedia
-    //FSInject->AddStringToList(Blacklist, L"\\System\\Library\\PrelinkedKernels\\prelinkedkernel"); // 10.10+/10.13.4
+    //FSInject->AddStringToList(Blacklist, L"\\System\\Library\\PrelinkedKernels\\prelinkedkernel"); // 10.10+/10.13.4+
     
     // Recovery
     //FSInject->AddStringToList(Blacklist, L"\\com.apple.recovery.boot\\kernelcache"); // 10.7 - 10.10

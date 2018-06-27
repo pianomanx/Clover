@@ -363,7 +363,7 @@
   Clover/CloverEFI/BiosVideo/BiosVideo.inf
   #Clover/BiosVideoAuto/BiosVideo.inf
   Clover/LegacyBios/VideoDxe/VideoDxe.inf
-  Clover/LegacyBios/VideoDxe/VideoDxe2.inf
+  #Clover/LegacyBios/VideoDxe/VideoDxe2.inf
 
   # IDE/AHCI Support
 !ifdef USE_BIOS_BLOCKIO
@@ -502,7 +502,18 @@
 
   
   Clover/ShellPkg/Application/Shell/Shell.inf {
+    <PcdsFixedAtBuild>
+	  gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0xFF
+	  gEfiShellPkgTokenSpaceGuid.PcdShellLibAutoInitialize|FALSE
+	  gEfiMdePkgTokenSpaceGuid.PcdUefiLibMaxPrintBufferSize|16000
+	!ifdef $(NO_SHELL_PROFILES)
+	  gEfiShellPkgTokenSpaceGuid.PcdShellProfileMask|0x00
+	!endif #$(NO_SHELL_PROFILES)
+
     <LibraryClasses>
+      PcdLib|MdePkg/Library/DxePcdLib/DxePcdLib.inf
+      PeCoffGetEntryPointLib|MdePkg/Library/BasePeCoffGetEntryPointLib/BasePeCoffGetEntryPointLib.inf
+      UefiHiiServicesLib|MdeModulePkg/Library/UefiHiiServicesLib/UefiHiiServicesLib.inf
       NULL|Clover/ShellPkg/Library/UefiShellLevel2CommandsLib/UefiShellLevel2CommandsLib.inf
       NULL|Clover/ShellPkg/Library/UefiShellLevel1CommandsLib/UefiShellLevel1CommandsLib.inf
       NULL|Clover/ShellPkg/Library/UefiShellLevel3CommandsLib/UefiShellLevel3CommandsLib.inf
@@ -627,7 +638,7 @@
 !endif
 
 !ifdef DISABLE_LTO
-	DEFINE DISABLE_LTO_FLAG = -fno-lto
+	DEFINE DISABLE_LTO_FLAG = -fno-lto -UUSING_LTO
 !endif
 
 
@@ -636,12 +647,12 @@ DEFINE EXIT_USBKB_FLAG = -DEXIT_USBKB
 !endif
 
 
-DEFINE BUILD_OPTIONS=-DMDEPKG_NDEBUG -DCLOVER_BUILD $(VBIOS_PATCH_CLOVEREFI_FLAG) $(ONLY_SATA_0_FLAG) $(BLOCKIO_FLAG) $(NOUSB_FLAG) $(AMD_FLAG) $(SECURE_BOOT_FLAG) $(LODEPNG_FLAG) $(ANDX86_FLAG) $(PS2MOUSE_LEGACYBOOT_FLAG) $(DEBUG_ON_SERIAL_PORT_FLAG) $(NOUDMA_FLAG) $(CHECKS) $(EXIT_USBKB_FLAG)
+DEFINE BUILD_OPTIONS=-DMDEPKG_NDEBUG -DCLOVER_BUILD $(VBIOS_PATCH_CLOVEREFI_FLAG) $(ONLY_SATA_0_FLAG) $(BLOCKIO_FLAG) $(NOUSB_FLAG) $(NOUDMA_FLAG) $(AMD_FLAG) $(SECURE_BOOT_FLAG) $(ANDX86_FLAG) $(LODEPNG_FLAG) $(PS2MOUSE_LEGACYBOOT_FLAG) $(DEBUG_ON_SERIAL_PORT_FLAG) $(EXIT_USBKB_FLAG)
 
   #MSFT:*_*_*_CC_FLAGS  = /FAcs /FR$(@R).SBR /wd4701 /wd4703 $(BUILD_OPTIONS)
   MSFT:*_*_*_CC_FLAGS  = /FAcs /FR$(@R).SBR $(BUILD_OPTIONS) -Dinline=__inline
 
-  XCODE:*_*_*_CC_FLAGS = -fno-unwind-tables -Os $(BUILD_OPTIONS) -Wno-msvc-include $(DISABLE_LTO_FLAG)
+  XCODE:*_*_*_CC_FLAGS = -fno-unwind-tables -Wno-msvc-include -Os $(BUILD_OPTIONS) $(DISABLE_LTO_FLAG)
   GCC:*_*_*_CC_FLAGS   = $(BUILD_OPTIONS) $(DISABLE_LTO_FLAG)
   #-Wunused-but-set-variable
   # -Os -fno-omit-frame-pointer -maccumulate-outgoing-args

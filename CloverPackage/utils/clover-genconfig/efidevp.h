@@ -1,25 +1,13 @@
 #ifndef _DEVPATH_H
 #define _DEVPATH_H
 
-#include "utils.h"
-#include <assert.h>
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <sys/types.h>
-#include <CoreFoundation/CoreFoundation.h>            // (CFDictionary, ...)
-#include <IOKit/IOCFSerialize.h>                      // (IOCFSerialize, ...)
-#include <IOKit/IOKitLib.h>                // (IOMasterPort, ...)
-//#include "../../../rEFIt_UEFI/Platform/Platform.h"
-
 #define MAX_PATH_LEN 4096
 #define MAX_DEVICE_PATH_LEN 1000
 
 #define MIN_ALIGNMENT_SIZE  4
 #define ALIGN_SIZE(a) ((a % MIN_ALIGNMENT_SIZE) ? MIN_ALIGNMENT_SIZE - (a % MIN_ALIGNMENT_SIZE) : 0)
 
+#ifndef IS_COMMA
 #define IS_COMMA(a)          ((a) == ',')
 #define IS_HYPHEN(a)         ((a) == '-')
 #define IS_DOT(a)            ((a) == '.')
@@ -38,9 +26,9 @@ typedef int              INT32;
 typedef unsigned int    UINT32;
 typedef long long        INT64;
 typedef unsigned long long  UINT64;
+#endif
 
-
-typedef struct
+typedef struct _EFI_DEVICE_PATH_P_TAG
 {
 	UINT8 Type;
 	UINT8 SubType;
@@ -65,10 +53,13 @@ typedef struct
 #define EFI_DP_TYPE_MASK                    0x7F
 #define EFI_DP_TYPE_UNPACKED                0x80
 #define END_DEVICE_PATH_TYPE                0x7f
+#ifndef END_ENTIRE_DEVICE_PATH_SUBTYPE
 #define END_ENTIRE_DEVICE_PATH_SUBTYPE      0xff
+#endif
 #define END_INSTANCE_DEVICE_PATH_SUBTYPE    0x01
+#ifndef END_DEVICE_PATH_LENGTH
 #define END_DEVICE_PATH_LENGTH              (sizeof(EFI_DEVICE_PATH_P))
-
+#endif
 #define DP_IS_END_TYPE(a)
 #define DP_IS_END_SUBTYPE(a)        ( ((a)->SubType == END_ENTIRE_DEVICE_PATH_SUBTYPE )
 
@@ -114,8 +105,8 @@ typedef struct _PCI_DEVICE_PATH
 typedef struct _ACPI_HID_DEVICE_PATH 
 {
 	EFI_DEVICE_PATH_P	Header;
-	UInt32	HID;
-	UInt32	UID;
+	UINT32	HID;
+	UINT32	UID;
 } ACPI_HID_DEVICE_PATH_P;
 
 // 

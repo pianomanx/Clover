@@ -40,6 +40,10 @@
 #include "Version.h"
 //#include "colors.h"
 
+#include "nanosvg.h"
+#include "FloatLib.h"
+
+
 #ifndef DEBUG_ALL
 #define DEBUG_MENU 1
 #else
@@ -2145,12 +2149,10 @@ static UINTN InputDialog(IN REFIT_MENU_SCREEN *Screen, IN MENU_STYLE_FUNC  Style
     } else if (Item->ItemType == RadioSwitch) {
       if (Item->IValue == 3) {
         OldChosenTheme = Pos? Pos - 1: 0xFFFF;
- //       OldChosenTheme = Pos;
       } else if (Item->IValue == 90) {
         OldChosenConfig = Pos;
       } else if (Item->IValue == 116) {
         OldChosenDsdt = Pos? Pos - 1: 0xFFFF;
-   //     OldChosenDsdt = Pos;
       }
       MenuExit = MENU_EXIT_ENTER;
     } else if (Item->ItemType == CheckBit) {
@@ -2538,19 +2540,47 @@ UINTN RunGenericMenu(IN REFIT_MENU_SCREEN *Screen, IN MENU_STYLE_FUNC StyleFunc,
           DBG("create file %r\n", Status);
         }
         break;
-
+*/
       case SCAN_F8:
         do {
-          CHAR16 *Str = PoolPrint(L"%s\n%s\n%s", L"ABC", L"123456", L"xy");
-          if (Str != NULL) {
-            AlertMessage(L"Sample message", Str);
-            FreePool(Str);
+          NSVGimage       *SVGimage;
+          EFI_STATUS      Status;
+          UINT8           *FileData = NULL;
+          UINTN           FileDataLength = 0;
+          EG_IMAGE        *NewImage;
+          INTN Width = 400, Height = 400;
+          float Scale,ScaleX, ScaleY;
+          
+          NSVGrasterizer* rast = nsvgCreateRasterizer();
+          
+          // load file
+          Status = egLoadFile(SelfRootDir, L"Sample.svg", &FileData, &FileDataLength);
+          if (EFI_ERROR(Status)) {
+            DrawTextXY(L"No file!", 0, 0, X_IS_CENTER);
           }
+          SVGimage = nsvgParse((CHAR8*)FileData, "px", 72);
+          NewImage = egCreateImage(Width, Height, TRUE);
+          // Rasterize
+          if (SVGimage->width == 0) SVGimage->width = Width;
+          if (SVGimage->height == 0) SVGimage->height = Height;
+          ScaleX = Width / SVGimage->width;
+          ScaleY = Height / SVGimage->height;
+          Scale = (ScaleX > ScaleY)?ScaleY:ScaleX;
+          nsvgRasterize(rast, SVGimage, 0,0,Scale,Scale, (UINT8*)NewImage->PixelData, Width, Height, Width*4, NULL, NULL);
+          //now show it!
+          BltImageAlpha(NewImage,
+                        (UGAWidth - Width) / 2,
+                        (UGAHeight - Height) / 2,
+                        &MenuBackgroundPixel,
+                        16);
+          egFreeImage(NewImage);
+          FreePool(rast);
+          nsvgDelete(SVGimage);
+          FreePool(FileData);
         } while (0);
- //this way screen is dirty
-        break;
+         break;
 
-  */
+  
       case SCAN_F9:
         SetNextScreenMode(1);
         break;
@@ -3204,14 +3234,14 @@ VOID GraphicsMenuStyle(IN REFIT_MENU_SCREEN *Screen, IN SCROLL_STATE *State, IN 
    /*       if ((OldChosenTheme != 0xFFFF)) { //embedded theme
             j = OldChosenTheme;
           } */
-          j = (OldChosenTheme == 0xFFFF) ? 0: OldChosenTheme + 1;
+          j = (OldChosenTheme == 0xFFFF) ? 0: (OldChosenTheme + 1);
         } else if (((REFIT_INPUT_DIALOG*)(Screen->Entries[0]))->Item->IValue == 90) {
           j = OldChosenConfig;
         } else if (((REFIT_INPUT_DIALOG*)(Screen->Entries[0]))->Item->IValue == 116) {
       /*    if ((OldChosenDsdt != 0xFFFF)) { //embedded DSDT
             j = OldChosenDsdt;
           } */
-          j = (OldChosenDsdt == 0xFFFF) ? 0: OldChosenDsdt + 1;
+          j = (OldChosenDsdt == 0xFFFF) ? 0: (OldChosenDsdt + 1);
         }
       }
       InitScroll(State, Screen->EntryCount, Screen->EntryCount, VisibleHeight, j);
@@ -3329,11 +3359,11 @@ VOID GraphicsMenuStyle(IN REFIT_MENU_SCREEN *Screen, IN SCROLL_STATE *State, IN 
 
 					if (((REFIT_INPUT_DIALOG*)Entry)->Item->IValue == 3) {
 						//OldChosenItem = OldChosenTheme;
-            OldChosenItem = (OldChosenTheme == 0xFFFF) ? 0: OldChosenTheme + 1;
+            OldChosenItem = (OldChosenTheme == 0xFFFF) ? 0: (OldChosenTheme + 1);
 					} else if (((REFIT_INPUT_DIALOG*)Entry)->Item->IValue == 90) {
 						OldChosenItem = OldChosenConfig;
           } else if (((REFIT_INPUT_DIALOG*)Entry)->Item->IValue == 116) {
-            OldChosenItem =  (OldChosenDsdt == 0xFFFF) ? 0: OldChosenDsdt + 1;
+            OldChosenItem =  (OldChosenDsdt == 0xFFFF) ? 0: (OldChosenDsdt + 1);
           }
 
           DrawMenuText(ResultString,
@@ -3393,8 +3423,7 @@ VOID GraphicsMenuStyle(IN REFIT_MENU_SCREEN *Screen, IN SCROLL_STATE *State, IN 
       } else if (EntryL->Tag == TAG_SWITCH) {
 
 				if (((REFIT_INPUT_DIALOG*)EntryL)->Item->IValue == 3) {
-					//OldChosenItem = OldChosenTheme;
-          OldChosenItem = (OldChosenTheme == 0xFFFF) ? 0: OldChosenTheme + 1;
+     			OldChosenItem = (OldChosenTheme == 0xFFFF) ? 0: OldChosenTheme + 1;
 				} else if (((REFIT_INPUT_DIALOG*)EntryL)->Item->IValue == 90) {
 					OldChosenItem = OldChosenConfig;
         } else if (((REFIT_INPUT_DIALOG*)EntryL)->Item->IValue == 116) {
@@ -4078,7 +4107,11 @@ VOID AddMenuItem(REFIT_MENU_SCREEN  *SubScreen, INTN Inx, CONST CHAR8 *Title, UI
 
   InputBootArgs->Entry.Title          = PoolPrint(L"%a", Title);
   InputBootArgs->Entry.Tag            = Tag;
-  InputBootArgs->Entry.Row            = Cursor?StrLen(InputItems[Inx].SValue):0xFFFF;
+  if (Inx == 3 || Inx == 116) {
+    InputBootArgs->Entry.Row = 0;
+  } else {
+    InputBootArgs->Entry.Row            = Cursor?StrLen(InputItems[Inx].SValue):0xFFFF;
+  }
   InputBootArgs->Item                 = &InputItems[Inx];
   InputBootArgs->Entry.AtClick        = Cursor?ActionSelect:ActionEnter;
   InputBootArgs->Entry.AtRightClick   = Cursor?ActionNone:ActionDetails;

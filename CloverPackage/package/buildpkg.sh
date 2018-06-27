@@ -370,11 +370,26 @@ addChoice () {
         exit 1
     fi
 
+    # check if we have a localization ready in Localizable.strings
+    local ltitle=""
+    local ldescription=""
+    if grep -q "\"${choiceId}_title\"" "${PKGROOT}/Resources/templates/Localizable.strings"; then
+      ltitle="${choiceId}_title"
+    else
+      ltitle="${choiceId%.UEFI}"
+    fi
+
+    if grep -q "\"${choiceId}_description\"" "${PKGROOT}/Resources/templates/Localizable.strings"; then
+      ldescription="${choiceId}_description"
+    else
+      ldescription="${choiceId%.UEFI}"
+    fi
+
     # Record new node
     choice_key[$idx]="$choiceId"
-    choice_title[$idx]="${title:-${choiceId}}"
-    choice_description[$idx]="${description:-${choiceId}_description}"
-#    choice_description[$idx]="${description:-${choiceId}}"
+    choice_title[$idx]="$ltitle"
+    choice_description[$idx]="${ldescription}"
+
     choice_options[$idx]=$(trim "${choiceOptions}") # Removing leading and trailing whitespace(s)
     choice_selected[$idx]=$(trim "${choiceSelected}") # Removing leading and trailing whitespace(s)
     choice_force_selected[$idx]=$(trim "${choiceForceSelected}") # Removing leading and trailing whitespace(s)
@@ -424,6 +439,8 @@ addGroupChoices() {
                        shift; choiceOptions+=("--enabled=${option#*=}") ;;
             --selected=*)
                        shift; choiceOptions+=("--selected=${option#*=}") ;;
+            --visible=*)
+                       shift; choiceOptions+=("--visible=${option#*=}") ;;
            -*)
                 echo "Unrecognized addGroupChoices option '$option'" >&2
                 exit 1
@@ -553,8 +570,8 @@ if [[ ${NOEXTRAS} != *"CloverEFI"* ]]; then
     ditto --noextattr --noqtn ${SRCROOT}/CloverV2/BootSectors/boot1x      ${PKG_BUILD_DIR}/${choiceId}/Root/usr/standalone/i386/
     ditto --noextattr --noqtn ${SRCROOT}/CloverV2/BootSectors/boot1xalt   ${PKG_BUILD_DIR}/${choiceId}/Root/usr/standalone/i386/
 
-    ditto --noextattr --noqtn ${SRCROOT}/utils/fdisk440/fdisk440.8        ${PKG_BUILD_DIR}/${choiceId}/Root/usr/local/man/man8/
-    ditto --noextattr --noqtn ${SYMROOT}/utils/fdisk440                   ${PKG_BUILD_DIR}/${choiceId}/Root/usr/local/bin/
+#    ditto --noextattr --noqtn ${SRCROOT}/utils/fdisk440/fdisk440.8        ${PKG_BUILD_DIR}/${choiceId}/Root/usr/local/man/man8/
+#    ditto --noextattr --noqtn ${SYMROOT}/utils/fdisk440                   ${PKG_BUILD_DIR}/${choiceId}/Root/usr/local/bin/
     ditto --noextattr --noqtn ${SYMROOT}/utils/boot1-install              ${PKG_BUILD_DIR}/${choiceId}/Root/usr/local/bin/
 
     # Add some documentation
@@ -563,7 +580,8 @@ if [[ ${NOEXTRAS} != *"CloverEFI"* ]]; then
     ditto --noextattr --noqtn ${SRCROOT}/CloverV2/BootSectors/Installation.txt ${PKG_BUILD_DIR}/${choiceId}/Root/EFIROOTDIR/EFI/CLOVER/doc/
 
     fixperms "${PKG_BUILD_DIR}/${choiceId}/Root/"
-    chmod 755 "${PKG_BUILD_DIR}/${choiceId}"/Root/usr/local/bin/{fdisk440,boot1-install}
+#    chmod 755 "${PKG_BUILD_DIR}/${choiceId}"/Root/usr/local/bin/{fdisk440,boot1-install}
+    chmod 755 "${PKG_BUILD_DIR}/${choiceId}"/Root/usr/local/bin/boot1-install
 
     packageRefId=$(getPackageRefId "${packagesidentity}" "${choiceId}")
     packageBiosBootRefId=$packageRefId
@@ -877,8 +895,11 @@ if [[ "$add_ia32" -eq 1 ]]; then
                                 --subst="DRIVER_DIR=$(basename $driverDestDir)"   \
                                 "VBoxHfs"
             buildpackage "$packageRefId" "${driverChoice}" "${PKG_BUILD_DIR}/${driverChoice}" "${driverDestDir}"
-            addChoice --start-visible="false" --selected="!choices['UEFI.only'].selected"  \
-            --pkg-refs="$packageRefId"  "${driverChoice}"
+            addChoice --start-visible="true" \
+                      --enabled="!choices['UEFI.only'].selected" \
+                      --start-selected="!choices['UEFI.only'].selected &amp;&amp; (cloverPackageFirstRun() || choicePreviouslySelected('$packageRefId'))"  \
+                      --visible="!choices['UEFI.only'].selected"     \
+                      --pkg-refs="$packageRefId"  "${driverChoice}"
             rm -R -f "${PKG_BUILD_DIR}/${driverChoice}"
         done
         # End mandatory drivers-ia32 packages
@@ -887,6 +908,7 @@ if [[ "$add_ia32" -eq 1 ]]; then
         echo "===================== drivers32 ========================"
         addGroupChoices --title="Drivers32" --description="Drivers32"  \
                         --enabled="!choices['UEFI.only'].selected"     \
+                        --visible="!choices['UEFI.only'].selected"     \
                         "Drivers32"
         packagesidentity="${clover_package_identity}".drivers32
         local drivers=($( find "${SRCROOT}/CloverV2/drivers-Off/drivers32" -type f -name '*.efi' -depth 1 ))
@@ -945,6 +967,7 @@ if [[ -d "${SRCROOT}/CloverV2/EFI/CLOVER/drivers64" && ${NOEXTRAS} != *"CloverEF
     echo "================= drivers64 mandatory =================="
     addGroupChoices --title="Drivers64" --description="Drivers64"  \
       --enabled="!choices['UEFI.only'].selected"     \
+      --visible="!choices['UEFI.only'].selected"     \
       "Drivers64"
 
     packagesidentity="${clover_package_identity}".drivers64.mandatory
@@ -965,10 +988,16 @@ if [[ -d "${SRCROOT}/CloverV2/EFI/CLOVER/drivers64" && ${NOEXTRAS} != *"CloverEF
                             --subst="DRIVER_NAME=$driver"                     \
                             --subst="DRIVER_DIR=$(basename $driverDestDir)"   \
                             "VBoxHfs"
+        # mandatory drivers starts all selected only if /Library/Preferences/com.projectosx.clover.installer.plist does not exist
+        # (i.e. Clover package never run on that target partition).
+        # Otherwise each single choice start selected only for legacy Clover and only if you previously selected it
         buildpackage "$packageRefId" "${driverChoice}" "${PKG_BUILD_DIR}/${driverChoice}" "${driverDestDir}"
-        addChoice --group="Drivers64" --start-visible="true" --start-selected="true" --selected="true"  \
-         --pkg-refs="$packageRefId"  "${driverChoice}"
-#selected="!choices['UEFI.only'].selected"
+        addChoice --group="Drivers64" \
+                  --start-visible="true" \
+                  --enabled="!choices['UEFI.only'].selected" \
+                  --start-selected="!choices['UEFI.only'].selected &amp;&amp; (cloverPackageFirstRun() || choicePreviouslySelected('$packageRefId'))"  \
+                  --visible="!choices['UEFI.only'].selected"     \
+                  --pkg-refs="$packageRefId"  "${driverChoice}"
         rm -R -f "${PKG_BUILD_DIR}/${driverChoice}"
     done
 fi
@@ -993,7 +1022,7 @@ if [[ -d "${SRCROOT}/CloverV2/drivers-Off/drivers64" && ${NOEXTRAS} != *"CloverE
         buildpackage "$packageRefId" "${driverName}" "${PKG_BUILD_DIR}/${driverName}" "${driverDestDir}"
         addChoice --group="Drivers64" --title="$driverName"                                               \
                   --enabled="!choices['UEFI.only'].selected"                                              \
-                  --start-selected="choicePreviouslySelected('$packageRefId')"                            \
+                  --start-selected="!choices['UEFI.only'].selected &amp;&amp; choicePreviouslySelected('$packageRefId')"                            \
                   --selected="choices['$driverName'].selected"  \
                   --pkg-refs="$packageRefId"                                                              \
                   "${driverName}"
@@ -1040,7 +1069,7 @@ if [[ -d "${SRCROOT}/CloverV2/drivers-Off/drivers64UEFI" ]]; then
     for (( i = 0 ; i < ${#drivers[@]} ; i++ ))
     do
         local driver="${drivers[$i]##*/}"
-        local driverName="${driver%.efi}"
+        local driverName="${driver%.efi}.UEFI"
         ditto --noextattr --noqtn --arch i386 "${drivers[$i]}" "${PKG_BUILD_DIR}/${driverName}/Root/"
         find "${PKG_BUILD_DIR}/${driverName}" -name '.DS_Store' -exec rm -R -f {} \; 2>/dev/null
         fixperms "${PKG_BUILD_DIR}/${driverName}/Root/"
