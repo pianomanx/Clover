@@ -6,9 +6,13 @@
 //
 
 #include "FloatLib.h"
+#include "IO.h"
 
-#define memcpy(dest,source,count) gBS->CopyMem(dest,(void*)source,(UINTN)(count))
 
+#define memcpy(dest,source,count) CopyMem(dest,(void*)source,(UINTN)(count))
+#define fabsf(x) ((x >= 0.0f)?x:(-x))
+
+//we will assume sqrt(abs(x))
 float SqrtF(float X)
 {
   struct FloatInt {
@@ -17,10 +21,17 @@ float SqrtF(float X)
       float f;
     };
   };
+  if (X == 0.0f) {
+    return 0.0f;
+  } else if (X < 0.0f) {
+    X = -X;
+  }
   struct FloatInt Y;
-  Y.f = X;
-  Y.i = Y.i >> 1; // dirty hack - first iteration
-  //do four iterations
+  Y.f = X * 0.3f;
+//  Y.i = Y.i >> 1; // dirty hack - first iteration
+  //do six iterations
+  Y.f = Y.f * 0.5f + X / (Y.f * 2.0f);
+  Y.f = Y.f * 0.5f + X / (Y.f * 2.0f);
   Y.f = Y.f * 0.5f + X / (Y.f * 2.0f);
   Y.f = Y.f * 0.5f + X / (Y.f * 2.0f);
   Y.f = Y.f * 0.5f + X / (Y.f * 2.0f);
@@ -29,40 +40,56 @@ float SqrtF(float X)
 }
 
 float CosF(float X);
+
+//we know sin is odd
 float SinF(float X)
 {
-  INTN Period = X / (2.0f * PI);
+  INTN Period;
   float X2;
-  X = X - Period * (2.0f * PI);
-  if (X > PI) {
-    X = PI - X;
+  float Sign = 1.0f;
+  
+  if (X < 0.0f) {
+    X = -X;
+    Sign = -1.0f;
   }
-  if (X > PI * 0.5f) {
+  Period = X / PI2;
+  X = X - Period * PI2;
+  if (X > PI) {
+    X = X - PI;
+    Sign *= -1.0f;
+  }
+  if (X > PI5) {
     X = PI - X;
   }
   if (X > PI * 0.25f) {
-    return CosF(PI * 0.5f - X);
+    return (Sign*CosF(PI5 - X));
   }
   X2 = X * X;
-  return (X - X2 * X / 6.0f + X2 * X2 * X / 120.0f);
+  return (Sign*(X - X2 * X / 6.0f + X2 * X2 * X / 120.0f));
 }
 
+//we know cos is even
 float CosF(float X)
 {
-  INTN Period = X / (2.0f * PI);
+  INTN Period;
   float Sign = 1.0f;
   float X2;
-  X = X - Period * (2.0f * PI);
+  
+  if (X < 0.0f) {
+    X = -X;
+  }
+  Period = X / PI2;
+  X = X - Period * PI2;
   if (X > PI) {
     X = PI - X;
     Sign = -1.0f;
   }
-  if (X > PI * 0.5f) {
+  if (X > PI5) {
     X = PI - X;
     Sign *= -1.0f;
   }
   if (X > PI * 0.25f) {
-    return SinF(PI * 0.5f - X);
+    return (Sign*SinF(PI5 - X));
   }
   X2 = X * X;
   return (Sign * (1.0f - X2 * 0.5f + X2 * X2 / 24.0f));
@@ -115,40 +142,78 @@ float ModF(float X, float Y)
 float AcosF(float X)
 {
   float X2 = X * X;
-  return (PI * 0.5f - X * (1.0f + X2 / 6.0f + X2 * X2 * (3.0f / 40.0f)));
+  float res = 0.f, Y = 0.f;
+  INTN Sign = 0;
+
+  if (X2 < 0.3f) {
+    Y = X * (1.0f + X2 / 6.0f + X2 * X2 * (3.0f / 40.0f));
+    return (PI5 - Y);
+  } else if (X2 >= 1.0f) {
+    return 0.0f;
+  } else {
+    if (X < 0) {
+      X = -X;
+      Sign = 1;
+    }
+    Y = 1.0f - X; //for X ~ 1
+    X2 = Y * (2.0 + Y * (1.0 / 3.0 + Y * (4.0f / 45.0 + Y  / 35.0f))); //Dwight, form.508
+    res = SqrtF(X2);
+    if (Sign) {
+      res = PI - res;
+    }
+  }
+  
+  return res;
 }
 
 float AtanF(float X) //assume 0.0 < X < 1.0
 {
-  float Eps = 1.0e-4;
+  float Eps = 1.0e-8;
   int i = 1;
   float X2 = X * X;
-  float D = - X;
+  float D = X;
   float Y = 0;
   float sign = 1.0f;
-  while (D > (Eps * i)) {
-    Y += D * sign / i;  //x -x3/3+x5/5-x7/7...
-    D *= X2;
-    sign = - sign;
-    i += 2;
+
+  if (X > 0.5f) {
+    //make here arctg(1-x)
+    X = 1.0f - D;
+    X2 = X * X;
+    Y = PI4 - X * 0.5f - X2 * 0.25f - X * X2 * 0.25f * ( 1.f / 3.f - X2 * (0.1f + X / 12.f + X2 / 28.f));
+  } else {
+    //  Y = X * (1 - X2 * ( 1.0f / 3.0f - X2 * (1.0f / 5.0f - X2 * ( 1.0f / 7.0f))));
+    for (i = 1; i < 50; i += 2) {
+      Y += (D * sign / i);
+      D *= X2;
+      if (D < Eps) {
+        break;
+      }
+      sign = - sign;
+    }
   }
   return Y;
 }
 
-float Atan2F(float X, float Y)
+float Atan2F(float Y, float X)
 {
-  float sign = (((X > 0.0f) && (Y < 0.0f)) ||
-                ((X < 0.0f) && (Y > 0.0f)));
-  X = (X > 0.0f)?X:(-X);
-  Y = (Y > 0.0f)?Y:(-Y);
-  if (X < Y) {
-    return sign * AtanF(X / Y);
-  } else if (Y == 0.0f) {
-    return sign * (PI * 0.5f);
-  } else {
-    return sign * (PI * 0.5f - AtanF(Y / X));
+  float sign = (((X >= 0.0f) && (Y < 0.0f)) ||
+                ((X < 0.0f) && (Y >= 0.0f)))?-1.0f:1.0f;
+  float PP = 0.f;
+  float res = 0.f;
+  //1,1 = pi4  1,-1=pi34   -1,-1=-pi34   -1,1=-pi4
+  if (X < 0.f) {
+    PP = PI;
   }
-  return 0.0f;
+  X = (X >= 0.0f)?X:(-X);
+  Y = (Y >= 0.0f)?Y:(-Y);
+  if (Y < X) {
+    res = AtanF(Y / X);
+  } else if (X == 0.0f) {
+    res = PI5;
+  } else {
+    res = (PI5 - AtanF(X / Y));
+  }
+  return sign * (res - PP);
 }
 
 /*
@@ -161,7 +226,6 @@ AsciiStrDecimalToUintnS (
                          );
 */
 RETURN_STATUS
-EFIAPI
 AsciiStrToFloat(IN  CONST CHAR8              *String,
                 OUT       CHAR8              **EndPointer,  OPTIONAL
                 OUT       float              *Data)
@@ -180,12 +244,6 @@ AsciiStrToFloat(IN  CONST CHAR8              *String,
   while ((*String == ' ') || (*String == '\t')) {
     String++;
   }
-  //
-  // Ignore leading Zeros after the spaces
-  //
-/*  while (*String == '0') {
-    String++;
-  } */
   if (*String == '-') {
     Sign = -1;
     String++;
@@ -247,10 +305,10 @@ AsciiStrToFloat(IN  CONST CHAR8              *String,
    return -0;
  }
  */
-
-void QuickSort(void* Array, int Low, int High, INTN Size, int (*compare)(const void* a, const void* b)) {
-  int i = Low, j = High;
-  void *Med, *Temp;
+#if 0
+VOID QuickSort(VOID* Array, INTN Low, INTN High, INTN Size, INTN (*compare)(CONST VOID* a, CONST VOID* b)) {
+  INTN i = Low, j = High;
+  VOID *Med, *Temp;
   Med = Array + ((Low + High) / 2) * Size; // Central element, just pointer
   Temp = AllocatePool(Size);
   // Sort around center
@@ -272,4 +330,35 @@ void QuickSort(void* Array, int Low, int High, INTN Size, int (*compare)(const v
   if (j > Low)    QuickSort(Array, Low, j, Size, compare);
   if (High > i)   QuickSort(Array, i, High, Size, compare);
 }
+
+//S must be allocated before use
+VOID AsciiSPrintFloat(CHAR8* S, INTN N, CHAR8* F, float X)
+{
+  INTN I, Fract;
+  float D;
+  if (!S) {
+    return;
+  }
+  
+  I = (INTN)X;
+  D = I;
+  Fract = fabsf((X - D) * 1000000.0f);
+  AsciiSPrint(S, N, "%D.%06D", I, (INTN)Fract);
+}
+#endif
+
+CHAR16* PoolPrintFloat(float X)
+{
+  INTN I, Fract;
+  CHAR8 S = ' ';
+  float D;
+  I = (INTN)X;
+  D = I;
+  if (I == 0 && X < 0) {
+    S = '-';
+  }
+  Fract = fabsf((X - D) * 1000000.0f);
+  return PoolPrint(L"%c%d.%06d", S, I, (INTN)Fract);
+}
+
 

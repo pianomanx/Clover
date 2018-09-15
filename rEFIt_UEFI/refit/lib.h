@@ -521,6 +521,8 @@ typedef struct {
   BOOLEAN     ShowOptimus;
   BOOLEAN     HibernationFixup;
   BOOLEAN     SignatureFixup;
+  BOOLEAN     DarkEmbedded;
+  BOOLEAN     EmbeddedSVG;
 } REFIT_CONFIG;
 
 // types
@@ -791,6 +793,8 @@ extern EG_PIXEL InputBackgroundPixel;
 extern EG_PIXEL BlueBackgroundPixel;
 extern EG_PIXEL DarkBackgroundPixel;
 extern EG_PIXEL SelectionBackgroundPixel;
+extern EG_PIXEL DarkEmbeddedBackgroundPixel;
+extern EG_PIXEL DarkSelectionPixel;
 
 extern EG_RECT  BannerPlace;
 extern EG_IMAGE *BackgroundImage;
@@ -859,13 +863,14 @@ EG_IMAGE * GetSmallHover(IN UINTN Id);
 #define BUILTIN_ICON_VOL_FIREWIRE              (15)
 #define BUILTIN_ICON_VOL_BOOTER                (16)
 #define BUILTIN_ICON_VOL_INTERNAL_HFS          (17)
-#define BUILTIN_ICON_VOL_INTERNAL_NTFS         (18)
-#define BUILTIN_ICON_VOL_INTERNAL_EXT3         (19)
-#define BUILTIN_ICON_VOL_INTERNAL_REC          (20)
-#define BUILTIN_ICON_BANNER                    (21)
-#define BUILTIN_SELECTION_SMALL                (22)
-#define BUILTIN_SELECTION_BIG                  (23)
-#define BUILTIN_ICON_COUNT                     (24)
+#define BUILTIN_ICON_VOL_INTERNAL_APFS         (18)
+#define BUILTIN_ICON_VOL_INTERNAL_NTFS         (19)
+#define BUILTIN_ICON_VOL_INTERNAL_EXT3         (20)
+#define BUILTIN_ICON_VOL_INTERNAL_REC          (21)
+#define BUILTIN_ICON_BANNER                    (22)
+#define BUILTIN_SELECTION_SMALL                (23)
+#define BUILTIN_SELECTION_BIG                  (24)
+#define BUILTIN_ICON_COUNT                     (25)
 //
 // menu module
 //

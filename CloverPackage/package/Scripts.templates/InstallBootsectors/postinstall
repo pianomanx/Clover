@@ -134,14 +134,15 @@ fi
 echo "" >> "$install_log"
 
 ### Stage 0 ###
-echo "Stage 0 - Writting ${diskloader} to ${bootdisk}" >> "$install_log"
-#echo "$fdisk440 -u -f ${DEST_VOL}/usr/standalone/i386/${diskloader} -y ${bootdisk}" >> "$install_log"
-#"$fdisk440" -u -f "${DEST_VOL}/usr/standalone/i386/${diskloader}" -y ${bootdisk}
-echo "dd: ${DEST_VOL}/usr/standalone/i386/${diskloader} -> ${bootdisk}" >> "$install_log"
-dd if=${bootdisk} count=1 bs=512 of=origMBR
-cp origMBR newMBR
-dd if="${DEST_VOL}/usr/standalone/i386/${diskloader}" of=newMBR bs=1 count=440 conv=notrunc
-dd if=newMBR of=${bootdisk} count=1 bs=512
+echo "Stage 0 - Writing ${diskloader} to ${bootrdisk}" >> "$install_log"
+echo dd if=${bootrdisk} count=1 bs=512 of=/tmp/origMBR >> "$install_log"
+dd if=${bootrdisk} count=1 bs=512 of=/tmp/origMBR
+echo cp /tmp/origMBR /tmp/newMBR >> "$install_log"
+cp /tmp/origMBR /tmp/newMBR
+echo dd if="${DEST_VOL}/usr/standalone/i386/${diskloader}" of=/tmp/newMBR bs=440 count=1 conv=notrunc >> "$install_log"
+dd if="${DEST_VOL}/usr/standalone/i386/${diskloader}" of=/tmp/newMBR bs=440 count=1 conv=notrunc
+echo fdisk -f /tmp/newMBR -u -y ${bootrdisk} >> "$install_log"
+fdisk -f /tmp/newMBR -u -y ${bootrdisk}
 echo "" >> "$install_log"
 
 ### Stage 1 ###
@@ -168,19 +169,19 @@ if [[ -n "$mnt_pt" ]]; then
 fi
 
 if [[ ${boot_volume_format} = "hfs" ]]; then
-    echo "Stage 1 - Writting ${partitionloaderhfs} to ${bootrdev}" >> "$tmp_log"
+    echo "Stage 1 - Writing ${partitionloaderhfs} to ${bootrdev}" >> "$tmp_log"
     echo "File system is HFS." >> "$tmp_log"
     echo "dd if=${partitionloaderhfs_copy} of=${bootrdev}" >> "$tmp_log"
     dd if="${partitionloaderhfs_copy}" of=${bootrdev}
 
 elif [[ ${boot_volume_format} = "msdos" ]]; then
-    echo "Stage 1 - Writting ${partitionloaderfat} to ${bootrdev}" >> "$tmp_log"
+    echo "Stage 1 - Writing ${partitionloaderfat} to ${bootrdev}" >> "$tmp_log"
 
     # copy partition boot sector to origbs
     echo "dd if=${bootrdev} count=1 bs=512 of=/tmp/origbs" >> "$tmp_log"
     dd if=${bootrdev} count=1 bs=512 of=/tmp/origbs
 
-    if [[cat /tmp/origbs | grep FAT16]]; then
+    if [[ -n $(cat /tmp/origbs | grep FAT16) ]]; then
       echo "boot volume format is FAT16" >> "$tmp_log"
       echo "No Stage1 was written" >> "$tmp_log"
     else
@@ -198,7 +199,7 @@ elif [[ ${boot_volume_format} = "msdos" ]]; then
       dd if=/tmp/newbs count=1 bs=512 of=${bootrdev}
     fi
 elif [[ ${boot_volume_format} = "exfat" ]]; then
-    echo "Stage 1 - Writting ${partitionloaderexfat} to ${bootrdev}" >> "$tmp_log"
+    echo "Stage 1 - Writing ${partitionloaderexfat} to ${bootrdev}" >> "$tmp_log"
     echo "File system is ExFat." >> "$tmp_log"
     echo "$boot1install -y -f ${partitionloaderexfat_copy} ${bootrdev}" >> "$tmp_log"
     "$boot1install" -y -f "${partitionloaderexfat_copy}" ${bootrdev}

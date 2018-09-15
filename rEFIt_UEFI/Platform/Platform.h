@@ -1265,6 +1265,8 @@ typedef enum {
   MacBookPro141,
   MacBookPro142,
   MacBookPro143,
+  MacBookPro151,
+  MacBookPro152,
   MacBookAir11,
   MacBookAir21,
   MacBookAir31,
@@ -1952,6 +1954,7 @@ setup_ati_devprop (
 
 BOOLEAN
 setup_gma_devprop (
+  LOADER_ENTRY *Entry,
   pci_dt_t *gma_dev
   );
 
@@ -1996,7 +1999,7 @@ CHAR8
 UINT32 PciAddrFromDevicePath(EFI_DEVICE_PATH_PROTOCOL* DevicePath);
 
 VOID
-FillCardList(
+FillCardList (
   TagPtr CfgDict
   );
 
@@ -2118,6 +2121,8 @@ ParseXML (
         TagPtr *dict,
         UINT32 bufSize
   );
+
+EFI_STATUS ParseSVGTheme(CONST CHAR8* buffer, TagPtr * dict, UINT32 bufSize);
 
 TagPtr
 GetProperty (

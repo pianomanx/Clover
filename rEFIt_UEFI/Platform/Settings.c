@@ -153,7 +153,8 @@ REFIT_CONFIG   GlobalConfig = {
   FALSE,          // BOOLEAN     ShowOptimus;
   FALSE,          // BOOLEAN     HibernationFixup;
   FALSE,          // BOOLEAN     SignatureFixup;
-  //  0,              // INTN        PruneScrollRows;
+  FALSE,          // BOOLEAN     DarkEmbedded;
+  FALSE,          // BOOLEAN     EmbeddedSVG;
 };
 
 static struct FIX_CONFIG { const CHAR8* oldName; const CHAR8* newName; UINT32 bitData; } FixesConfig[] =
@@ -918,15 +919,6 @@ FillinKextPatches (IN OUT KERNEL_AND_KEXT_PATCHES *Patches,
     Patches->KPKernelLapic = IsPropertyTrue (Prop);
   }
   
-  // this is an old key. after a long time, we consider removing this key for cleanup
-  Prop = GetProperty (DictPointer, "KernelIvyXCPM");
-  if (Prop != NULL || gBootChanged) {
-    Patches->KPKernelXCPM = IsPropertyTrue (Prop);
-    if (IsPropertyTrue(Prop)) {
-      DBG("KernelXCPM: enabled\n");
-    }
-  }
-  
   Prop = GetProperty (DictPointer, "KernelXCPM");
   if (Prop != NULL || gBootChanged) {
     Patches->KPKernelXCPM = IsPropertyTrue (Prop);
@@ -938,12 +930,6 @@ FillinKextPatches (IN OUT KERNEL_AND_KEXT_PATCHES *Patches,
   Prop = GetProperty (DictPointer, "KernelPm");
   if (Prop != NULL || gBootChanged) {
     Patches->KPKernelPm = IsPropertyTrue (Prop);
-  }
-  
-  // this is an old key. after a long time, we consider removing this key for cleanup
-  Prop = GetProperty (DictPointer, "AsusAICPUPM");
-  if (Prop != NULL || gBootChanged) {
-    Patches->KPAppleIntelCPUPM = IsPropertyTrue (Prop);
   }
   
   Prop = GetProperty (DictPointer, "AppleIntelCPUPM");
@@ -2684,9 +2670,37 @@ GetEarlyUserSettings (
               break;
             }
           }
+          if ((AsciiStriCmp (Prop->string, "embedded") == 0) || (AsciiStriCmp (Prop->string, "") == 0)) {
+            Prop = GetProperty (DictPointer, "EmbeddedThemeType");
+            if (Prop && (Prop->type == kTagTypeString) && Prop->string) {
+              if (AsciiStriCmp (Prop->string, "Dark") == 0) {
+                GlobalConfig.DarkEmbedded = TRUE;
+                GlobalConfig.Font = FONT_GRAY;
+              } else if (AsciiStriCmp (Prop->string, "Light") == 0) {
+                GlobalConfig.DarkEmbedded = FALSE;
+                GlobalConfig.Font = FONT_ALFA;
+              } else if (AsciiStriCmp (Prop->string, "SVG") == 0) {
+                GlobalConfig.EmbeddedSVG = TRUE;
+              }
+            }
+          }
+        }
+      } else if (Prop == NULL) {
+        Prop = GetProperty (DictPointer, "EmbeddedThemeType");
+        if (Prop && (Prop->type == kTagTypeString) && Prop->string) {
+          if (AsciiStriCmp (Prop->string, "Dark") == 0) {
+            GlobalConfig.DarkEmbedded = TRUE;
+            GlobalConfig.Font = FONT_GRAY;
+          } else if (AsciiStriCmp (Prop->string, "Light") == 0) {
+            GlobalConfig.DarkEmbedded = FALSE;
+            GlobalConfig.Font = FONT_ALFA;
+          } else if (AsciiStriCmp (Prop->string, "SVG") == 0) {
+            GlobalConfig.EmbeddedSVG = TRUE;
+          }
         }
       }
-      //CustomIcons
+      
+      // CustomIcons
       Prop = GetProperty (DictPointer, "CustomIcons");
       if (IsPropertyTrue (Prop)) {
         GlobalConfig.CustomIcons = TRUE;
@@ -2694,12 +2708,12 @@ GetEarlyUserSettings (
       
       Prop = GetProperty (DictPointer, "ShowOptimus");
       GlobalConfig.ShowOptimus = IsPropertyTrue (Prop);
-      //      DBG("ShowOptimus set to %d\n", GlobalConfig.ShowOptimus);
+      //DBG("ShowOptimus set to %d\n", GlobalConfig.ShowOptimus);
       
       Prop = GetProperty (DictPointer, "TextOnly");
       if (IsPropertyTrue (Prop)) {
         GlobalConfig.TextOnly = TRUE;
-        //        DBG ("TextOnly option enabled\n");
+        //DBG ("TextOnly option enabled\n");
       }
       
       Prop = GetProperty (DictPointer, "ScreenResolution");
@@ -3308,6 +3322,7 @@ VOID InitKextList()
 }
 
 #define CONFIG_THEME_FILENAME L"theme.plist"
+#define CONFIG_THEME_SVG L"theme.svg"
 
 VOID
 GetListOfThemes ()
@@ -3338,9 +3353,13 @@ GetListOfThemes ()
         Status = egLoadFile (ThemeTestDir, CONFIG_THEME_FILENAME, (UINT8**)&ThemePtr, &Size);
         //REVIEW: memory leak... ThemePtr
         if (EFI_ERROR (Status) || (ThemePtr == NULL) || (Size == 0)) {
-          Status = EFI_NOT_FOUND;
-          DBG (" - bad theme because %s can't be load", CONFIG_THEME_FILENAME);
-        } else {
+          Status = egLoadFile (ThemeTestDir, CONFIG_THEME_SVG, (UINT8**)&ThemePtr, &Size);
+          if (EFI_ERROR (Status)) {
+            Status = EFI_NOT_FOUND;
+            DBG (" - bad theme because %s nor %s can't be load", CONFIG_THEME_FILENAME, CONFIG_THEME_SVG);
+          }
+        }
+        if (!EFI_ERROR (Status)) {
           //we found a theme
           if ((StriCmp(DirEntry->FileName, L"embedded") == 0) ||
               (StriCmp(DirEntry->FileName, L"random") == 0)) {
@@ -3882,9 +3901,9 @@ LoadTheme (CHAR16 *TestTheme)
     }
     
     if (UGAHeight > HEIGHT_2K) {
-      ThemePath = PoolPrint (L"EFI\\CLOVER\\themes\\%s@2x", TestTheme);
+      ThemePath = PoolPrint(L"EFI\\CLOVER\\themes\\%s@2x", TestTheme);
     } else {
-      ThemePath = PoolPrint (L"EFI\\CLOVER\\themes\\%s", TestTheme);
+      ThemePath = PoolPrint(L"EFI\\CLOVER\\themes\\%s", TestTheme);
     }
     if (ThemePath != NULL) {
       if (ThemeDir != NULL) {
@@ -3892,35 +3911,50 @@ LoadTheme (CHAR16 *TestTheme)
         ThemeDir = NULL;
       }
       
-      Status = SelfRootDir->Open (SelfRootDir, &ThemeDir, ThemePath, EFI_FILE_MODE_READ, 0);
+      Status = SelfRootDir->Open(SelfRootDir, &ThemeDir, ThemePath, EFI_FILE_MODE_READ, 0);
       if (EFI_ERROR (Status)) {
         FreePool (ThemePath);
-        ThemePath = PoolPrint (L"EFI\\CLOVER\\themes\\%s", TestTheme);
-        Status = SelfRootDir->Open (SelfRootDir, &ThemeDir, ThemePath, EFI_FILE_MODE_READ, 0);
+        ThemePath = PoolPrint(L"EFI\\CLOVER\\themes\\%s", TestTheme);
+        Status = SelfRootDir->Open(SelfRootDir, &ThemeDir, ThemePath, EFI_FILE_MODE_READ, 0);
       }
       if (!EFI_ERROR (Status)) {
-        Status = egLoadFile (ThemeDir, CONFIG_THEME_FILENAME, (UINT8**)&ThemePtr, &Size);
-        if (!EFI_ERROR (Status) && (ThemePtr != NULL) && (Size != 0)) {
-          Status = ParseXML ((const CHAR8*)ThemePtr, &ThemeDict, 0);
+        Status = egLoadFile(ThemeDir, CONFIG_THEME_SVG, (UINT8**)&ThemePtr, &Size);
+        if (!EFI_ERROR(Status) && (ThemePtr != NULL) && (Size != 0)) {
+          Status = ParseSVGTheme((const CHAR8*)ThemePtr, &ThemeDict, 0);
           
-          if (EFI_ERROR (Status)) {
+          if (EFI_ERROR(Status)) {
             ThemeDict = NULL;
           }
           
           if (ThemeDict == NULL) {
-            DBG ("xml file %s not parsed\n", CONFIG_THEME_FILENAME);
+            DBG("svg file %s not parsed\n", CONFIG_THEME_SVG);
           } else {
-            DBG ("Using theme '%s' (%s)\n", TestTheme, ThemePath);
+            DBG("Using vector theme '%s' (%s)\n", TestTheme, ThemePath);
           }
-        }
-        
-        if (ThemePtr != NULL) {
-          FreePool (ThemePtr);
+         
+        } else {
+          Status = egLoadFile(ThemeDir, CONFIG_THEME_FILENAME, (UINT8**)&ThemePtr, &Size);
+          if (!EFI_ERROR (Status) && (ThemePtr != NULL) && (Size != 0)) {
+            Status = ParseXML((const CHAR8*)ThemePtr, &ThemeDict, 0);
+            
+            if (EFI_ERROR (Status)) {
+              ThemeDict = NULL;
+            }
+            
+            if (ThemeDict == NULL) {
+              DBG ("xml file %s not parsed\n", CONFIG_THEME_FILENAME);
+            } else {
+              DBG ("Using theme '%s' (%s)\n", TestTheme, ThemePath);
+            }
+          }
+          
         }
       }
     }
   }
-  
+  if (ThemePtr != NULL) {
+    FreePool (ThemePtr);
+  }
   return ThemeDict;
 }
 
@@ -4379,7 +4413,6 @@ ParseSMBIOSSettings(
   }
   DBG ("BiosReleaseDate: %a\n", gSettings.ReleaseDate);
   
-  // Check for FirmwareFeatures and FirmwareFeaturesMask by Sherlocks
   Prop = GetProperty (DictPointer, "FirmwareFeatures");
   if (Prop != NULL) {
     gFwFeatures = (UINT32)GetPropertyInteger (Prop, gFwFeatures);
@@ -4966,8 +4999,11 @@ GetUserSettings(
               }
             }
             
-            DBG (" %a", Prop2->string);
+            DBG (" %a ", Prop2->string);
             
+            Prop2 = GetProperty (Dict2, "Disabled");
+            gSettings.AddProperties[Index].MenuItem.BValue = !IsPropertyTrue (Prop2);
+
             Prop2 = GetProperty (Dict2, "Key");
             if (Prop2 && (Prop2->type == kTagTypeString) && Prop2->string) {
               gSettings.AddProperties[Index].Key = AllocateCopyPool (AsciiStrSize (Prop2->string), Prop2->string);
@@ -4988,7 +5024,11 @@ GetUserSettings(
               gSettings.AddProperties[Index].ValueLen = Size;
             }
             
-            DBG (", len: %d\n", gSettings.AddProperties[Index].ValueLen);
+            DBG ("Key: %a, len: %d\n", gSettings.AddProperties[Index].Key, gSettings.AddProperties[Index].ValueLen);
+            
+            if (!gSettings.AddProperties[Index].MenuItem.BValue) {
+              DBG ("  property disabled at config\n");
+            }
             
             ++Index;
           }
@@ -6179,8 +6219,8 @@ CHAR8 *GetOSVersion(IN LOADER_ENTRY *Entry)
          FileExists (Entry->Volume->RootDir, L"\\System\\Installation\\CDIS\\OS X Installer.app") || // 10.8 - 10.11
          FileExists (Entry->Volume->RootDir, L"\\System\\Installation\\CDIS\\macOS Installer.app") || // 10.12+
          FileExists (Entry->Volume->RootDir, L"\\.IAPhysicalMedia"))) { // 10.13.4+
-          InstallerPlist = L"\\System\\Library\\CoreServices\\SystemVersion.plist";
-        }
+      InstallerPlist = L"\\System\\Library\\CoreServices\\SystemVersion.plist";
+    }
     if (FileExists (Entry->Volume->RootDir, InstallerPlist)) {
       Status = egLoadFile (Entry->Volume->RootDir, InstallerPlist, (UINT8 **)&PlistBuffer, &PlistLen);
       if (!EFI_ERROR (Status) && PlistBuffer != NULL && ParseXML (PlistBuffer, &Dict, 0) == EFI_SUCCESS) {
@@ -6245,8 +6285,8 @@ CHAR8 *GetOSVersion(IN LOADER_ENTRY *Entry)
                   (FileExists (Entry->Volume->RootDir, L"\\com.apple.boot.R\\System\\Library\\PrelinkedKernels\\prelinkedkernel") ||
                    FileExists (Entry->Volume->RootDir, L"\\com.apple.boot.P\\System\\Library\\PrelinkedKernels\\prelinkedkernel") ||
                    FileExists (Entry->Volume->RootDir, L"\\com.apple.boot.S\\System\\Library\\PrelinkedKernels\\prelinkedkernel"))) {
-                    InstallerPlist = L"\\System\\Library\\CoreServices\\SystemVersion.plist"; // 10.11
-                  }
+                InstallerPlist = L"\\System\\Library\\CoreServices\\SystemVersion.plist"; // 10.11
+              }
             }
           }
         }
@@ -7179,7 +7219,7 @@ SetDevices (LOADER_ENTRY *Entry)
                   
                 case 0x8086:
                   if (gSettings.InjectIntel) {
-                    TmpDirty    = setup_gma_devprop(&PCIdevice);
+                    TmpDirty    = setup_gma_devprop(Entry, &PCIdevice);
                     StringDirty |=  TmpDirty;
                     MsgLog ("Intel GFX revision  = 0x%x\n", PCIdevice.revision);
                   } else {

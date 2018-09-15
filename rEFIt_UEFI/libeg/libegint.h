@@ -43,6 +43,7 @@
 
 #include "Platform.h"
 
+
 #if defined(_MSC_VER)
   #define ALIGN_64 __declspec(align(8))
 #else
@@ -74,9 +75,11 @@ DECLARE_EMB_EXTERN_WITH_SIZE(emb_selection_small)
 DECLARE_EMB_EXTERN_WITH_SIZE(emb_vol_internal)
 DECLARE_EMB_EXTERN_WITH_SIZE(emb_vol_internal_booter)
 DECLARE_EMB_EXTERN_WITH_SIZE(emb_vol_internal_hfs)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_vol_internal_apfs)
 DECLARE_EMB_EXTERN_WITH_SIZE(emb_vol_internal_ntfs)
 DECLARE_EMB_EXTERN_WITH_SIZE(emb_vol_internal_ext)
 DECLARE_EMB_EXTERN_WITH_SIZE(emb_vol_internal_recovery)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_vol_external)
 DECLARE_EMB_EXTERN_WITH_SIZE(emb_scroll_up_button)
 DECLARE_EMB_EXTERN_WITH_SIZE(emb_scroll_bar_start)
 DECLARE_EMB_EXTERN_WITH_SIZE(emb_scroll_scroll_start)
@@ -91,6 +94,43 @@ DECLARE_EMB_EXTERN_WITH_SIZE(emb_selection_indicator)
 DECLARE_EMB_EXTERN_WITH_SIZE(emb_checkbox)
 DECLARE_EMB_EXTERN_WITH_SIZE(emb_checkbox_checked)
 
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_font_data)
+//DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_pointer)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_func_about)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_func_clover)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_func_options)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_func_reset)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_func_secureboot_config)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_func_secureboot)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_func_shell)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_func_exit)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_func_help)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_logo)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_selection_big)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_selection_small)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_vol_internal)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_vol_internal_booter)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_vol_internal_hfs)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_vol_internal_apfs)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_vol_internal_ntfs)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_vol_internal_ext)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_vol_internal_recovery)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_vol_external)
+/*
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_scroll_up_button)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_scroll_bar_start)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_scroll_scroll_start)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_scroll_scroll_fill)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_scroll_scroll_end)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_scroll_bar_fill)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_scroll_bar_end)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_scroll_down_button)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_radio_button_selected)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_radio_button)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_selection_indicator)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_checkbox)
+DECLARE_EMB_EXTERN_WITH_SIZE(emb_dark_checkbox_checked)
+*/
 
 /* types */
 

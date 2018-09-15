@@ -13,8 +13,12 @@
 #include <Library/BaseMemoryLib.h>
 #include <Library/BaseLib.h>
 #include <Library/MemoryAllocationLib.h>
+#include <Library/PrintLib.h>
 
 #define PI (3.1415926536f)
+#define PI2 (6.283185307179586f)
+#define PI5 (1.570796326794897f)
+#define PI4 (0.78539816339745f)
 #define FLT_MAX (1.0e38f)
 #define FLT_MIN (1.0e-37f)
 
@@ -30,12 +34,15 @@ float AcosF(float X);
 float Atan2F(float X, float Y);
 
 RETURN_STATUS
-EFIAPI
 AsciiStrToFloat(IN  CONST CHAR8              *String,
                 OUT       CHAR8              **EndPointer,  OPTIONAL
                 OUT       float              *Data);
+#if 0
+VOID AsciiSPrintFloat(CHAR8* S, INTN N, CHAR8* F, float X);
 
-void QuickSort(void* Array, int Low, int High, INTN Size,
-               int (*compare)(const void* a, const void* b));
+VOID QuickSort(VOID* Array, INTN Low, INTN High, INTN Size,
+               INTN (*compare)(CONST VOID* a, CONST VOID* b));
+#endif
+CHAR16* PoolPrintFloat(float X);
 
 #endif /* FloatLib_h */

@@ -592,6 +592,7 @@ void PrintConfig(CFTypeRef data, GFX_HEADER * gfx)
   CFMutableArrayRef appPropArray = addArray(pciDict, CFSTR("#AddProperties"));
   CFMutableDictionaryRef appPropDict = addDictToArray(appPropArray);
   addString(appPropDict, CFSTR("#Device"), "XXX");
+  addBoolean(appPropDict, CFSTR("#Disabled"), 1);
   addString(appPropDict, CFSTR("#Key"), "AAPL,XXX");
   addHex(appPropDict, CFSTR("#Value"), 0xFFFF);
   
@@ -861,24 +862,22 @@ int main(int argc, char **argv)
     errx(1, "EFI is not supported on this system");
   }
   
-  /*result = */GetOFVariable(gEFI, "device-properties", &devProp);
-  //  int i;
+  (void) GetOFVariable(gEFI, "device-properties", &devProp);
   
   // Get the OF variable's type.
   typeID = CFGetTypeID(devProp);
   
   if (typeID == CFDataGetTypeID()) {
     length = CFDataGetLength(devProp);
-    if (length == 0)
-      return 0;
-    else
-      dataPtr = CFDataGetBytePtr(devProp);
+      if (length > 0) {
+        dataPtr = CFDataGetBytePtr(devProp);
+        gfx =  parse_binary(dataPtr);
+      } else {
+          warnx("<INVALID> Length of device-properties");
+      }
   } else {
-    printf("<INVALID> Type of properties\n");
-    return 0;
+    warnx("<INVALID> Type of device-properties");
   }
-
-  gfx =  parse_binary(dataPtr);
 #endif
   
   gPlatform = IORegistryEntryFromPath(masterPort, "IODeviceTree:/efi/platform");
@@ -888,7 +887,7 @@ int main(int argc, char **argv)
   CFTypeRef data = NULL;
   result = GetOFVariable(gPlatform, "Settings", &data);
   if (result != KERN_SUCCESS) {
-    errx(1, "Clover absent or too old : %s",
+    errx(1, "Can not get Clover settings: %s",
          mach_error_string(result));
   }
 
