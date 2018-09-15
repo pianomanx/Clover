@@ -25,6 +25,17 @@ Currently N/A.
 
 ### RehabMan added features/fixes
 
+Released as Clover_v2.4k_r4658.RM-4897.a1212629.zip on bitbucket, 2018-09-15:
+
+- generated CPU SSDTs table-id modifications for friendly names in patchmatic -extract output
+
+- removed all AAPL,GfxYTile injects for Intel IGPU (these properties cause issues with 10.14)
+
+- add support for VirtualSMC when InjectKexts="Detect"
+
+- update to Clover svn (4658), not latest Clover 4672, as it has annoying GUI performance issues
+
+
 Released as Clover_v2.4k_r4444.RM-4652.c1f8602f.zip on bitbucket, 2018-04-19:
 
 - update to latest Clover svn (4444)
