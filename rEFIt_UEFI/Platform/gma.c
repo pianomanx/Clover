@@ -2515,7 +2515,8 @@ BOOLEAN setup_gma_devprop(LOADER_ENTRY *Entry, pci_dt_t *gma_dev)
             default:
               break;
           }
-          devprop_add_value(device, "AAPL,GfxYTile", skylake_hd_vals[1], 4);
+          //REVIEW_REHABMAN: not needed and problematic on 10.14 beta
+          //devprop_add_value(device, "AAPL,GfxYTile", skylake_hd_vals[1], 4);
           break;
       }
       break;
@@ -2733,13 +2734,13 @@ BOOLEAN setup_gma_devprop(LOADER_ENTRY *Entry, pci_dt_t *gma_dev)
           switch (gma_dev->device_id) {
             case 0x5917:
             case 0x87C0:
-              // Rehabman: GfxYTile causes a hang on boot in 10.14 beta when using Kaby Lake-R UHD Graphics 620
-              if (os_version < AsciiOSVersionToUint64("10.14")) {
-                devprop_add_value(device, "AAPL,GfxYTile", kabylake_hd_vals[1], 4);
-              }
+              //REVIEW_REHABMAN: not needed and problematic on 10.14 beta
+              //if (os_version < AsciiOSVersionToUint64("10.14")) {
+              //  devprop_add_value(device, "AAPL,GfxYTile", kabylake_hd_vals[1], 4);
+              //}
               break;
             default:
-              devprop_add_value(device, "AAPL,GfxYTile", kabylake_hd_vals[1], 4);
+              //devprop_add_value(device, "AAPL,GfxYTile", kabylake_hd_vals[1], 4);
               break;
           }
       }
