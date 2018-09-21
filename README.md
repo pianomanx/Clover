@@ -25,7 +25,14 @@ Currently N/A.
 
 ### RehabMan added features/fixes
 
-Released as Clover_v2.4k_r4658.RM-4897.a1212629.zip on bitbucket, 2018-09-15:
+Released as Clover_v2.4k_r4658.RM-4898.587482ee.zip on bitbucket, 2018-09-21:
+
+- includes AppleUISupport, ApfsDriverLoader,  AppleImageLoader, etc
+
+- Clover svn version (4658) remains the same
+
+
+Released as Clover_v2.4k_r4658.RM-4897.a1212629.zip on bitbucket, 2018-09-15 (redacted):
 
 - generated CPU SSDTs table-id modifications for friendly names in patchmatic -extract output
 
