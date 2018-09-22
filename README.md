@@ -25,7 +25,7 @@ Currently N/A.
 
 ### RehabMan added features/fixes
 
-Released as Clover_v2.4k_r4658.RM-4901.b81dd0cc.zip on bitbucket, 2018-09-22:
+Released as Clover_v2.4k_r4658.RM-4903.ca9576f3.zip on bitbucket, 2018-09-22:
 
 - fix serious regression in the ACPI patcher (AcpiPatcher.c) that caused ACPI/DSDT/Patches content to NOT be applied to merged SSDTs in ACPI/patched.  Only add-on SSDTs are excluded from ACPI/DSDT/Patches when AutoMerge=true.  Merged SSDTs are still patched just as they would have been had they not had a patched file in ACPI/patched.  It was a clear regression from my last major build r4444.
 
