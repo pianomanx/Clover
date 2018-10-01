@@ -235,10 +235,37 @@ cd clover.git
 
 Then you can invoke the script and use the menus:
 ```
-./Build_Clover.git
+cd ~/Projects/clover.git
+./Build_Clover.command
 ```
 
 The script will automatically clone master from my Clover fork.  If you wanted to use your own fork, modify the script as needed.
+
+
+### AptioFixPkg and AppleSupportPkg
+
+For AptioMemoryFix*.efi/AptioInputFix*.efi and AptioUISupport*.efi/ApfsDriverLoader.efi/AppleImageLoader.efi, you must clone and build these separately, then copy (with script) to the appropriate location for inclusion with the Clover package.
+
+To clone:
+```
+cd ~/Projects
+git clone https://github.com/acidanthera/AptioFixPkg.git aptiofix.git
+git clone https://github.com/acidanthera/AppleSupportPkg.git applesupport.git
+```
+
+Then build each with each respective project's ./macbuild.tool.
+
+Then back in your clover.git, copy them with the provided script:
+```
+cd ~/Projects/clover.git
+./update_externals.sh
+```
+
+After that, you can build as usual with the Build_Clover.command:
+```
+cd ~/Projects/clover.git
+./Build_Clover.command
+```
 
 
 ### A note regarding the 'svn' branch
