@@ -1199,7 +1199,7 @@ static nvidia_pci_info_t nvidia_card_generic[] = {
 	{ 0x10DE119A,	"GeForce GTX 860M" },
 	{ 0x10DE119D,	"GeForce GTX 775M" }, // Mac Edition
 	{ 0x10DE119E,	"GeForce GTX 780M" }, // Mac Edition
-	{ 0x10DE119F,	"GeForce GTX 780M" },
+	{ 0x10DE119F,	"GeForce GTX 780M" },  //GK104
 	// 11A0 - 11AF
 	{ 0x10DE11A0,	"GeForce GTX 680M" },
 	{ 0x10DE11A1,	"GeForce GTX 670MX" },
@@ -1410,7 +1410,7 @@ static nvidia_pci_info_t nvidia_card_generic[] = {
 	{ 0x10DE1B80,   "GeForce GTX 1080"}, // GP104
 	{ 0x10DE1B81,   "GeForce GTX 1070"}, // GP104
   //	{ 0x10DE1B82,	"Graphics Device" }, // GP104
-  //	{ 0x10DE1B83,	"Graphics Device" }, // GP104
+  { 0x10DE1B83,	"GeForce GTX 1060" }, // GP104
 	{ 0x10DE1BA0,	"GeForce GTX 1080" }, // GP104M
 	{ 0x10DE1BA1,	"GeForce GTX 1070" }, // GP104M
 	{ 0x10DE1BB0,	"Quadro P5000" }, // GP104GL
@@ -1432,7 +1432,7 @@ static nvidia_pci_info_t nvidia_card_generic[] = {
 	{ 0x10DE1C60,	"GeForce GTX 1060" }, // GP106M
   //	{ 0x10DE1C70,	"Graphics Device" }, // GP106GL
   //	{ 0x10DE1C80,	"Graphics Device" }, // GP107
-  //	{ 0x10DE1C81,	"Graphics Device" }, // GP107
+  	{ 0x10DE1C81,	"GeForce GTX 1050" }, // GP107
   	{ 0x10DE1C82,	"GeForce GTX 1050 Ti"}, // GP107
 	// 1D00 - 1EFFF
   	{ 0x10DE1D10,	"GeForce MX150"},

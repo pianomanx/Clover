@@ -326,7 +326,7 @@ typedef struct NSVGfont {
   int fontWeight; //usually 400 like stroke-width
   float fontSize; // 8,9,12,14...
   int unitsPerEm; //usually 1000
-  char panose[64]; //int[10] obsolete
+//  char panose[64]; //int[10] obsolete
   int ascent;
   int descent;
   int xHeight;
@@ -338,8 +338,8 @@ typedef struct NSVGfont {
   int unicodeRange[2];
   char fontStretch; //normal, ...
   char fontStyle; //light, italic, bold
+//  int fillColor; -- font is colorless while text has color
   // -- glyphs
-  char pad[2];
   NSVGglyph* missingGlyph;
   NSVGglyph* glyphs; // a chain
 } NSVGfont;
@@ -352,6 +352,7 @@ typedef struct NSVGtext {
   NSVGfont* font;
   float fontSize;
   char fontStyle;
+  unsigned int fontColor;
   NSVGstyles* style;
   NSVGshape* shapes;
 } NSVGtext;
@@ -396,15 +397,17 @@ typedef struct NSVGparser
 
 // Parses SVG file from a null terminated string, returns SVG image as paths.
 // Important note: changes the string.
-extern NSVGparser* nsvgParse(char* input, const char* units, float dpi);
+NSVGparser* nsvgParse(char* input, const char* units, float dpi);
 
 // Deletes list of paths.
-extern void nsvgDelete(NSVGimage* image);
-extern void nsvg__xformIdentity(float* t);
-extern void nsvg__deleteParser(NSVGparser* p);
-extern void nsvg__xformInverse(float* inv, float* t);
-extern void nsvg__xformPremultiply(float* t, float* s);
+void nsvgDelete(NSVGimage* image);
+void nsvg__xformIdentity(float* t);
+void nsvg__deleteParser(NSVGparser* p);
+void nsvg__xformInverse(float* inv, float* t);
+void nsvg__xformPremultiply(float* t, float* s);
 void nsvg__deleteFont(NSVGfont* font);
+INTN addLetter(NSVGparser* p, CHAR16 letter, INTN x, INTN y, float scale);
+VOID LoadSVGfont(NSVGfont  *fontSVG);
 
 //--------------- Rasterizer --------------
 typedef struct NSVGrasterizer NSVGrasterizer;
@@ -412,7 +415,7 @@ typedef void (*recursive_image)(const void *obj, NSVGrasterizer *r, const char *
 
 
 // Allocated rasterizer context.
-extern NSVGrasterizer* nsvgCreateRasterizer(VOID);
+NSVGrasterizer* nsvgCreateRasterizer(VOID);
 
 // Rasterizes SVG image, returns RGBA image (non-premultiplied alpha)
 //   r - pointer to rasterizer context
@@ -423,16 +426,16 @@ extern NSVGrasterizer* nsvgCreateRasterizer(VOID);
 //   w - width of the image to render
 //   h - height of the image to render
 //   stride - number of bytes per scaleline in the destination buffer
-extern void nsvgRasterize(NSVGrasterizer* r,
+void nsvgRasterize(NSVGrasterizer* r,
                    NSVGimage* image, float tx, float ty, float scalex, float scaley,
                    unsigned char* dst, int w, int h, int stride, recursive_image external_image, const void *obj);
 
 // Deletes rasterizer context.
-extern void nsvgDeleteRasterizer(NSVGrasterizer*);
-extern NSVGparser* nsvg__createParser();
+void nsvgDeleteRasterizer(NSVGrasterizer*);
+NSVGparser* nsvg__createParser();
 
 #define NSVG__SUBSAMPLES  5
-#define NSVG__FIXSHIFT    10
+#define NSVG__FIXSHIFT    12
 #define NSVG__FIX      (1 << NSVG__FIXSHIFT)
 #define NSVG__FIXMASK    (NSVG__FIX-1)
 #define NSVG__MEMPAGE_SIZE  1024

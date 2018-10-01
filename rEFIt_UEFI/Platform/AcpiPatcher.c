@@ -506,12 +506,17 @@ VOID PatchAllTables()
       // may be also EFI_ACPI_4_0_MULTIPLE_APIC_DESCRIPTION_TABLE_SIGNATURE?
       continue; // will be patched elsewhere
     }
+	/*
+    if (!CheckTableHeader(Table)) {
+      // header does not need patching
+      continue;
+    }
     //BUGFIX_REHABMAN: This is wrong! *MUST* apply DSDT/Patches to merged tables!
     //if (IsXsdtEntryMerged(IndexFromXsdtEntryPtr(Ptr))) {
     //  // table header already patched
     //  continue;
     //}
-
+	*/
     //do new table with patched header
     UINT32 Len = Table->Length;
     EFI_PHYSICAL_ADDRESS BufferPtr = EFI_SYSTEM_TABLE_MAX_ADDRESS;
@@ -526,6 +531,8 @@ VOID PatchAllTables()
     EFI_ACPI_DESCRIPTION_HEADER* NewTable = (EFI_ACPI_DESCRIPTION_HEADER*)(UINTN)BufferPtr;
     CopyMem(NewTable, Table, Len);
     if ((gSettings.FixDsdt & FIX_HEADERS) || gSettings.FixHeaders) {
+
+//      CopyMem(NewTable, Table, Len);
       // Merged tables already have the header patched, so no need to do it again
       if (!IsXsdtEntryMerged(IndexFromXsdtEntryPtr(Ptr))) {
         // table header NOT already patched
@@ -565,8 +572,7 @@ VOID PatchAllTables()
     }
     if (Patched) {
       // in case we need to free it, keep track of table size
-      SaveMergedXsdtEntrySize(IndexFromXsdtEntryPtr(Ptr), Len + 4096);
-
+      //SaveMergedXsdtEntrySize(IndexFromXsdtEntryPtr(Ptr), Len + 4096);
       // write patched table pointer into the XSDT
       WriteUnaligned64(Ptr, BufferPtr);
       FixChecksum(NewTable);

@@ -129,7 +129,8 @@
   ExtractGuidedSectionLib|MdePkg/Library/DxeExtractGuidedSectionLib/DxeExtractGuidedSectionLib.inf
   PlatformHookLib|MdeModulePkg/Library/BasePlatformHookLibNull/BasePlatformHookLibNull.inf
 !ifdef NO_CLOVER_SHELL
-  ShellLib|ShellPkg/Library/UefiShellLib/UefiShellLib.inf
+  #ShellLib|ShellPkg/Library/UefiShellLib/UefiShellLib.inf
+  ShellLib|Clover/ShellPkg/Library/UefiShellLib/UefiShellLib.inf
 !endif
 
   #SerialPortLib|PcAtChipsetPkg/Library/SerialIoLib/SerialIoLib.inf
@@ -450,6 +451,7 @@
   Clover/Protocols/AppleUITheme/AppleUITheme.inf
   Clover/Protocols/HashServiceFix/HashServiceFix.inf
   Clover/Protocols/AppleKeyAggregator/AppleKeyAggregator.inf
+  Clover/Protocols/AppleKeyFeeder/AppleKeyFeeder.inf
   
 
 !ifdef DEBUG_ON_SERIAL_PORT

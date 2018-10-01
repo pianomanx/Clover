@@ -983,11 +983,12 @@ if [[ -d "${SRCROOT}/CloverV2/EFI/CLOVER/drivers64" && ${NOEXTRAS} != *"CloverEF
 
         packageRefId=$(getPackageRefId "${packagesidentity}" "${driverChoice}")
         # Add postinstall script for VBoxHfs driver to remove it if HFSPlus driver exists
-        [[ "$driver" == VBoxHfs* ]] && \
+        if [[ "$driver" == VBoxHfs* ]]; then
          addTemplateScripts --pkg-rootdir="${PKG_BUILD_DIR}/${driverChoice}"  \
                             --subst="DRIVER_NAME=$driver"                     \
                             --subst="DRIVER_DIR=$(basename $driverDestDir)"   \
                             "VBoxHfs"
+        fi
         # mandatory drivers starts all selected only if /Library/Preferences/com.projectosx.clover.installer.plist does not exist
         # (i.e. Clover package never run on that target partition).
         # Otherwise each single choice start selected only for legacy Clover and only if you previously selected it
@@ -1031,6 +1032,47 @@ if [[ -d "${SRCROOT}/CloverV2/drivers-Off/drivers64" && ${NOEXTRAS} != *"CloverE
 fi
 # End build drivers-x64 packages
 
+# build FileVault drivers-x64 packages
+if [[ -d "${SRCROOT}/CloverV2/drivers-Off/drivers64/FileVault2" && ${NOEXTRAS} != *"CloverEFI"* ]]; then
+    echo "=============== drivers64 FileVault2 ==================="
+      addGroupChoices --title="Drivers64FV2" --description="Drivers64FV2"  \
+      --enabled="!choices['UEFI.only'].selected"     \
+      --visible="!choices['UEFI.only'].selected"     \
+      "Drivers64FV2"
+    packagesidentity="${clover_package_identity}".fv2.drivers64
+    local drivers=($( find "${SRCROOT}/CloverV2/drivers-Off/drivers64/FileVault2" -type f -name '*.efi' -depth 1 | sort -f ))
+    local driverDestDir='/EFIROOTDIR/EFI/CLOVER/drivers64'
+    for (( i = 0 ; i < ${#drivers[@]} ; i++ )); do
+        local driver="${drivers[$i]##*/}"
+        local driverName="${driver%.efi}"
+        ditto --noextattr --noqtn --arch i386 "${drivers[$i]}" "${PKG_BUILD_DIR}/${driverName}/Root/"
+        find "${PKG_BUILD_DIR}/${driverName}" -name '.DS_Store' -exec rm -R -f {} \; 2>/dev/null
+        fixperms "${PKG_BUILD_DIR}/${driverName}/Root/"
+
+        packageRefId=$(getPackageRefId "${packagesidentity}" "${driverName}")
+        # Add postinstall script for old FileVault2 drivers to remove it if AppleUiSupport driver exists
+        if [[ "$driver" == AppleImageCodec* || "$driver" == AppleKeyAggregator* ||
+                "$driver" == AppleUITheme* || "$driver" == FirmwareVolume* || "$driver" == HashServiceFix* ]]; then
+         addTemplateScripts --pkg-rootdir="${PKG_BUILD_DIR}/${driverName}"  \
+                            --subst="DRIVER_NAME=$driver"                     \
+                            --subst="DRIVER_DIR=$(basename $driverDestDir)"   \
+                            "AppleUiSupport"
+        fi
+
+        addTemplateScripts --pkg-rootdir="${PKG_BUILD_DIR}/${driverName}" \
+                           --subst="INSTALLER_CHOICE=$packageRefId" MarkChoice
+        buildpackage "$packageRefId" "${driverName}" "${PKG_BUILD_DIR}/${driverName}" "${driverDestDir}"
+        addChoice --group="Drivers64FV2" --title="$driverName"                                               \
+                  --enabled="!choices['UEFI.only'].selected"                                              \
+                  --start-selected="!choices['UEFI.only'].selected &amp;&amp; choicePreviouslySelected('$packageRefId')"                            \
+                  --selected="choices['$driverName'].selected"  \
+                  --pkg-refs="$packageRefId"                                                              \
+                  "${driverName}"
+        rm -R -f "${PKG_BUILD_DIR}/${driverName}"
+    done
+fi
+# End build FileVault drivers-x64 packages
+
 # build mandatory drivers-x64UEFI packages
 if [[ -d "${SRCROOT}/CloverV2/EFI/CLOVER/drivers64UEFI" ]]; then
     echo "=============== drivers64 UEFI mandatory ==============="
@@ -1048,11 +1090,12 @@ if [[ -d "${SRCROOT}/CloverV2/EFI/CLOVER/drivers64UEFI" ]]; then
 
         packageRefId=$(getPackageRefId "${packagesidentity}" "${driverChoice}")
         # Add postinstall script for VBoxHfs driver to remove it if HFSPlus driver exists
-        [[ "$driver" == VBoxHfs* ]] && \
+        if [[ "$driver" == VBoxHfs* ]]; then
          addTemplateScripts --pkg-rootdir="${PKG_BUILD_DIR}/${driverChoice}"  \
                             --subst="DRIVER_NAME=$driver"                     \
                             --subst="DRIVER_DIR=$(basename $driverDestDir)"   \
                             "VBoxHfs"
+        fi
         buildpackage "$packageRefId" "${driverChoice}" "${PKG_BUILD_DIR}/${driverChoice}" "${driverDestDir}"
         addChoice --group="Drivers64UEFI" --start-visible="true" --start-selected="true" --pkg-refs="$packageRefId"  "${driverChoice}"
         rm -R -f "${PKG_BUILD_DIR}/${driverChoice}"
@@ -1085,6 +1128,41 @@ if [[ -d "${SRCROOT}/CloverV2/drivers-Off/drivers64UEFI" ]]; then
     done
 fi
 # End build drivers-x64UEFI packages
+
+# build FileVault drivers-x64UEFI packages
+if [[ -d "${SRCROOT}/CloverV2/drivers-Off/drivers64UEFI/FileVault2" ]]; then
+    echo "============= drivers64 UEFI FileVault2 ================"
+    addGroupChoices --title="Drivers64UEFIFV2" --description="Drivers64UEFIFV2" "Drivers64UEFIFV2"
+    packagesidentity="${clover_package_identity}".fv2.drivers64UEFI
+    local drivers=($( find "${SRCROOT}/CloverV2/drivers-Off/drivers64UEFI/FileVault2" -type f -name '*.efi' -depth 1 | sort -f ))
+    local driverDestDir='/EFIROOTDIR/EFI/CLOVER/drivers64UEFI'
+    for (( i = 0 ; i < ${#drivers[@]} ; i++ ))
+    do
+        local driver="${drivers[$i]##*/}"
+        local driverName="${driver%.efi}.UEFI"
+        ditto --noextattr --noqtn --arch i386 "${drivers[$i]}" "${PKG_BUILD_DIR}/${driverName}/Root/"
+        find "${PKG_BUILD_DIR}/${driverName}" -name '.DS_Store' -exec rm -R -f {} \; 2>/dev/null
+        fixperms "${PKG_BUILD_DIR}/${driverName}/Root/"
+
+        packageRefId=$(getPackageRefId "${packagesidentity}" "${driverName}")
+        # Add postinstall script for old FileVault2 drivers to remove it if AppleUiSupport driver exists
+        if [[ "$driver" == AppleImageCodec* || "$driver" == AppleKeyAggregator* ||
+                "$driver" == AppleUITheme* || "$driver" == FirmwareVolume* || "$driver" == HashServiceFix* ]]; then
+         addTemplateScripts --pkg-rootdir="${PKG_BUILD_DIR}/${driverName}"  \
+                            --subst="DRIVER_NAME=$driver"                     \
+                            --subst="DRIVER_DIR=$(basename $driverDestDir)"   \
+                            "AppleUiSupport"
+        fi
+        addTemplateScripts --pkg-rootdir="${PKG_BUILD_DIR}/${driverName}" \
+                           --subst="INSTALLER_CHOICE=$packageRefId" MarkChoice
+        buildpackage "$packageRefId" "${driverName}" "${PKG_BUILD_DIR}/${driverName}" "${driverDestDir}"
+        addChoice --group="Drivers64UEFIFV2"  --title="$driverName"                \
+                  --start-selected="choicePreviouslySelected('$packageRefId')"  \
+                  --pkg-refs="$packageRefId"  "${driverName}"
+        rm -R -f "${PKG_BUILD_DIR}/${driverName}"
+    done
+fi
+# End build FileVault drivers-x64UEFI packages
 
 # build rc scripts package
 if [[ ${NOEXTRAS} != *"RC scripts"* ]]; then
