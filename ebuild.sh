@@ -1135,9 +1135,9 @@ MainPostBuildScript() {
         ;;
         0 | 2 | 3)
           copyBin "$APTIO_BUILD_DIR_ARCH"/AptioMemoryFix.efi "$CLOVER_PKG_DIR"/EFI/CLOVER/drivers64UEFI/AptioMemoryFix-64.efi
-          copyBin "$APTIO_BUILD_DIR_ARCH"/AptioInputFix.efi "$CLOVER_PKG_DIR"/EFI/CLOVER/drivers64UEFI/FileVault2/AptioInputFix-64.efi
+          copyBin "$APTIO_BUILD_DIR_ARCH"/AptioInputFix.efi "$CLOVER_PKG_DIR"/drivers-Off/drivers64UEFI/FileVault2/AptioInputFix-64.efi
 
-          copyBin "$APFS_BUILD_DIR_ARCH"/AppleUISupport.efi "$CLOVER_PKG_DIR"/EFI/CLOVER/drivers64UEFI/FileVault2/AppleUISupport-64.efi
+          copyBin "$APFS_BUILD_DIR_ARCH"/AppleUISupport.efi "$CLOVER_PKG_DIR"/drivers-Off/drivers64UEFI/FileVault2/AppleUISupport-64.efi
           binArray=( ApfsDriverLoader AppleImageLoader )
           for efi in "${binArray[@]}"
           do
