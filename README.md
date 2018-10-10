@@ -25,14 +25,19 @@ Currently N/A.
 
 ### RehabMan added features/fixes
 
-Released as Clover_v2.4k_r4701.RM-4961.695d25a4.zip on bitbucket, 2018-10-10:
+Released as Clover_v2.4k_r4701.RM-4963.ca6cca7c.zip on bitbucket, 2018-10-10:
+
+- fix bug where EDID specified in Devices/Properties would not be injected if Graphics/EDID/Inject=false
+
+
+Released as Clover_v2.4k_r4701.RM-4961.695d25a4.zip on bitbucket, 2018-10-10 (removed):
 
 - allow EDID settings from Graphics/EDID to apply to EDID injection properties (*override-no-connect, *override-no-edid) in Devices/Properties
 
 - update to latest Clover svn (4701)
 
 
-Released as Clover_v2.4k_r4697.RM-4952.c464150b.zip on bitbucket, 2018-10-07:
+Released as Clover_v2.4k_r4697.RM-4952.c464150b.zip on bitbucket, 2018-10-07 (removed):
 
 - update to latest Clover svn (4697) -- Note: EFI/FV2 drivers group refactor in the Clover installer
 
@@ -46,14 +51,14 @@ Released as Clover_v2.4k_r4658.RM-4903.ca9576f3.zip on bitbucket, 2018-09-22:
 - VboxHfs-64.efi is NOT a default in this build
 
 
-Released as Clover_v2.4k_r4658.RM-4898.587482ee.zip on bitbucket, 2018-09-21 (redacted):
+Released as Clover_v2.4k_r4658.RM-4898.587482ee.zip on bitbucket, 2018-09-21 (removed):
 
 - includes AppleUISupport, ApfsDriverLoader,  AppleImageLoader, etc
 
 - Clover svn version (4658) remains the same
 
 
-Released as Clover_v2.4k_r4658.RM-4897.a1212629.zip on bitbucket, 2018-09-15 (redacted):
+Released as Clover_v2.4k_r4658.RM-4897.a1212629.zip on bitbucket, 2018-09-15 (removed):
 
 - generated CPU SSDTs table-id modifications for friendly names in patchmatic -extract output
 
@@ -90,12 +95,12 @@ Released as Clover_v2.4k_r4359.RM-4506.7036cf0a.zip on bitbucket, 2017-12-15:
 - no change, just build identifiers (git commit hash) fixed due to git commit log snafu
 
 
-Released as Clover_v2.4k_r4359.RM-4506.c5fc0346.zip on bitbucket, 2017-12-15 (redacted):
+Released as Clover_v2.4k_r4359.RM-4506.c5fc0346.zip on bitbucket, 2017-12-15 (removed):
 
 - fixed a bug when AutoMerge=true and SortedOrder specified would cause a merged table to be also treated as an add-on SSDT.  (Note: SortedOrder is not needed when using AutoMerge=true, but it should not result in duplicate table insertion)
 
 
-Released as Clover_v2.4k_r4359.RM-4503.86e25a09.zip on bitbucket, 2017-12-15 (redacted):
+Released as Clover_v2.4k_r4359.RM-4503.86e25a09.zip on bitbucket, 2017-12-15 (removed):
 
 - fixed a bug with config.plist/ACPI/DSDT/Fixes/FixHeaders (NUL characters should not have been translated to spaces)
 
@@ -118,7 +123,7 @@ Released as Clover_v2.4k_r4330.RM-4456.06db6224.pkg on bitbucket, 2017-12-01:
 - updated to latest Clover svn (4330)
 
 
-Released as Clover_v2.4k_r4328.RM-4448.d22dddfd.pkg on bitbucket, 2017-11-31 (redacted):
+Released as Clover_v2.4k_r4328.RM-4448.d22dddfd.pkg on bitbucket, 2017-11-31 (removed):
 
 - restored "without caches" option (AGAIN!)
 
@@ -133,7 +138,7 @@ Released as Clover_v2.4k_r4328.RM-4448.d22dddfd.pkg on bitbucket, 2017-11-31 (re
 - updated to latest Clover svn (4328)
 
 
-Released as Clover_v2.4k_r4318.RM-4429.43710d68.pkg on bitbucket, 2017-11-24 (redacted):
+Released as Clover_v2.4k_r4318.RM-4429.43710d68.pkg on bitbucket, 2017-11-24 (removed):
 
 - fixed an issue with AutoMerge when SSDTs have the same OEM table ID
 
@@ -148,12 +153,12 @@ Released as Clover_v2.4k_r4318.RM-4429.43710d68.pkg on bitbucket, 2017-11-24 (re
 - updated to latest Clover svn (4318)
 
 
-Released as Clover_v2.4k_r4270.RM-4359.cc5db5ba.pkg on bitbucket, 2017-10-28 (redacted):
+Released as Clover_v2.4k_r4270.RM-4359.cc5db5ba.pkg on bitbucket, 2017-10-28 (removed):
 
 - added config.plist/ACPI/SSDT/NoDynamicExtract (boolean) option, default false.  When set true, this flag will disable extraction of dynamic SSDTs when using F4.  Dynamic SSDTs are rarely needed and usually just cause confusion (mistakenly putting them in ACPI/patched).
 
 
-Released as Clover_v2.4k_r4265.RM-4346.38d5ad43.zip on bitbucket, 2017-10-26 (redacted):
+Released as Clover_v2.4k_r4265.RM-4346.38d5ad43.zip on bitbucket, 2017-10-26 (removed):
 
 - internal: automatic calculation of embedded image/font sizes
 
