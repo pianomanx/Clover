@@ -6982,14 +6982,23 @@ SetDevices (LOADER_ENTRY *Entry)
     while (Prop2) {
       if (Prop2->MenuItem.BValue) {
         if (AsciiStrStr(Prop2->Key, "-platform-id") != NULL) {
+          // special case for ig-platform-id and snb-platform-id
           if (gSettings.IgPlatform == 0) {
             CopyMem((UINT8*)&gSettings.IgPlatform, (UINT8*)Prop2->Value, Prop2->ValueLen);
           }
           devprop_add_value(device, Prop2->Key, (UINT8*)&gSettings.IgPlatform, 4);
+          DBG("   Add key=%a valuelen=%d\n", Prop2->Key, Prop2->ValueLen);
+        } else if (AsciiStrStr(Prop2->Key, "override-no-edid") || AsciiStrStr(Prop2->Key, "override-no-connect")) {
+          // special case for EDID properties
+          if (gSettings.InjectEDID && gSettings.CustomEDID) {
+            devprop_add_value(device, Prop2->Key, gSettings.CustomEDID, 128);
+            DBG("   Add key=%a from custom EDID\n", Prop2->Key);
+          }
         } else {
+          // normal properties, ...
           devprop_add_value(device, Prop2->Key, (UINT8*)Prop2->Value, Prop2->ValueLen);
+          DBG("   Add key=%a valuelen=%d\n", Prop2->Key, Prop2->ValueLen);
         }
-        DBG("   Add key=%a valuelen=%d\n", Prop2->Key, Prop2->ValueLen);
       }
       
       StringDirty = TRUE;
