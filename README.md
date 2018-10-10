@@ -25,6 +25,13 @@ Currently N/A.
 
 ### RehabMan added features/fixes
 
+Released as Clover_v2.4k_r4701.RM-4961.695d25a4.zip on bitbucket, 2018-10-10:
+
+- allow EDID settings from Graphics/EDID to apply to EDID injection properties (*override-no-connect, *override-no-edid) in Devices/Properties
+
+- update to latest Clover svn (4701)
+
+
 Released as Clover_v2.4k_r4697.RM-4952.c464150b.zip on bitbucket, 2018-10-07:
 
 - update to latest Clover svn (4697) -- Note: EFI/FV2 drivers group refactor in the Clover installer
