@@ -461,10 +461,10 @@ struct _refit_menu_screen {
 #define HDBADGES_INLINE (1<<2)
 
 typedef enum {
-  None,
-  Scale,
-  Crop,
-  Tile
+  imNone,
+  imScale,
+  imCrop,
+  imTile
   
 } SCALING;
 
@@ -875,6 +875,7 @@ EG_IMAGE * GetSmallHover(IN UINTN Id);
 #define BUILTIN_SELECTION_SMALL                (23)
 #define BUILTIN_SELECTION_BIG                  (24)
 #define BUILTIN_ICON_COUNT                     (25)
+#define BUILTIN_ICON_BACKGROUND                (100)
 //
 // menu module
 //

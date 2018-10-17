@@ -153,7 +153,7 @@ typedef struct NSVGgroup
 	struct NSVGgroup* parent;			// Pointer to parent group or NULL
 	struct NSVGgroup* next;			// Pointer to next group or NULL
   struct NSVGshape* shapeList; // list of shapes inside the group
-  
+
 } NSVGgroup;
 
 typedef struct NSVGshape
@@ -186,7 +186,8 @@ typedef struct NSVGshape
 //  char fontWeight[64];
 //  float fontSize;
   BOOLEAN isText;
-  char pad2[7];
+  BOOLEAN debug;
+  char pad2[6];
 //  CHAR16 textData[kMaxTextLength];
   const char *image_href;
 } NSVGshape;
@@ -308,7 +309,7 @@ typedef struct NSVGattrib
  	char* description;
  	struct NSVGstyles* next;
  } NSVGstyles;
- 
+
 //------------- Fonts ---------------------
 typedef struct NSVGglyph {
   char name[16];
@@ -342,19 +343,22 @@ typedef struct NSVGfont {
   // -- glyphs
   NSVGglyph* missingGlyph;
   NSVGglyph* glyphs; // a chain
+  struct NSVGfont* next;
 } NSVGfont;
 
 typedef struct NSVGtext {
   char id[64];
-  char class[64];
+//  char class[64];
   float x,y;
   //  char fontFamily[64];
   NSVGfont* font;
+  NSVGfont* fontFace;
   float fontSize;
   char fontStyle;
   unsigned int fontColor;
   NSVGstyles* style;
   NSVGshape* shapes;
+  struct NSVGtext *next;
 } NSVGtext;
 
 typedef struct NSVGparser
@@ -380,7 +384,7 @@ typedef struct NSVGparser
   char styleFlag;
 //  char groupFlag;
   BOOLEAN isText;
-  char unknown[64];
+//  char unknown[64];
   NSVGtext* text;
   NSVGclipPath* clipPath;
   NSVGclipPathIndex clipPathStack[NSVG_MAX_CLIP_PATHS];
@@ -406,8 +410,8 @@ void nsvg__deleteParser(NSVGparser* p);
 void nsvg__xformInverse(float* inv, float* t);
 void nsvg__xformPremultiply(float* t, float* s);
 void nsvg__deleteFont(NSVGfont* font);
-INTN addLetter(NSVGparser* p, CHAR16 letter, INTN x, INTN y, float scale);
-VOID LoadSVGfont(NSVGfont  *fontSVG);
+INTN addLetter(NSVGparser* p, CHAR16 letter, INTN x, INTN y, float scale, UINT32 color);
+VOID LoadSVGfont(NSVGfont  *fontSVG, UINT32 color);
 
 //--------------- Rasterizer --------------
 typedef struct NSVGrasterizer NSVGrasterizer;
@@ -506,7 +510,7 @@ struct NSVGrasterizer
   unsigned char* scanline;
   int cscanline;
   NSVGscanlineFunction fscanline;
-  
+
   unsigned char* stencil;
   int stencilSize;
   int stencilStride;

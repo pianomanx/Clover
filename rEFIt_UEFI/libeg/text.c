@@ -58,8 +58,9 @@ EG_IMAGE *FontImage = NULL;
 INTN FontWidth = 9;
 INTN FontHeight = 18;
 INTN TextHeight = 19;
+VOID *fontsDB = NULL;
 
-CONST EG_PIXEL WhitePixel = {255, 255, 255, 210};
+CONST EG_PIXEL WhitePixel = {255, 255, 255, 210}; //semitransparent
 
 //
 // Text rendering
@@ -86,8 +87,13 @@ EG_IMAGE * egLoadFontImage(IN BOOLEAN UseEmbedded, IN INTN Rows, IN INTN Cols)
     NewImage = egDecodePNG(ACCESS_EMB_DATA(emb_font_data), ACCESS_EMB_SIZE(emb_font_data), TRUE);
     MsgLog("Using embedded font: %a\n", NewImage ? "Success" : "Error");
   } else {
-    NewImage = egLoadImage(ThemeDir, isKorean ? L"FontKorean.png" : GlobalConfig.FontFileName, TRUE);
-    MsgLog("Loading font from ThemeDir: %a\n", NewImage ? "Success" : "Error");
+    if (!GlobalConfig.TypeSVG) {
+      NewImage = egLoadImage(ThemeDir, isKorean ? L"FontKorean.png" : GlobalConfig.FontFileName, TRUE);
+      MsgLog("Loading font from ThemeDir: %a\n", NewImage ? "Success" : "Error");
+    } else {
+      MsgLog("Using SVG font\n");
+      return FontImage;
+    }
   }
   
   if (!NewImage) {
@@ -153,16 +159,17 @@ VOID PrepareFont()
 {
   EG_PIXEL    *p;
   INTN         Width, Height;
-  
+
+  if (GlobalConfig.TypeSVG) {
+//    FontImage = LoadSVGfont();
+    return;
+  }
+
   if (FontImage) {
     egFreeImage(FontImage);
     FontImage = NULL;
   }
-/*
-  if (GlobalConfig.TypeSVG) {
-    FontImage = LoadSVGfont();
-  }
-*/
+
   if (gLanguage == korean) {
     FontImage = egLoadFontImage(FALSE, 10, 28);
     if (FontImage) {
