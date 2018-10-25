@@ -90,11 +90,11 @@ enum NSVGfillRule {
   NSVG_FILLRULE_NONZERO = 0,
   NSVG_FILLRULE_EVENODD = 1
 };
-
+/*
 enum NSVGflags {
   NSVG_FLAGS_VISIBLE = 0x01
 };
-
+*/
 typedef struct NSVGgradientLink {
   char id[64];
   float xform[6];
@@ -107,8 +107,9 @@ typedef struct NSVGgradientStop {
 
 typedef struct NSVGgradient {
   float xform[6];
-  char spread;
+  float position[6];
   float fx, fy;
+  char spread;
   int nstops;
   NSVGgradientStop stops[1];
 } NSVGgradient;
@@ -153,7 +154,7 @@ typedef struct NSVGgroup
 	struct NSVGgroup* parent;			// Pointer to parent group or NULL
 	struct NSVGgroup* next;			// Pointer to next group or NULL
   struct NSVGshape* shapeList; // list of shapes inside the group
-
+  int visibility;
 } NSVGgroup;
 
 typedef struct NSVGshape
@@ -169,11 +170,12 @@ typedef struct NSVGshape
   char strokeDashCount;        // Number of dash values in dash array.
   char strokeLineJoin;    // Stroke join type.
   char strokeLineCap;      // Stroke cap type.
-  char pad0[5];
-  float miterLimit;      // Miter limit
   char fillRule;        // Fill rule, see NSVGfillRule.
-  unsigned char flags;    // Logical or of NSVG_FLAGS_* flags (NSVG_FLAGS_VISIBLE=1)
-  char pad1[2];
+  unsigned char flags;    // Logical or of NSVG_FLAGS_* flags
+  BOOLEAN isText;
+  BOOLEAN debug;
+  char pad0[1];
+  float miterLimit;      // Miter limit
   float bounds[4];      // Tight bounding box of the shape [minx,miny,maxx,maxy].
   float xform[6];
   NSVGpath* paths;      // Linked list of paths in the image. One shape - one path.
@@ -182,13 +184,6 @@ typedef struct NSVGshape
   struct NSVGshape* next;    // Pointer to next shape, or NULL if last element.
   struct NSVGshape* link;
   struct NSVGfont* fontFace; //one letter - one shape
-//  char fontFamily[64];
-//  char fontWeight[64];
-//  float fontSize;
-  BOOLEAN isText;
-  BOOLEAN debug;
-  char pad2[6];
-//  CHAR16 textData[kMaxTextLength];
   const char *image_href;
 } NSVGshape;
 
@@ -211,7 +206,7 @@ typedef struct NSVGimage
   NSVGclipPath* clipPaths;
 } NSVGimage;
 
-#define NSVG_MAX_ATTR 128
+#define NSVG_MAX_ATTR 1024
 #define NSVG_MAX_CLIP_PATHS 255 // also note NSVGclipPathIndex
 
 enum NSVGgradientUnits {
@@ -324,9 +319,9 @@ typedef struct NSVGfont {
   int horizAdvX;
   // --- font-face
   char fontFamily[64];
-  int fontWeight; //usually 400 like stroke-width
+  float fontWeight; //usually 400 like stroke-width
   float fontSize; // 8,9,12,14...
-  int unitsPerEm; //usually 1000
+  float unitsPerEm; //usually 1000
 //  char panose[64]; //int[10] obsolete
   int ascent;
   int descent;
@@ -374,6 +369,11 @@ typedef struct NSVGparser
   NSVGgradientData* gradients;
   NSVGshape* shapesTail;
   struct NSVGfont* font;
+  // this is temporary set for Menu text, later each text will have own face
+  float fontSize;
+  char fontStyle;
+  unsigned int fontColor;
+  //------------
   float viewMinx, viewMiny, viewWidth, viewHeight;
   int alignX, alignY, alignType;
   float dpi;
@@ -384,7 +384,7 @@ typedef struct NSVGparser
   char styleFlag;
 //  char groupFlag;
   BOOLEAN isText;
-//  char unknown[64];
+  char unknown[64];
   NSVGtext* text;
   NSVGclipPath* clipPath;
   NSVGclipPathIndex clipPathStack[NSVG_MAX_CLIP_PATHS];
@@ -409,8 +409,9 @@ void nsvg__xformIdentity(float* t);
 void nsvg__deleteParser(NSVGparser* p);
 void nsvg__xformInverse(float* inv, float* t);
 void nsvg__xformPremultiply(float* t, float* s);
+void nsvg__xformMultiply(float* t, float* s);
 void nsvg__deleteFont(NSVGfont* font);
-INTN addLetter(NSVGparser* p, CHAR16 letter, INTN x, INTN y, float scale, UINT32 color);
+float addLetter(NSVGparser* p, CHAR16 letter, float x, float y, float scale, UINT32 color);
 VOID LoadSVGfont(NSVGfont  *fontSVG, UINT32 color);
 
 //--------------- Rasterizer --------------

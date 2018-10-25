@@ -852,6 +852,7 @@ typedef struct {
   // SMBIOS TYPE0
   CHAR8                   VendorName[64];
   CHAR8                   RomVersion[64];
+  CHAR8                   EfiVersion[64];
   CHAR8                   ReleaseDate[64];
   // SMBIOS TYPE1
   CHAR8                   ManufactureName[64];
@@ -1065,6 +1066,9 @@ typedef struct {
   BOOLEAN                 KernelPatchesAllowed; //From GUI: Only for user patches, not internal Clover
 
   CHAR8                   AirportBridgeDeviceName[5];
+
+  // Pre-language
+  BOOLEAN                 KbdPrevLang;
 
   //Pointer
   BOOLEAN                 PointerEnabled;
@@ -1876,6 +1880,12 @@ ResetNvram (VOID);
 
 EFI_STATUS
 ResetEmuNvram (VOID);
+
+BOOLEAN
+IsDeletableVariable (
+  IN CHAR16    *Name,
+  IN EFI_GUID  *Guid
+  );
 
 EFI_STATUS
 ResetNativeNvram (VOID);

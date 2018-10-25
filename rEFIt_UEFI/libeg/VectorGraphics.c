@@ -39,222 +39,259 @@ extern EG_IMAGE *BackgroundImage;
 extern EG_IMAGE *Banner;
 extern EG_IMAGE *BigBack;
 extern VOID *fontsDB;
+extern INTN BanHeight;
 
-EFI_STATUS ParseSVGIcon(NSVGparser  *p, UINTN Id, float Scale)
+EG_IMAGE  *ParseSVGIcon(NSVGparser  *p, INTN Id, CHAR8 *IconName, float Scale)
 {
-  EFI_STATUS      Status = EFI_NOT_FOUND;
+//  EFI_STATUS      Status = EFI_NOT_FOUND;
   NSVGimage       *SVGimage;
   NSVGrasterizer* rast = nsvgCreateRasterizer();
   SVGimage = p->image;
-  CHAR8 *IconName = NULL;
-  UINTN Size;
-  if (Id == BUILTIN_ICON_BANNER) {
-    IconName = AllocateCopyPool(sizeof("Banner")+1, "Banner");
-  } else if (Id == BUILTIN_ICON_BACKGROUND) {
-    IconName = AllocateCopyPool(sizeof("Background")+1, "Background");
-  } else {
-    CHAR16 *IconPath = BuiltinIconTable[Id].Path;
-    CHAR16 *ptr = StrStr(IconPath, L"\\");
-    if (!ptr) {
-      ptr = IconPath;
-    } else {
-      ptr++;
-    }
-    Size = StrLen(ptr)+1;
-    IconName = AllocateZeroPool(Size);
-    UnicodeStrToAsciiStrS(ptr, IconName, Size);
-  }
-  DBG("search for icon name %a\n", IconName);
   NSVGshape   *shape;
   NSVGgroup   *group;
   NSVGimage *IconImage = (NSVGimage*)AllocateZeroPool(sizeof(NSVGimage));
-  NSVGshape *shapeNext, *shapesTail=NULL;
+  NSVGshape *shapeNext, *shapesTail=NULL, *shapePrev;
 
   shape = SVGimage->shapes;
+  shapePrev = NULL;
   while (shape) {
     group = shape->group;
 
     shapeNext = shape->next;
+
+      while (group) {
+        if (strcmp(group->id, IconName) == 0) {
+          break;
+        }
+        group = group->next;
+      }
+
+    if (group) { //the shape is in the group
+      DBG("found shape %a", shape->id);
+      DBG(" from group %a\n", group->id);
+      if ((Id == BUILTIN_SELECTION_BIG) ||
+          (Id == BUILTIN_ICON_BACKGROUND) ||
+          (Id == BUILTIN_ICON_BANNER)) {
+        shape->debug = TRUE;
+      }
+      if (strstr(shape->id, "BoundingRect") != NULL) {
+        //there is bounds after nsvgParse()
+        IconImage->width = shape->bounds[2] - shape->bounds[0];
+        IconImage->height = shape->bounds[3] - shape->bounds[1];
+
+  //      memcpy(IconImage->realBounds, shape->bounds, 4*sizeof(float));
+        if (!IconImage->height) {
+          IconImage->height = 200;
+        }
+        if (Id == BUILTIN_ICON_BACKGROUND || Id == BUILTIN_ICON_BANNER) {
+//          DBG("IconImage size [%d,%d]\n", (int)IconImage->width, (int)IconImage->height);
+//          DBG("IconImage left corner x=%s y=%s\n", PoolPrintFloat(IconImage->realBounds[0]), PoolPrintFloat(IconImage->realBounds[1]));
+        }
+        shape->flags = 0;  //invisible
+        if (shapePrev) {
+          shapePrev->next = shapeNext;
+        } else {
+          SVGimage->shapes = shapeNext;
+        }
+        shape = shapeNext;
+//        Status = EFI_SUCCESS;
+        continue; //while(shape) it is BoundingRect shape
+      }
+      shape->flags = NSVG_VIS_VISIBLE;
+      DBG("shape opacity=%s, fill color=0x%x\n", PoolPrintFloat(shape->opacity), shape->fill.color);
+      //should be added to tail
+      // Add to tail
+      if (IconImage->shapes == NULL)
+        IconImage->shapes = shape;
+      else
+        shapesTail->next = shape;
+      shapesTail = shape;
+      if (shapePrev) {
+        shapePrev->next = shapeNext;
+      } else {
+        SVGimage->shapes = shapeNext;
+      }
+      shapePrev->next = shapeNext;
+    } //the shape in the group
+    else {
+      shapePrev = shape;
+    }
+    shape = shapeNext;
+  } //while shape
+  shapesTail->next = NULL;
+
+  //add clipPaths  xxx
+  NSVGclipPath* clipPaths = SVGimage->clipPaths;
+  NSVGclipPath* clipNext = NULL;
+  while (clipPaths) {
+    group = clipPaths->shapes->group;
+    clipNext = clipPaths->next;
     while (group) {
       if (strcmp(group->id, IconName) == 0) {
         break;
       }
       group = group->parent;
     }
-
-    if (group) { //the shape is in the group
-      if (Id == BUILTIN_ICON_BACKGROUND || Id == BUILTIN_ICON_BANNER) {
-        DBG("found shape %a", shape->id);
-        DBG(" from group %a\n", group->id);
-        shape->debug = TRUE;
-      }
-      if (strstr(shape->id, "BoundingRect") != NULL) {
-		  //there is bounds after nsvgParse()
-        IconImage->width = shape->bounds[2] - shape->bounds[0];
-        IconImage->height = shape->bounds[3] - shape->bounds[1];
-
-        memcpy(IconImage->realBounds, shape->bounds, 4*sizeof(float));
-        if (!IconImage->height) {
-          IconImage->height = 200;
-        }
-        if (Id == BUILTIN_ICON_BACKGROUND || Id == BUILTIN_ICON_BANNER) {
-          DBG("IconImage size [%d,%d]\n", (int)IconImage->width, (int)IconImage->height);
-          DBG("IconImage left corner x=%s y=%s\n", PoolPrintFloat(IconImage->realBounds[0]), PoolPrintFloat(IconImage->realBounds[1]));
-        }
-        //     shape->flags = 0;  //invisible
-        shape = shapeNext;
-        Status = EFI_SUCCESS;
-        continue;
-      }
-	  //should be add to tail
-	    // Add to tail
-	if (IconImage->shapes == NULL)
-      IconImage->shapes = shape;
-    else
-      shapesTail->next = shape;
-    shapesTail = shape;
-
-/*
-      shape->next = IconImage->shapes; //add to head
-      IconImage->shapes = shape;
-      if (shapePrev) {
-        shapePrev->next = shapeNext;
-      }
-    } else {
-      shapePrev = shape;
-	  */
-    } //the shape in the group
-
-    shape = shapeNext;
-  } //while shape
-
-  //add clipPaths  xxx
-  NSVGclipPath* clipPaths = SVGimage->clipPaths;
-  NSVGclipPath* clipNext = NULL;
-  while (clipPaths) {
-	  group = clipPaths->shapes->group;
-	  clipNext = clipPaths->next;
-	while (group) {
-      if (strcmp(group->id, IconName) == 0) {
-        break;
-      }
-      group = group->parent;
+    if (group) {
+      DBG("found clipPaths for %a\n", IconName);
+      IconImage->clipPaths = clipPaths;
     }
-	if (group) {
-		IconImage->clipPaths = clipPaths;
-	}
-	clipPaths = clipNext;
-  }
-
-  if (Id == BUILTIN_ICON_BACKGROUND) { // special case for background width
-    IconImage->width = UGAWidth / Scale; // no sense
+    clipPaths = clipNext;
   }
 
   float Height = IconImage->height * Scale;
   float Width = IconImage->width * Scale;
-
-  if (!EFI_ERROR(Status)) {
-    EG_IMAGE  *NewImage = egCreateImage((int)Width, (int)Height, TRUE);
-    nsvgRasterize(rast, IconImage, 0,0,Scale,Scale, (UINT8*)NewImage->PixelData, (int)Width, (int)Height, (int)Width*4, NULL, NULL);
-    if (Id == BUILTIN_ICON_BACKGROUND) { // special case for background
-      BigBack = NewImage;
-      GlobalConfig.BackgroundScale = imScale;
-    } else {
-      BuiltinIconTable[Id].Image = NewImage;
-      if (Id == BUILTIN_ICON_BANNER) {
-        Banner = NewImage;
-      }
-    }
-  } else {
-    BuiltinIconTable[Id].Image = NULL;
-  }
-
+  EG_IMAGE  *NewImage = NULL;
+  NewImage = egCreateImage((int)Width, (int)Height, TRUE);
+  DBG("begin rasterize %a\n", IconName);
+  nsvgRasterize(rast, IconImage, 0,0,Scale,Scale, (UINT8*)NewImage->PixelData, (int)Width, (int)Height, (int)Width*4, NULL, NULL);
   nsvgDeleteRasterizer(rast);
-  return Status;
+  nsvgDelete(IconImage);
+  return NewImage;
 }
 
 EFI_STATUS ParseSVGTheme(CONST CHAR8* buffer, TagPtr * dict, UINT32 bufSize)
 {
-  EFI_STATUS      Status;
-  NSVGparser      *p = NULL, *p1 = NULL;
+
+  NSVGparser      *p = NULL;
   NSVGfont        *fontSVG;
   NSVGimage       *SVGimage;
-  NSVGtext        *text;
   NSVGrasterizer  *rast = nsvgCreateRasterizer();
-  UINT8           *FileData = NULL;
-  UINTN           FileDataLength = 0;
-  INTN    i;
 
-  float Scale;
-
+// --- Parse Theme.svg
   p = nsvgParse((CHAR8*)buffer, "px", 72);
   SVGimage = p->image;
-  DBG("Theme width=%d heigth=%d\n", (int)(SVGimage->width), (int)(SVGimage->height));
-  float vbx = SVGimage->realBounds[2] - SVGimage->realBounds[0];
-  float vby = SVGimage->realBounds[3] - SVGimage->realBounds[1];
-  DBG("Theme real-bounds: w=%d h=%d units=%a\n", (int)vbx, (int)vby, "px");
-  if (SVGimage->height == 0) {
+  if (!SVGimage) {
+    DBG("Theme not parsed!\n");
+    return EFI_NOT_STARTED;
+  }
+
+// --- Get scale as theme design height vs screen height
+  float Scale;
+  // must be svg view-box
+  float vbx = p->viewWidth;
+  float vby = p->viewHeight;
+  DBG("Theme view-bounds: w=%d h=%d units=%a\n", (int)vbx, (int)vby, "px");
     if (vby > 1.0f) {
       SVGimage->height = vby;
     } else {
       SVGimage->height = 768.f;  //default height
     }
-  }
   Scale = UGAHeight / SVGimage->height;
   DBG("using scale %s\n", PoolPrintFloat(Scale));
+
+// --- Get theme embedded font (already parsed above)
   fontSVG = p->font;
-  if (fontSVG) {
-    DBG("found embedded font-name=%a\n", fontSVG->fontFamily);
+  if (!fontSVG) {
+    fontSVG = fontsDB;
+    while (fontSVG && !fontSVG->glyphs) {
+	    fontSVG = fontSVG->next;
+    }
   }
-  //TODO search attributes for MessageRow: font, size, color
-  text = p->text;
+  if (fontSVG) {
+    DBG("using font-family=%a\n", fontSVG->fontFamily);
+  }
+
+//already done during nsvgParse
+#if 0
+  EFI_STATUS      Status;
+  UINT8           *FileData = NULL;
+  UINTN           FileDataLength = 0;
+  NSVGparser      *p1 = NULL;
+  NSVGtext        *text = p->text;
+
   if (text && text->font) {
     DBG("text uses font-name=%a\n", text->font->fontFamily);
     //    DBG("text uses font size=%d\n", (int)text->font->fontSize);
     if (!fontSVG || strcmp(fontSVG->fontFamily, text->font->fontFamily) != 0) {
       Status = egLoadFile(ThemeDir, PoolPrint(L"%a.svg", text->font->fontFamily), &FileData, &FileDataLength);
       DBG("font loaded status=%r\n", Status);
+      if (EFI_ERROR(Status)) {
+        Status = egLoadFile(ThemeDir, PoolPrint(L"%a.svg", text->font->id), &FileData, &FileDataLength);
+      }
       if (!EFI_ERROR(Status)) {
         p1 = nsvgParse((CHAR8*)FileData, "px", 72);
         if (!p1) {
           DBG("font not parsed\n");
         } else {
           fontSVG = p1->font;
-          //         DBG("font %a parsed\n", fontSVG->fontFamily);
+          DBG("font %a parsed\n", fontSVG->fontFamily);
         }
         FreePool(FileData);
         FileData = NULL;
+      } else {
+        fontSVG = p->font;
       }
     }
+    if (!fontSVG || !fontSVG->glyphs) {
+      fontSVG = fontsDB;
+    }
   }
+#endif
+
+// --- Create rastered font
   if (fontSVG) {
-    if (text->font) {
-      FontHeight = (int)(text->font->fontSize * Scale);
-      DBG("font height=%d color=%x\n", FontHeight, text->fontColor);
+    if (p->font) {
+      FontHeight = (int)(p->fontSize * Scale);
+      DBG("font height=%d color=%x\n", FontHeight, p->fontColor);
     }
     if (!FontHeight) FontHeight = 16;
     if (fontSVG->fontFamily[0] < 0x30) {
       AsciiStrCpyS(fontSVG->fontFamily, 64, fontSVG->id);
     }
-    LoadSVGfont(fontSVG, text->fontColor | 0xFF000000);
+    LoadSVGfont(fontSVG, p->fontColor);
     DBG("font %a parsed\n", fontSVG->fontFamily);
   }
 
-  // make background
+// --- Make background
   BackgroundImage = egCreateFilledImage(UGAWidth, UGAHeight, TRUE, &MenuBackgroundPixel);
-  Status = ParseSVGIcon(p, BUILTIN_ICON_BACKGROUND, Scale);
-  //make other icons
-  for (i = BUILTIN_ICON_FUNC_ABOUT; i < BUILTIN_ICON_COUNT; i++) {
-    Status = ParseSVGIcon(p, i, Scale);
-    if (EFI_ERROR(Status)) {
-      DBG("icon %d not parsed, status %r\n", i, Status);
-    }
-  }
+  BigBack = ParseSVGIcon(p, BUILTIN_ICON_BACKGROUND, "Background", Scale);
+  GlobalConfig.BackgroundScale = imScale;
 
-#if 1 //test banner
+// --- Make Banner
+  Banner = ParseSVGIcon(p, BUILTIN_ICON_BANNER, "Banner", Scale);
+  BuiltinIconTable[BUILTIN_ICON_BANNER].Image = Banner;
+  BanHeight = (int)(Banner->Height * Scale);
+
+// --- Make other icons
+#if 0
+  INTN i = BUILTIN_ICON_FUNC_ABOUT;
+  CHAR8           *IconName;
+  while (BuiltinIconTable[i].Path) {
+    CHAR16 *IconPath = BuiltinIconTable[i].Path;
+    CHAR16 *ptr = StrStr(IconPath, L"\\");
+    if (!ptr) {
+      ptr = IconPath;
+    } else {
+      ptr++;
+    }
+    UINTN Size = StrLen(ptr)+1;
+    IconName = AllocateZeroPool(Size);
+    UnicodeStrToAsciiStrS(ptr, IconName, Size);
+    DBG("search for icon name %a\n", IconName);
+
+    BuiltinIconTable[i].Image = ParseSVGIcon(p, i, IconName, Scale);
+    if (!BuiltinIconTable[i].Image) {
+      DBG("icon %d not parsed\n", i);
+    }
+    i++;
+    FreePool(IconName);
+  }
+  i = 0;
+  while (OSIconsTable[i].name) {
+    DBG("search for %a\n", OSIconsTable[i].name);
+    OSIconsTable[i].image = ParseSVGIcon(p, i, OSIconsTable[i].name, Scale);
+    if (OSIconsTable[i].image == NULL) {
+      DBG("OSicon %d not parsed\n", i);
+    }
+    i++;
+  }
+#endif
+
+#if 0 //test banner
   NSVGshape   *shape;
   NSVGgroup   *group;
-  NSVGimage *Banner = (NSVGimage*)AllocateZeroPool(sizeof(NSVGimage));
+  NSVGimage *BannerSVG = (NSVGimage*)AllocateZeroPool(sizeof(NSVGimage));
   NSVGshape *shapeNext, *shapePrev = NULL;
 
   shape = SVGimage->shapes;
@@ -273,20 +310,20 @@ EFI_STATUS ParseSVGTheme(CONST CHAR8* buffer, TagPtr * dict, UINT32 bufSize)
       DBG("found shape %a", shape->id);
       DBG(" from group %a\n", group->id);
       if (strstr(shape->id, "BoundingRect") != NULL) {
-        Banner->width = shape->bounds[2] - shape->bounds[0];
-        Banner->height = shape->bounds[3] - shape->bounds[1];
-        memcpy(Banner->realBounds, shape->bounds, 4*sizeof(float));
-        if (!Banner->height) {
-          Banner->height = 200;
+        BannerSVG->width = shape->bounds[2] - shape->bounds[0];
+        BannerSVG->height = shape->bounds[3] - shape->bounds[1];
+        memcpy(BannerSVG->realBounds, shape->bounds, 4*sizeof(float));
+        if (!BannerSVG->height) {
+          BannerSVG->height = 200;
         }
-        DBG("Banner size [%d,%d]\n", (int)Banner->width, (int)Banner->height);
-        DBG("Banner shift dx=%s dy=%s\n", PoolPrintFloat(Banner->realBounds[0]), PoolPrintFloat(Banner->realBounds[1]));
+        DBG("Banner size [%d,%d]\n", (int)BannerSVG->width, (int)BannerSVG->height);
+        DBG("Banner shift dx=%s dy=%s\n", PoolPrintFloat(BannerSVG->realBounds[0]), PoolPrintFloat(BannerSVG->realBounds[1]));
         //     shape->flags = 0;  //invisible
         shape = shapeNext;
         continue;
       }
-      shape->next = Banner->shapes; //add to head
-      Banner->shapes = shape;
+      shape->next = BannerSVG->shapes; //add to head
+      BannerSVG->shapes = shape;
       if (shapePrev) {
         shapePrev->next = shapeNext;
       }
@@ -299,22 +336,25 @@ EFI_STATUS ParseSVGTheme(CONST CHAR8* buffer, TagPtr * dict, UINT32 bufSize)
   //suppose Banner will be 2-30% of Height
   float Height = UGAHeight * 0.28f;
 
-  float Width = Banner->width * Scale;
-  EG_IMAGE        *NewImage;
+  float Width = BannerSVG->width * Scale;
+  EG_IMAGE        *NewImage1;
   // FreePool(FileData);
   // FileData = NULL;
   if (Width > 1.0f) {
-    NewImage = egCreateImage((int)Width, (int)Height, TRUE);
+    UINT8           *FileData = NULL;
+    UINTN           FileDataLength = 0U;
+
+    NewImage1 = egCreateImage((int)Width, (int)Height, TRUE);
     DBG("new banner size=[%d,%d]\n", (int)Width, (int)Height);
 
     float tx = 0; //-Banner->realBounds[0] * Scale;
     float ty = 0; //-Banner->realBounds[1] * Scale;
     //  DBG("Banner shift by %d, %d\n", (int)tx, (int)ty);
 
-    nsvgRasterize(rast, Banner, tx,ty,Scale,Scale, (UINT8*)NewImage->PixelData, (int)Width, (int)Height, (int)Width*4, NULL, NULL);
+    nsvgRasterize(rast, BannerSVG, tx,ty,Scale,Scale, (UINT8*)NewImage1->PixelData, (int)Width, (int)Height, (int)Width*4, NULL, NULL);
     //now show it!
 
-    BltImageAlpha(NewImage,
+    BltImageAlpha(NewImage1,
                   (int)(UGAWidth - Width) / 4,
                   (int)(UGAHeight * 0.05f),
                   &MenuBackgroundPixel,
@@ -322,22 +362,32 @@ EFI_STATUS ParseSVGTheme(CONST CHAR8* buffer, TagPtr * dict, UINT32 bufSize)
     WaitForKeyPress(L"waiting for key press...\n");
     //save banner as png yyyyy
 
-    EFI_UGA_PIXEL *ImagePNG = (EFI_UGA_PIXEL *)NewImage->PixelData;
-    unsigned lode_return = eglodepng_encode(&FileData, &FileDataLength, (CONST UINT8*)ImagePNG, (UINTN)NewImage->Width, (UINTN)NewImage->Height);
+    EFI_UGA_PIXEL *ImagePNG = (EFI_UGA_PIXEL *)NewImage1->PixelData;
+    unsigned lode_return = eglodepng_encode(&FileData, &FileDataLength, (CONST UINT8*)ImagePNG, (UINTN)NewImage1->Width, (UINTN)NewImage1->Height);
     if (!lode_return) {
-      Status = egSaveFile(NULL, L"\\Banner.png", FileData, FileDataLength);
+      egSaveFile(NULL, L"\\Banner.png", FileData, FileDataLength);
       FreePool(FileData);
       FileData = NULL;
     }
-    egFreeImage(NewImage);
+    egFreeImage(NewImage1);
 
   }
   //  nsvg__deleteParser(p);
 
 #endif
+
+#if 1
+  BltImageAlpha(Banner,
+                (int)(UGAWidth - Banner->Width) / 4,
+                (int)(UGAHeight * 0.05f),
+                &MenuBackgroundPixel,
+                16);
+  WaitForKeyPress(L"waiting for key press...\n");
+
+#endif
   //Test text
 
-#if 1  // test font
+#if TEST_FONT  // test font
   if (fontSVG) {
     INTN iHeight = 260;
     INTN iWidth = UGAWidth-200;
@@ -373,22 +423,26 @@ EFI_STATUS ParseSVGTheme(CONST CHAR8* buffer, TagPtr * dict, UINT32 bufSize)
     WaitForKeyPress(L"waiting for key press...\n");
   }
 #endif
+
   if (p) {
     nsvg__deleteParser(p);
     p = NULL;
   }
+
+#if TEST_FONT
   if (p1) {
     nsvg__deleteParser(p1);
     p1 = NULL;
   }
+#endif
 
   nsvgDeleteRasterizer(rast);
 
   *dict = AllocatePool(sizeof(TagStruct));
   (*dict)->type = kTagTypeNone;
   GlobalConfig.TypeSVG = TRUE;
-GlobalConfig.ThemeDesignHeight = (int)SVGimage->height;
-GlobalConfig.ThemeDesignWidth = (int)SVGimage->width;
+  GlobalConfig.ThemeDesignHeight = (int)SVGimage->height;
+  GlobalConfig.ThemeDesignWidth = (int)SVGimage->width;
   return EFI_SUCCESS;
 //  return EFI_NOT_READY;
 }
@@ -412,12 +466,12 @@ VOID LoadSVGfont(NSVGfont  *fontSVG, UINT32 color)
   INTN Width = Height * (0xC0 + GlobalConfig.CodepageSize);
   FontImage = egCreateImage(Width, Height, TRUE);
 //  DBG("load font %a\n", fontSVG->fontFamily);
-  if (!fontSVG->unitsPerEm) {
-    fontSVG->unitsPerEm = 1000;
+  if (fontSVG->unitsPerEm < 1.f) {
+    fontSVG->unitsPerEm = 1000.f;
   }
   float fH = fontSVG->bbox[3] - fontSVG->bbox[1];
   if (fH == 0.f) {
-    fH = (float)fontSVG->unitsPerEm;
+    fH = fontSVG->unitsPerEm;
   }
   FontScale = (float)FontHeight / fH;
   DBG("font scale %s\n", PoolPrintFloat(FontScale));
@@ -427,39 +481,39 @@ VOID LoadSVGfont(NSVGfont  *fontSVG, UINT32 color)
     return;
   }
 //  p->font = fontSVG;
-  p->image->height = Height;
+  p->image->height = (float)Height;
   p->image->width = Width;
 
   NSVGtext* text = (NSVGtext*)AllocateZeroPool(sizeof(NSVGtext));
   if (!text) {
     return;
   }
-  text->fontSize = FontHeight;
+  text->fontSize = (float)FontHeight;
   text->font = fontSVG;
   text->fontColor = color;
 
-  DBG("LoadSVGfont: fontID=%a\n", text->font->id);
-  DBG("LoadSVGfont:  family=%a\n", text->font->fontFamily);
+//  DBG("LoadSVGfont: fontID=%a\n", text->font->id);
+//  DBG("LoadSVGfont:  family=%a\n", text->font->fontFamily);
   //add to head
   text->next = p->text;
   p->text = text;
   //for each letter rasterize glyph into FontImage
   //0..0xC0 == AsciiPageSize
   // cyrillic 0x410..0x450 at 0xC0
-  INTN x = 0;
-  INTN y = 0;
+  float x = 0.f;
+  float y = 0.f;
   p->isText = TRUE;
   for (i = 0; i < AsciiPageSize; i++) {
-    if (i == 'C') {
-      DBG("addLetter %x\n", i);
-    }
+//    if (i == 'C') {
+//      DBG("addLetter %x\n", i);
+//    }
     addLetter(p, i, x, y, FontScale, color);
-    x += Height;
+    x += (float)Height;
   }
   x = AsciiPageSize * Height;
   for (i = GlobalConfig.Codepage; i < GlobalConfig.Codepage+GlobalConfig.CodepageSize; i++) {
     addLetter(p, i, x, y, FontScale, color);
-    x += Height;
+    x += (float)Height;
   }
   p->image->realBounds[0] = fontSVG->bbox[0] * FontScale;
   p->image->realBounds[1] = fontSVG->bbox[1] * FontScale;
@@ -468,9 +522,9 @@ VOID LoadSVGfont(NSVGfont  *fontSVG, UINT32 color)
 
   //We made an image, then rasterize it
   rast = nsvgCreateRasterizer();
-  DBG("begin raster text\n");
+//  DBG("begin raster text\n");
   nsvgRasterize(rast, p->image, 0, 0, 1.0f, 1.0f, (UINT8*)FontImage->PixelData, (int)Width, (int)Height, (int)(Width*4), NULL, NULL);
-  DBG("end raster text\n");
+//  DBG("end raster text\n");
 #if 0 //DEBUG_FONT
   //save font as png yyyyy
   UINT8           *FileData = NULL;
@@ -486,7 +540,7 @@ VOID LoadSVGfont(NSVGfont  *fontSVG, UINT32 color)
   }
 #endif
   nsvgDeleteRasterizer(rast);
-  nsvg__deleteParser(p);
+//  nsvg__deleteParser(p);
   return;
 }
 // it is for test purpose
@@ -501,9 +555,9 @@ VOID drawSVGtext(EG_IMAGE* TextBufferXY, VOID* font, CONST CHAR16* text, UINT32 
   NSVGrasterizer* rast;
   NSVGfont* fontSVG = (NSVGfont*)font;
   float Scale, sx, sy;
-  INTN x, y;
+  float x, y;
   if (!fontSVG) {
-    DBG("no font\n");
+    DBG("no font in drawSVGtext\n");
     return;
   }
   if (!TextBufferXY) {
@@ -518,21 +572,21 @@ VOID drawSVGtext(EG_IMAGE* TextBufferXY, VOID* font, CONST CHAR16* text, UINT32 
   Width = TextBufferXY->Width;
   Height = TextBufferXY->Height;
 //  Height = 180; //for test
-  DBG("textBuffer: [%d,%d], fontUnits=%d\n", Width, TextBufferXY->Height, fontSVG->unitsPerEm);
+  DBG("textBuffer: [%d,%d], fontUnits=%d\n", Width, TextBufferXY->Height, (int)fontSVG->unitsPerEm);
   if (!fontSVG->unitsPerEm) {
-    fontSVG->unitsPerEm = 1000;
+    fontSVG->unitsPerEm = 1000.f;
   }
   float fH = fontSVG->bbox[3] - fontSVG->bbox[1]; //1250
   if (fH == 0.f) {
-    fH = (float)fontSVG->unitsPerEm;  //1000
+    fH = fontSVG->unitsPerEm;  //1000
   }
   sy = (float)Height / fH; //(float)fontSVG->unitsPerEm; // 260./1250.
   //in font units
   float fW = fontSVG->bbox[2] - fontSVG->bbox[0];
   sx = (float)Width / (fW * len);
   Scale = (sx > sy)?sy:sx;
-  x = 0;
-  y = 0;
+  x = 0.f;
+  y = 0.f;
   for (i=0; i < len; i++) {
     CHAR16 letter = text[i];
     NSVGglyph* g;
@@ -570,7 +624,7 @@ VOID drawSVGtext(EG_IMAGE* TextBufferXY, VOID* font, CONST CHAR16* text, UINT32 
     }
     if (!shape->paths) {
       if (g) {
-        x += g->horizAdvX;
+        x += g->horizAdvX  * Scale;
       }
       if (shape) {
         FreePool(shape);
@@ -585,18 +639,18 @@ VOID drawSVGtext(EG_IMAGE* TextBufferXY, VOID* font, CONST CHAR16* text, UINT32 
     shape->stroke.type = NSVG_PAINT_NONE;
     shape->stroke.color = NSVG_RGBA(0,0,0, 255); //black?
     shape->strokeWidth = 2.0f;
-    shape->flags = NSVG_FLAGS_VISIBLE;
+    shape->flags = NSVG_VIS_VISIBLE;
     nsvg__xformIdentity(shape->xform);
     shape->xform[0] = 1.f * Scale;
     shape->xform[3] = -1.f * Scale; //glyphs are mirrored by Y
-    shape->xform[4] = ((float)x - fontSVG->bbox[0]) * Scale;
-    shape->xform[5] = ((float)y - fontSVG->bbox[3]) * Scale; // Y2 is a floor for a letter
+    shape->xform[4] = x - fontSVG->bbox[0] * Scale;
+    shape->xform[5] = y + fontSVG->bbox[3] * Scale; // Y2 is a floor for a letter
 //    DumpFloat2(shape->xform, 6);
     //in glyph units
-    shape->bounds[0] = fontSVG->bbox[0] * Scale;
-    shape->bounds[1] = fontSVG->bbox[1] * Scale;
-    shape->bounds[2] = fontSVG->bbox[2] * Scale;
-    shape->bounds[3] = fontSVG->bbox[3] * Scale;
+    shape->bounds[0] = fontSVG->bbox[0];
+    shape->bounds[1] = fontSVG->bbox[1];
+    shape->bounds[2] = fontSVG->bbox[2];
+    shape->bounds[3] = fontSVG->bbox[3];
     DumpFloat2("letter bounds", shape->bounds, 4);
 
     x += g->horizAdvX * Scale; //position for next letter
@@ -626,6 +680,7 @@ VOID drawSVGtext(EG_IMAGE* TextBufferXY, VOID* font, CONST CHAR16* text, UINT32 
 
   DBG("end raster text\n");
   nsvgDeleteRasterizer(rast);
+  nsvg__deleteParser(p);
 }
 
 VOID testSVG()
@@ -678,7 +733,7 @@ VOID testSVG()
 
       p = nsvgParse((CHAR8*)FileData, "px", 72);
       SVGimage = p->image;
-      DBG("Image width=%d heigth=%d\n", (int)(SVGimage->width), (int)(SVGimage->height));
+      DBG("Test image width=%d heigth=%d\n", (int)(SVGimage->width), (int)(SVGimage->height));
       FreePool(FileData);
 
       // Rasterize
@@ -708,10 +763,10 @@ VOID testSVG()
     //Test text
     Height = 260;
     Width = UGAWidth-200;
-    DBG("create textbuffer\n");
+    DBG("create test textbuffer\n");
     EG_IMAGE* TextBufferXY = egCreateFilledImage(Width, Height, TRUE, &MenuBackgroundPixel);
     Status = egLoadFile(SelfRootDir, L"Font.svg", &FileData, &FileDataLength);
-    DBG("font loaded status=%r\n", Status);
+    DBG("test font loaded status=%r\n", Status);
     if (!EFI_ERROR(Status)) {
       p = nsvgParse((CHAR8*)FileData, "px", 72);
       if (!p) {

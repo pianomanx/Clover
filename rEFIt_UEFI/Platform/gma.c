@@ -363,18 +363,18 @@ UINT8 kabylake_hd_vals[12][4] = {
 
 
 UINT8 coffeelake_ig_vals[12][4] = {
-  { 0x00, 0x00, 0x00, 0x3E },   //0 Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 1388
-  { 0x03, 0x00, 0x91, 0x3E },   //1 Intel UHD Graphics 630 - Mobile: 0, PipeCount: 0, PortCount: 0, STOLEN: 0MB, FBMEM: 0MB, VRAM: 1536MB, Connector:, BL: 1388
-  { 0x00, 0x00, 0x92, 0x3E },   //2 Intel UHD Graphics 630 - Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 1388
-  { 0x03, 0x00, 0x92, 0x3E },   //3 Intel UHD Graphics 630 - Mobile: 0, PipeCount: 0, PortCount: 0, STOLEN: 0MB, FBMEM: 0MB, VRAM: 1536MB, Connector:, BL: 1388
-  { 0x09, 0x00, 0x92, 0x3E },   //4 Intel UHD Graphics 630 - Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DUMMY2, BL: 1388
-  { 0x00, 0x00, 0x9B, 0x3E },   //5 *MacBookPro15,1 - Intel UHD Graphics 630 - Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 1388
-  { 0x06, 0x00, 0x9B, 0x3E },   //6 Intel UHD Graphics 630 - Mobile: 1, PipeCount: 1, PortCount: 1, STOLEN: 38MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1, BL: 1388
-  { 0x07, 0x00, 0x9B, 0x3E },   //7 Intel UHD Graphics 630 - Mobile: 0, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 1388
-  { 0x09, 0x00, 0x9B, 0x3E },   //8 Intel UHD Graphics 630 - Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 1388
-  { 0x00, 0x00, 0xA5, 0x3E },   //9 Intel Iris Plus Graphics 655 - Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 1388
-  { 0x04, 0x00, 0xA5, 0x3E },   //10 *MacBookPro15,2 - Intel Iris Plus Graphics 655 - Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 1388
-  { 0x09, 0x00, 0xA5, 0x3E },   //11 Intel Iris Plus Graphics 655 - Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 1388
+  { 0x00, 0x00, 0x00, 0x3E },   //0 Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 65535
+  { 0x03, 0x00, 0x91, 0x3E },   //1 Intel UHD Graphics 630 - Mobile: 0, PipeCount: 0, PortCount: 0, STOLEN: 0MB, FBMEM: 0MB, VRAM: 1536MB, Connector:, BL: 65535
+  { 0x00, 0x00, 0x92, 0x3E },   //2 Intel UHD Graphics 630 - Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 65535
+  { 0x03, 0x00, 0x92, 0x3E },   //3 Intel UHD Graphics 630 - Mobile: 0, PipeCount: 0, PortCount: 0, STOLEN: 0MB, FBMEM: 0MB, VRAM: 1536MB, Connector:, BL: 65535
+  { 0x09, 0x00, 0x92, 0x3E },   //4 Intel UHD Graphics 630 - Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DUMMY2, BL: 65535
+  { 0x00, 0x00, 0x9B, 0x3E },   //5 *MacBookPro15,1 - Intel UHD Graphics 630 - Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 65535
+  { 0x06, 0x00, 0x9B, 0x3E },   //6 Intel UHD Graphics 630 - Mobile: 1, PipeCount: 1, PortCount: 1, STOLEN: 38MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1, BL: 65535
+  { 0x07, 0x00, 0x9B, 0x3E },   //7 Intel UHD Graphics 630 - Mobile: 0, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 65535
+  { 0x09, 0x00, 0x9B, 0x3E },   //8 Intel UHD Graphics 630 - Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 65535
+  { 0x00, 0x00, 0xA5, 0x3E },   //9 Intel Iris Plus Graphics 655 - Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 65535
+  { 0x04, 0x00, 0xA5, 0x3E },   //10 *MacBookPro15,2 - Intel Iris Plus Graphics 655 - Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 65535
+  { 0x09, 0x00, 0xA5, 0x3E },   //11 Intel Iris Plus Graphics 655 - Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 65535
 };
 
 UINT8 coffeelake_hd_vals[8][4] = {
@@ -390,20 +390,20 @@ UINT8 coffeelake_hd_vals[8][4] = {
 
 
 UINT8 cannonlake_ig_vals[14][4] = {
-  { 0x00, 0x00, 0x01, 0x0A },   //0 Mobile: 1, PipeCount: 1, PortCount: 1, STOLEN: 34MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1, BL: 1388
-  { 0x00, 0x00, 0x40, 0x5A },   //1 Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 1388
-  { 0x09, 0x00, 0x40, 0x5A },   //2 Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 1388
-  { 0x00, 0x00, 0x41, 0x5A },   //3 Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 1388
-  { 0x09, 0x00, 0x41, 0x5A },   //4 Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 1388
-  { 0x00, 0x00, 0x49, 0x5A },   //5 Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 1388
-  { 0x09, 0x00, 0x49, 0x5A },   //6 Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 1388
-  { 0x00, 0x00, 0x50, 0x5A },   //7 Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 1388
-  { 0x09, 0x00, 0x50, 0x5A },   //8 Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 1388
-  { 0x00, 0x00, 0x51, 0x5A },   //9 Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 1388
-  { 0x09, 0x00, 0x51, 0x5A },   //10 Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 1388
-  { 0x00, 0x00, 0x52, 0x5A },   //11 Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP1/HDMI1, BL: 1388
-  { 0x00, 0x00, 0x59, 0x5A },   //12 Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP1/HDMI1, BL: 1388
-  { 0x09, 0x00, 0x59, 0x5A },   //13 Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 1388
+  { 0x00, 0x00, 0x01, 0x0A },   //0 Mobile: 1, PipeCount: 1, PortCount: 1, STOLEN: 34MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1, BL: 65535
+  { 0x00, 0x00, 0x40, 0x5A },   //1 Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 65535
+  { 0x09, 0x00, 0x40, 0x5A },   //2 Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 65535
+  { 0x00, 0x00, 0x41, 0x5A },   //3 Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 65535
+  { 0x09, 0x00, 0x41, 0x5A },   //4 Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 65535
+  { 0x00, 0x00, 0x49, 0x5A },   //5 Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 65535
+  { 0x09, 0x00, 0x49, 0x5A },   //6 Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 65535
+  { 0x00, 0x00, 0x50, 0x5A },   //7 Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 65535
+  { 0x09, 0x00, 0x50, 0x5A },   //8 Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 65535
+  { 0x00, 0x00, 0x51, 0x5A },   //9 Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 65535
+  { 0x09, 0x00, 0x51, 0x5A },   //10 Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 65535
+  { 0x00, 0x00, 0x52, 0x5A },   //11 Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP1/HDMI1, BL: 65535
+  { 0x00, 0x00, 0x59, 0x5A },   //12 Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP1/HDMI1, BL: 65535
+  { 0x09, 0x00, 0x59, 0x5A },   //13 Mobile: 1, PipeCount: 3, PortCount: 3, STOLEN: 57MB, FBMEM: 0MB, VRAM: 1536MB, Connector: LVDS1/DP2, BL: 65535
 };
 
 UINT8 cannonlake_hd_vals[8][4] = {
@@ -838,7 +838,7 @@ static struct gma_gpu_t KnownGPUS[] = {
   { 0x3E92, "Intel UHD Graphics 630"         }, // Desktop
   { 0x3E94, "Intel Coffee Lake GT2"          }, //
   { 0x3E96, "Intel Coffee Lake GT2"          }, //
-  { 0x3E98, "Intel Coffee Lake GT2"          }, //
+  { 0x3E98, "Intel UHD Graphics 630"         }, // Desktop
   { 0x3E9A, "Intel Coffee Lake GT2"          }, //
   { 0x3E9B, "Intel UHD Graphics 630"         }, // Mobile - MacBookPro15,1
   //GT3
@@ -1367,19 +1367,19 @@ BOOLEAN setup_gma_devprop(LOADER_ENTRY *Entry, pci_dt_t *gma_dev)
 
   if (gSettings.InjectEDID && gSettings.CustomEDID) {
     switch (gma_dev->device_id) {
-      case 0x2772: // "Intel GMA 950"                   // Desktop - Intel 82945G Express Chipset Family
-      case 0x2776: // "Intel GMA 950"                   // Desktop - Intel 82945G Express Chipset Family
-      case 0x27A2: // "Intel GMA 950"                   // Mobile - Intel 945GM Express Chipset Family - MacBook1,1/MacBook2,1
-      case 0x27A6: // "Intel GMA 950"                   // Mobile - Intel 945GM Express Chipset Family
-      case 0x27AE: // "Intel GMA 950"                   // Mobile - Intel 945GM Express Chipset Family
-      case 0xA001: // "Intel GMA 3150"                  // Nettop - Intel NetTop Atom D410
-      case 0xA002: // "Intel GMA 3150"                  // Nettop - Intel NetTop Atom D510
-      case 0xA011: // "Intel GMA 3150"                  // Netbook - Intel NetBook Atom N4x0
-      case 0xA012: // "Intel GMA 3150"                  // Netbook - Intel NetBook Atom N4x0
-      case 0x2A02: // "Intel GMA X3100"                 // Mobile - Intel 965 Express Chipset Family - MacBook3,1/MacBook4,1/MacbookAir1,1
-      case 0x2A03: // "Intel GMA X3100"                 // Mobile - Intel 965 Express Chipset Family
-      case 0x2A12: // "Intel GMA X3100"                 // Mobile - Intel 965 Express Chipset Family
-      case 0x2A13: // "Intel GMA X3100"                 // Mobile - Intel 965 Express Chipset Family
+      case 0x2772: // "Intel GMA 950"
+      case 0x2776: // "Intel GMA 950"
+      case 0x27A2: // "Intel GMA 950"
+      case 0x27A6: // "Intel GMA 950"
+      case 0x27AE: // "Intel GMA 950"
+      case 0xA001: // "Intel GMA 3150"
+      case 0xA002: // "Intel GMA 3150"
+      case 0xA011: // "Intel GMA 3150"
+      case 0xA012: // "Intel GMA 3150"
+      case 0x2A02: // "Intel GMA X3100"
+      case 0x2A03: // "Intel GMA X3100"
+      case 0x2A12: // "Intel GMA X3100"
+      case 0x2A13: // "Intel GMA X3100"
         devprop_add_value(device, "AAPL01,override-no-connect", gSettings.CustomEDID, 128);
         DBG("  AAPL01,override-no-connect: added\n");
         break;
@@ -1395,19 +1395,19 @@ BOOLEAN setup_gma_devprop(LOADER_ENTRY *Entry, pci_dt_t *gma_dev)
   // High resolution(1400x1050+) - DualLink = 1
   // Default DualLink is auto-detection
   switch (gma_dev->device_id) {
-    case 0x2772: // "Intel GMA 950"                   // Desktop - Intel 82945G Express Chipset Family
-    case 0x2776: // "Intel GMA 950"                   // Desktop - Intel 82945G Express Chipset Family
-    case 0x27A2: // "Intel GMA 950"                   // Mobile - Intel 945GM Express Chipset Family - MacBook1,1/MacBook2,1
-    case 0x27A6: // "Intel GMA 950"                   // Mobile - Intel 945GM Express Chipset Family
-    case 0x27AE: // "Intel GMA 950"                   // Mobile - Intel 945GM Express Chipset Family
-    case 0xA001: // "Intel GMA 3150"                  // Nettop - Intel NetTop Atom D410
-    case 0xA002: // "Intel GMA 3150"                  // Nettop - Intel NetTop Atom D510
-    case 0xA011: // "Intel GMA 3150"                  // Netbook - Intel NetBook Atom N4x0
-    case 0xA012: // "Intel GMA 3150"                  // Netbook - Intel NetBook Atom N4x0
-    case 0x2A02: // "Intel GMA X3100"                 // Mobile - Intel 965 Express Chipset Family - MacBook3,1/MacBook4,1/MacbookAir1,1
-    case 0x2A03: // "Intel GMA X3100"                 // Mobile - Intel 965 Express Chipset Family
-    case 0x2A12: // "Intel GMA X3100"                 // Mobile - Intel 965 Express Chipset Family
-    case 0x2A13: // "Intel GMA X3100"                 // Mobile - Intel 965 Express Chipset Family
+    case 0x2772: // "Intel GMA 950"
+    case 0x2776: // "Intel GMA 950"
+    case 0x27A2: // "Intel GMA 950"
+    case 0x27A6: // "Intel GMA 950"
+    case 0x27AE: // "Intel GMA 950"
+    case 0xA001: // "Intel GMA 3150"
+    case 0xA002: // "Intel GMA 3150"
+    case 0xA011: // "Intel GMA 3150"
+    case 0xA012: // "Intel GMA 3150"
+    case 0x2A02: // "Intel GMA X3100"
+    case 0x2A03: // "Intel GMA X3100"
+    case 0x2A12: // "Intel GMA X3100"
+    case 0x2A13: // "Intel GMA X3100"
       if ((gSettings.DualLink == 0) || (gSettings.DualLink == 1)) {
         if (gSettings.DualLink == 1) {
           DBG("  DualLink: set to 1\n");
@@ -1478,13 +1478,13 @@ BOOLEAN setup_gma_devprop(LOADER_ENTRY *Entry, pci_dt_t *gma_dev)
 
   // platform-id
   switch (gma_dev->device_id) {
-    case 0x0102: // "Intel HD Graphics 2000"          // Desktop - iMac12,x
-    case 0x0106: // "Intel HD Graphics 2000"          // Mobile
-    case 0x010A: // "Intel HD Graphics P3000"         // Server
-    case 0x0112: // "Intel HD Graphics 3000"          // Desktop
-    case 0x0116: // "Intel HD Graphics 3000"          // Mobile - MacBookAir4,x/MacBookPro8,2/MacBookPro8,3
-    case 0x0122: // "Intel HD Graphics 3000"          // Desktop
-    case 0x0126: // "Intel HD Graphics 3000"          // Mobile - MacBookPro8,1/Macmini5,x
+    case 0x0102: // "Intel HD Graphics 2000"
+    case 0x0106: // "Intel HD Graphics 2000"
+    case 0x010A: // "Intel HD Graphics P3000"
+    case 0x0112: // "Intel HD Graphics 3000"
+    case 0x0116: // "Intel HD Graphics 3000"
+    case 0x0122: // "Intel HD Graphics 3000"
+    case 0x0126: // "Intel HD Graphics 3000"
       if (gSettings.IgPlatform != 0) {
         devprop_add_value(device, "AAPL,snb-platform-id", (UINT8*)&gSettings.IgPlatform, 4);
         DBG("  snb-platform-id = 0x%08lx\n", gSettings.IgPlatform);
@@ -2763,7 +2763,7 @@ BOOLEAN setup_gma_devprop(LOADER_ENTRY *Entry, pci_dt_t *gma_dev)
     case 0x3E92: // "Intel UHD Graphics 630"          // Desktop
     case 0x3E94: // "Intel Coffee Lake GT2"           //
     case 0x3E96: // "Intel Coffee Lake GT2"           //
-    case 0x3E98: // "Intel Coffee Lake GT2"           //
+    case 0x3E98: // "Intel UHD Graphics 630"          // Desktop
     case 0x3E9A: // "Intel Coffee Lake GT2"           //
     case 0x3E9B: // "Intel UHD Graphics 630"          // Mobile - MacBookPro15,1
       //GT3
@@ -2775,8 +2775,7 @@ BOOLEAN setup_gma_devprop(LOADER_ENTRY *Entry, pci_dt_t *gma_dev)
         case 0x3E90:
         case 0x3E93:
           if ((os_version >= AsciiOSVersionToUint64("10.14")) || ((os_version == AsciiOSVersionToUint64("10.13.6")) &&
-              (AsciiStrStr(Entry->BuildVersion, "17G2112") || AsciiStrStr(Entry->BuildVersion, "17G2208") ||
-               FileExists(Entry->Volume->RootDir, CFLFBPath)))) {
+              (AsciiStrStr(Entry->BuildVersion, "17G2") || FileExists(Entry->Volume->RootDir, CFLFBPath)))) {
             if (!SetFake) {
               FakeID = 0x3E908086 >> 16;
               DBG("  Found FakeID Intel GFX = 0x%04lx8086\n", FakeID);
@@ -2804,8 +2803,7 @@ BOOLEAN setup_gma_devprop(LOADER_ENTRY *Entry, pci_dt_t *gma_dev)
           break;
         case 0x3E91:
           if ((os_version >= AsciiOSVersionToUint64("10.14")) || ((os_version == AsciiOSVersionToUint64("10.13.6")) &&
-              (AsciiStrStr(Entry->BuildVersion, "17G2112") || AsciiStrStr(Entry->BuildVersion, "17G2208") ||
-               FileExists(Entry->Volume->RootDir, CFLFBPath)))) {
+              (AsciiStrStr(Entry->BuildVersion, "17G2") || FileExists(Entry->Volume->RootDir, CFLFBPath)))) {
             if (!SetFake) {
               FakeID = 0x3E918086 >> 16;
               DBG("  Found FakeID Intel GFX = 0x%04lx8086\n", FakeID);
@@ -2832,9 +2830,9 @@ BOOLEAN setup_gma_devprop(LOADER_ENTRY *Entry, pci_dt_t *gma_dev)
           }
           break;
         case 0x3E92:
+        case 0x3E98:
           if ((os_version >= AsciiOSVersionToUint64("10.14")) || ((os_version == AsciiOSVersionToUint64("10.13.6")) &&
-              (AsciiStrStr(Entry->BuildVersion, "17G2112") || AsciiStrStr(Entry->BuildVersion, "17G2208") ||
-               FileExists(Entry->Volume->RootDir, CFLFBPath)))) {
+              (AsciiStrStr(Entry->BuildVersion, "17G2") || FileExists(Entry->Volume->RootDir, CFLFBPath)))) {
             if (!SetFake) {
               FakeID = 0x3E928086 >> 16;
               DBG("  Found FakeID Intel GFX = 0x%04lx8086\n", FakeID);
@@ -2862,8 +2860,7 @@ BOOLEAN setup_gma_devprop(LOADER_ENTRY *Entry, pci_dt_t *gma_dev)
           break;
         case 0x3E9B:
           if ((os_version >= AsciiOSVersionToUint64("10.14")) || ((os_version == AsciiOSVersionToUint64("10.13.6")) &&
-              (AsciiStrStr(Entry->BuildVersion, "17G2112") || AsciiStrStr(Entry->BuildVersion, "17G2208") ||
-               FileExists(Entry->Volume->RootDir, CFLFBPath)))) {
+              (AsciiStrStr(Entry->BuildVersion, "17G2") || FileExists(Entry->Volume->RootDir, CFLFBPath)))) {
             if (!SetFake) {
               FakeID = 0x3E9B8086 >> 16;
               DBG("  Found FakeID Intel GFX = 0x%04lx8086\n", FakeID);
@@ -2891,8 +2888,7 @@ BOOLEAN setup_gma_devprop(LOADER_ENTRY *Entry, pci_dt_t *gma_dev)
           break;
         case 0x3EA5:
           if ((os_version >= AsciiOSVersionToUint64("10.14")) || ((os_version == AsciiOSVersionToUint64("10.13.6")) &&
-              (AsciiStrStr(Entry->BuildVersion, "17G2112") || AsciiStrStr(Entry->BuildVersion, "17G2208") ||
-               FileExists(Entry->Volume->RootDir, CFLFBPath)))) {
+              (AsciiStrStr(Entry->BuildVersion, "17G2") || FileExists(Entry->Volume->RootDir, CFLFBPath)))) {
             if (!SetFake) {
               FakeID = 0x3EA58086 >> 16;
               DBG("  Found FakeID Intel GFX = 0x%04lx8086\n", FakeID);
