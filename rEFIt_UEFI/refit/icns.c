@@ -61,7 +61,6 @@ BUILTIN_ICON BuiltinIconTable[] = {
   { NULL, L"icons\\func_secureboot_config" , L"png",  /*48*/32 },
   { NULL, L"icons\\func_reset"             , L"png",  /*48*/32 },
   { NULL, L"icons\\func_shutdown"          , L"png",  /*48*/32 },
-//  { NULL, L"icons\\func_exit"              , L"png",  /*48*/32 },
   { NULL, L"icons\\func_help"              , L"png",  /*48*/32 },
   { NULL, L"icons\\tool_shell"             , L"png",  /*48*/32 },
   { NULL, L"icons\\tool_part"              , L"png",  /*48*/32 },
@@ -104,6 +103,8 @@ MISC_ICONS OSIconsTable[] = {
   {NULL, "os_hsierra"},
   {NULL, "os_moja"},
   {NULL, "os_linux"},
+  {NULL, "os_ubuntu"},
+  {NULL, "os_suse"},
   {NULL, "os_freebsd"},
   {NULL, "os_freedos"},
   {NULL, "os_win"},
@@ -267,7 +268,7 @@ EG_IMAGE * BuiltinIcon(IN UINTN Id)
       // icon name is shutdown from historic reasons, but function is now exit
       UnicodeSPrint(Text, 30, L"exit");
     }
-    egRenderText(Text, TextBuffer, 0, 0, 0xFFFF);
+    egRenderText(Text, TextBuffer, 0, 0, 0xFFFF, 1);
     BuiltinIconTable[Id].Image = TextBuffer;
     DebugLog(1, "        [!] Icon %d: Text <%s> rendered\n", Id, Text);
     FreePool(Text);
@@ -349,7 +350,7 @@ EG_IMAGE * LoadOSIcon(IN CHAR16 *OSIconName OPTIONAL, IN CHAR16 *FallbackIconNam
   if (IsEmbeddedTheme()) { // embedded theme - return rendered icon name
     EG_IMAGE  *TextBuffer = egCreateImage(PixelSize, PixelSize, TRUE);
     egFillImage(TextBuffer, &MenuBackgroundPixel);
-//    egRenderText(FirstName, TextBuffer, PixelSize/4, PixelSize/3, 0xFFFF);
+//    egRenderText(FirstName, TextBuffer, PixelSize/4, PixelSize/3, 0xFFFF, 1);
 //    DebugLog(1, "Text <%s> rendered\n", FirstName);
     return TextBuffer;
   }

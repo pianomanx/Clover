@@ -82,6 +82,7 @@ EG_PIXEL BlueBackgroundPixel  = { 0x7f, 0x0f, 0x0f, 0xff};
 EG_PIXEL EmbeddedBackgroundPixel  = { 0xaa, 0xaa, 0xaa, 0xff};
 EG_PIXEL DarkSelectionPixel   = { 66, 66, 66, 0xff};
 EG_PIXEL DarkEmbeddedBackgroundPixel  = { 0x33, 0x33, 0x33, 0xff};
+EG_PIXEL WhitePixel  = { 0xff, 0xff, 0xff, 0xff};
 
 EG_IMAGE *BackgroundImage = NULL;
 EG_IMAGE *Banner = NULL;
@@ -409,10 +410,10 @@ VOID BltClearScreen(IN BOOLEAN ShowBanner) //ShowBanner always TRUE
   EG_PIXEL *p1;
   INTN i, j, x, x1, x2, y, y1, y2;
   if (BanHeight < 2) {
-    BanHeight = ((UGAHeight - LAYOUT_TOTAL_HEIGHT) >> 1) + LAYOUT_BANNER_HEIGHT;
+    BanHeight = ((UGAHeight - (int)(LAYOUT_TOTAL_HEIGHT * GlobalConfig.Scale)) >> 1);
+    //+ (int)(LAYOUT_TOTAL_HEIGHT * GlobalConfig.Scale); //LAYOUT_TOTAL_HEIGHT=376
   }
 
-  
   if (!(GlobalConfig.HideUIFlags & HIDEUI_FLAG_BANNER)) {
     // Banner is used in this theme
     if (!Banner) {
@@ -443,25 +444,37 @@ VOID BltClearScreen(IN BOOLEAN ShowBanner) //ShowBanner always TRUE
     if (Banner) {
       // Banner was loaded, so calculate its size and position
       BannerPlace.Width = Banner->Width;
-      BannerPlace.Height = (BanHeight >= Banner->Height) ? (INTN)Banner->Height : BanHeight; 
-      // Check if new style placement value was used for banner in theme.plist
-      if ((GlobalConfig.BannerPosX >=0 && GlobalConfig.BannerPosX <=100) && (GlobalConfig.BannerPosY >=0 && GlobalConfig.BannerPosY <=100)) {
-        // Check if screen size being used is different from theme origination size.
-        // If yes, then recalculate the placement % value.
-        // This is necessary because screen can be a different size, but banner is not scaled.
-        BannerPlace.XPos = HybridRepositioning(GlobalConfig.BannerEdgeHorizontal, GlobalConfig.BannerPosX, BannerPlace.Width,  UGAWidth,  GlobalConfig.ThemeDesignWidth );
-        BannerPlace.YPos = HybridRepositioning(GlobalConfig.BannerEdgeVertical,   GlobalConfig.BannerPosY, BannerPlace.Height, UGAHeight, GlobalConfig.ThemeDesignHeight);
-        // Check if banner is required to be nudged.
-        BannerPlace.XPos = CalculateNudgePosition(BannerPlace.XPos, GlobalConfig.BannerNudgeX, Banner->Width,  UGAWidth);
-        BannerPlace.YPos = CalculateNudgePosition(BannerPlace.YPos, GlobalConfig.BannerNudgeY, Banner->Height, UGAHeight);
+      BannerPlace.Height = (BanHeight >= Banner->Height) ? (INTN)Banner->Height : BanHeight;
+ //     DBG("banner width-height [%d,%d]\n", BannerPlace.Width, BannerPlace.Height);
+ //     DBG("global banner pos [%d,%d]\n", GlobalConfig.BannerPosX, GlobalConfig.BannerPosY);
+      if (GlobalConfig.TypeSVG) {
+        BannerPlace.XPos = GlobalConfig.BannerPosX;
+        BannerPlace.YPos = GlobalConfig.BannerPosY;
       } else {
-        // Use rEFIt default (no placement values speicifed)
-        BannerPlace.XPos = (UGAWidth - Banner->Width) >> 1;
-        BannerPlace.YPos = (BanHeight >= Banner->Height) ? (BanHeight - Banner->Height) : 0;
+        // Check if new style placement value was used for banner in theme.plist
+
+        if ((GlobalConfig.BannerPosX >=0 && GlobalConfig.BannerPosX <=1000) && (GlobalConfig.BannerPosY >=0 && GlobalConfig.BannerPosY <=1000)) {
+          // Check if screen size being used is different from theme origination size.
+          // If yes, then recalculate the placement % value.
+          // This is necessary because screen can be a different size, but banner is not scaled.
+          BannerPlace.XPos = HybridRepositioning(GlobalConfig.BannerEdgeHorizontal, GlobalConfig.BannerPosX, BannerPlace.Width,  UGAWidth,  GlobalConfig.ThemeDesignWidth );
+          BannerPlace.YPos = HybridRepositioning(GlobalConfig.BannerEdgeVertical,   GlobalConfig.BannerPosY, BannerPlace.Height, UGAHeight, GlobalConfig.ThemeDesignHeight);
+          // Check if banner is required to be nudged.
+          BannerPlace.XPos = CalculateNudgePosition(BannerPlace.XPos, GlobalConfig.BannerNudgeX, Banner->Width,  UGAWidth);
+          BannerPlace.YPos = CalculateNudgePosition(BannerPlace.YPos, GlobalConfig.BannerNudgeY, Banner->Height, UGAHeight);
+ //         DBG("banner position new style\n");
+        } else {
+          // Use rEFIt default (no placement values speicifed)
+          BannerPlace.XPos = (UGAWidth - Banner->Width) >> 1;
+          BannerPlace.YPos = (BanHeight >= Banner->Height) ? (BanHeight - Banner->Height) : 0;
+  //        DBG("banner position old style\n");
+        }
       }
     }
   }
-  
+
+//  DBG("Banner position [%d,%d]\n",  BannerPlace.XPos, BannerPlace.YPos);
+
   if (!Banner || (GlobalConfig.HideUIFlags & HIDEUI_FLAG_BANNER) || 
       !IsImageWithinScreenLimits(BannerPlace.XPos, BannerPlace.Width, UGAWidth) || 
       !IsImageWithinScreenLimits(BannerPlace.YPos, BannerPlace.Height, UGAHeight)) {
@@ -694,6 +707,8 @@ VOID BltImageCompositeBadge(IN EG_IMAGE *BaseImage, IN EG_IMAGE *TopImage, IN EG
     DBG("Can't create CompImage\n");
     return;
   }
+//  DBG("compose image total=[%d,%d], comp=[%d,%d] at [%d,%d] scale=%d\n", TotalWidth, TotalHeight,
+//      CompWidth, CompHeight, XPos, YPos, Scale);
   //to simplify suppose square images
   if (CompWidth < TotalWidth) {
     OffsetX = (TotalWidth - CompWidth) >> 1;
@@ -921,7 +936,7 @@ VOID UpdateAnime(REFIT_MENU_SCREEN *Screen, EG_RECT *Place)
   // Check if the theme.plist setting for allowing an anim to be moved horizontally in the quest 
   // to avoid overlapping the menu text on menu pages at lower resolutions is set.
   if ((Screen->ID > 1) && (LayoutAnimMoveForMenuX != 0)) { // these screens have text menus which the anim may interfere with.
-    MenuWidth = TEXT_XMARGIN * 2 + (50 * GlobalConfig.CharWidth); // taken from menu.c
+    MenuWidth = TEXT_XMARGIN * 2 + (50 * GlobalConfig.CharWidth * GlobalConfig.Scale); // taken from menu.c
     if ((x + Screen->Film[0]->Width) > (UGAWidth - MenuWidth) >> 1) {
       if ((x + LayoutAnimMoveForMenuX >= 0) || (UGAWidth-(x + LayoutAnimMoveForMenuX + Screen->Film[0]->Width)) <= 100) {
         x += LayoutAnimMoveForMenuX;
@@ -945,7 +960,8 @@ VOID UpdateAnime(REFIT_MENU_SCREEN *Screen, EG_RECT *Place)
               Screen->Film[Screen->Frames]->Height,
               AnimeImage->Width,
               Screen->Film[Screen->Frames]->Width);
-    egComposeImage(AnimeImage, Screen->Film[Screen->CurrentFrame], 0, 0);
+    AnimeImage->HasAlpha = FALSE;
+    egComposeImage(AnimeImage, Screen->Film[Screen->CurrentFrame], 0, 0);  //aaaa
     BltImage(AnimeImage, x, y);
   }
   Screen->CurrentFrame++;

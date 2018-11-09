@@ -63,7 +63,8 @@
 #define fmodf(x,y) ModF(x,y)
 #define acosf(x) AcosF(x)
 #define atan2f(x,y) Atan2F(x,y)
-#define fabsf(x) ((x >= 0.0f)?x:(-x))
+//#define fabsf(x) ((x >= 0.0f)?x:(-x))
+#define fabsf(x) FabsF(x)
 
 #define MALCOLM 1
 
@@ -76,7 +77,7 @@ void DumpFloat (char* s, float* t, int N)
     float a = t[i];
     int b = (int)a;
     int sign = (a < 0.f);
-    DBG("%c%d.%06d ", ((b == 0) && sign)?'-':' ', b, (int)(fabsf((a-b)*1e6f)));
+    DBG("%c%d.%06d ", ((b == 0) && sign)?'-':' ', b, (int)(fabsf((a-(float)b)*1.0e6f)));
   }
   DBG("\n");
 #endif
@@ -92,8 +93,7 @@ void nsvg_qsort(NSVGedge* Array, int Low, int High)
   float med = Array[Imed].y0;
 //  Temp = AllocatePool(sizeof(NSVGedge));
   // Sort around center
-  while (i <= j)
-  {
+  while (i <= j) {
     while (Array[i].y0 < med) i++;
     while (Array[j].y0 > med) j--;
     // Change
@@ -540,13 +540,13 @@ static void nsvg__flattenShape(NSVGrasterizer* r, NSVGshape* shape, float* xform
 	for (path = shape->paths; path != NULL; path = path->next) {
 		r->npoints = 0;
 		// Flatten path
-    if (shape->debug) {
+//    if (shape->debug) {
 //      DBG("npts=%d\n", path->npts);
-    }
+//    }
 
-    if (shape->debug) {
-      DBG("first point [%d,%d]\n", (int)path->pts[0], (int)path->pts[1]);
-    }
+//    if (shape->debug) {
+//      DBG("first point [%d,%d]\n", (int)path->pts[0], (int)path->pts[1]);
+//    }
     pt.x = path->pts[0];
     pt.y = path->pts[1];
     nsvg__addPathPoint(r, &pt, xform, 0);
@@ -558,10 +558,10 @@ static void nsvg__flattenShape(NSVGrasterizer* r, NSVGshape* shape, float* xform
 
 		// Close path
 		nsvg__addPathPoint(r, &pt, xform, 0);
-    if (shape->debug) {
-      DBG("npoints=%d\n", r->npoints);
-      DBG("first point x=%s y=%s\n", PoolPrintFloat(pt.x), PoolPrintFloat(pt.y));
-    }
+//    if (shape->debug) {
+//      DBG("npoints=%d\n", r->npoints);
+//      DBG("first point x=%s y=%s\n", PoolPrintFloat(pt.x), PoolPrintFloat(pt.y));
+//    }
 		// Build edges
 		for (i = 0, j = r->npoints-1; i < r->npoints; j = i++)
 			nsvg__addEdge(r, r->points[j].x, r->points[j].y, r->points[i].x, r->points[i].y);
@@ -1139,7 +1139,10 @@ static void nsvg__fillActiveEdges(unsigned char* scanline, int len, NSVGactiveEd
 	}
 }
 
-static float nsvg__clampf(float a, float mn, float mx) { return a < mn ? mn : (a > mx ? mx : a); }
+static float nsvg__clampf(float a, float mn, float mx)
+{
+  return a < mn ? mn : (a > mx ? mx : a);
+}
 
 static unsigned int nsvg__RGBA(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
 {
@@ -1148,7 +1151,8 @@ static unsigned int nsvg__RGBA(unsigned char r, unsigned char g, unsigned char b
 
 static unsigned int nsvg__lerpRGBA(unsigned int c0, unsigned int c1, float u)
 {
-	int iu = (int)(nsvg__clampf(u, 0.0f, 1.0f) * 256.0f); //0..256
+  float xu = nsvg__clampf(u, 0.0f, 1.0f) * 256.0f;
+	int iu = (int)xu; //0..256
 	int b = (((c0) & 0xff)*(256-iu) + (((c1) & 0xff)*iu)) >> 8;
 	int g = (((c0>>8) & 0xff)*(256-iu) + (((c1>>8) & 0xff)*iu)) >> 8;
 	int r = (((c0>>16) & 0xff)*(256-iu) + (((c1>>16) & 0xff)*iu)) >> 8;
@@ -1173,7 +1177,7 @@ static inline int nsvg__div255(int x)
 
 static void nsvg__scanlineBit(
             unsigned char* row, int count, unsigned char* cover, int x, int y,
-            float tx, float ty, float scalex, float scaley, NSVGcachedPaint* cache)
+         /*   float tx, float ty, float scalex, float scaley, */ NSVGcachedPaint* cache)
 {
   int x1 = x + count;
   for (; x < x1; x++) {
@@ -1181,8 +1185,14 @@ static void nsvg__scanlineBit(
   }
 }
 
+//  float du = xu - (float)iu;
+//  if (du > rndf()) {
+//    iu++;   //dithering
+//  }
+
+
 static void nsvg__scanlineSolid(unsigned char* row, int count, unsigned char* cover, int x, int y,
-								float tx, float ty, float scalex, float scaley, NSVGcachedPaint* cache)
+							/*	float tx, float ty, float scalex, float scaley, */ NSVGcachedPaint* cache)
 {
 //  static int once = 0;
   unsigned char* dst = row + x*4;
@@ -1226,16 +1236,17 @@ static void nsvg__scanlineSolid(unsigned char* row, int count, unsigned char* co
 		int i, cr, cg, cb, ca;
 		unsigned int c;
 //x,y - pixels
-		fx = ((float)x - tx) / scalex;
-		fy = ((float)y - ty) / scaley;
-		dx = 1.0f / scalex;
+//		fx = ((float)x - tx) / scalex;
+//		fy = ((float)y - ty) / scaley;
+//		dx = 1.0f / scalex;
+    fx = (float)x;
+    fy = (float)y;
+    dx = 1.0f;
+
 		for (i = 0; i < count; i++) {
 			int r,g,b,a,ia;
 			gy = fx*t[1] + fy*t[3] + t[5]; //gradient direction. Point at cut
-//      if (i==1) {
-//        DBG("grad dir gy=%s\n", PoolPrintFloat(gy));
-//      }
-			c = cache->colors[(int)nsvg__clampf(gy*255.0f, 0, 255.0f)]; //assumed gy = 0.0 ... 1.0f
+			c = cache->colors[dither(nsvg__clampf(gy*255.0f, 0, 254.99f))]; //assumed gy = 0.0 ... 1.0f
 			cr = (c) & 0xff;
 			cg = (c >> 8) & 0xff;
 			cb = (c >> 16) & 0xff;
@@ -1271,16 +1282,20 @@ static void nsvg__scanlineSolid(unsigned char* row, int count, unsigned char* co
 		int i, cr, cg, cb, ca;
 		unsigned int c;
 
-		fx = ((float)x - tx) / scalex;
-		fy = ((float)y - ty) / scaley;
-		dx = 1.0f / scalex;
+//		fx = ((float)x - tx) / scalex;
+//		fy = ((float)y - ty) / scaley;
+//    dx = 1.0f / scalex;
+    fx = (float)x;
+    fy = (float)y;
+    dx = 1.0f;
 
 		for (i = 0; i < count; i++) {
 			int r,g,b,a,ia;
 			gx = fx*t[0] + fy*t[2] + t[4];
 			gy = fx*t[1] + fy*t[3] + t[5];
 			gd = sqrtf(gx*gx + gy*gy);
-			c = cache->colors[(int)nsvg__clampf(gd*255.0f, 0, 255.0f)];
+//     DBG("gx=%s gy=%s\n", PoolPrintFloat(gx), PoolPrintFloat(gy));
+			c = cache->colors[dither(nsvg__clampf(gd*255.0f, 0, 254.99f))];
 			cr = (c) & 0xff;
 			cg = (c >> 8) & 0xff;
 			cb = (c >> 16) & 0xff;
@@ -1309,6 +1324,73 @@ static void nsvg__scanlineSolid(unsigned char* row, int count, unsigned char* co
 			dst += 4;
 			fx += dx;
     }
+  } else if (cache->type == NSVG_PAINT_PATTERN) {
+    // TODO
+    float fx, fy, dx, gx, gy;
+    float* t = cache->xform;
+    EG_IMAGE *Pattern = (EG_IMAGE *)cache->image;
+    if (!Pattern) {
+      DBG("no pattern to fill\n");
+      return;
+    }
+    INTN Width = Pattern->Width;
+    INTN Height = Pattern->Height;
+//    if ((x % 10) == 0) {
+//      DBG("found pattern [%d,%d]\n", Width, Height);
+//      DumpFloat("cache grad xform", t, 6);
+//    }
+    //    DumpFloat("cache grad xform", t, 6);
+    int i, cr, cg, cb, ca, ix, iy;
+    INTN j;
+    fx = (float)x;
+    fy = (float)y;
+    dx = 1.0f;
+
+//    unsigned int c;
+    for (i = 0; i < count; i++) {
+      int r,g,b,a,ia;
+      gx = fx*t[0] + fy*t[2] + t[4];
+      gy = fx*t[1] + fy*t[3] + t[5];
+      ix = dither(gx * Width) % Width;
+//      if ((x + i) % 10 == 0) {
+//        DBG("gx=%s gy=%s\n", PoolPrintFloat(gx), PoolPrintFloat(gy));
+//        DBG("ix=%d\n", ix);
+//      }
+//      if (ix >= Width) {
+//        ix = (int)Width - 1;
+//      }
+      iy = dither(gy * Height) % Height;
+//      if (iy >= Height) {
+//        iy = (int)Height - 1;
+ //     }
+      j = iy * Width + ix;
+      cr = Pattern->PixelData[j].r;
+      cb = Pattern->PixelData[j].b;
+      cg = Pattern->PixelData[j].g;
+      ca = Pattern->PixelData[j].a;
+      a = nsvg__div255((int)cover[0] * ca);
+      ia = 255 - a;
+      // Premultiply
+      r = nsvg__div255(cr * a);
+      g = nsvg__div255(cg * a);
+      b = nsvg__div255(cb * a);
+
+      // Blend over
+      r += nsvg__div255(ia * (int)dst[0]);
+      g += nsvg__div255(ia * (int)dst[1]);
+      b += nsvg__div255(ia * (int)dst[2]);
+      a += nsvg__div255(ia * (int)dst[3]);
+
+      dst[0] = (unsigned char)r;
+      dst[1] = (unsigned char)g;
+      dst[2] = (unsigned char)b;
+      dst[3] = (unsigned char)a;
+
+      cover++;
+      dst += 4;
+      fx += dx;
+    }
+
   } else if (cache->type == NSVG_PAINT_CONIC_GRADIENT) {
       // TODO: spread modes.
       // TODO: plenty of opportunities to optimize.
@@ -1319,20 +1401,20 @@ static void nsvg__scanlineSolid(unsigned char* row, int count, unsigned char* co
       int i, cr, cg, cb, ca;
       unsigned int c;
 
-      fx = ((float)x - tx) / scalex;
-      fy = ((float)y - ty) / scaley;
-      dx = 1.0f / scalex;
+      fx = (float)x;
+      fy = (float)y;
+      dx = 1.0f;
 
       for (i = 0; i < count; i++) {
         int r,g,b,a,ia;
         gx = fx*t[0] + fy*t[2] + t[4];
         gy = fx*t[1] + fy*t[3] + t[5];
-        gd = sqrtf(gx*gx + gy*gy);
-        if (gd == 0.f) {
+   //     gd = sqrtf(gx*gx + gy*gy);
+        if ((gx == 0.f) && (gy == 0.f)) {
           c = 0;
         } else {
           gd = (Atan2F(gy, gx) + PI) / PI2;
-          c = cache->colors[(int)nsvg__clampf(gd*255.0f, 0, 255.0f)];
+          c = cache->colors[dither(nsvg__clampf(gd*255.0f, 0, 254.99f))];
         }
         cr = (c) & 0xff;
         cg = (c >> 8) & 0xff;
@@ -1365,7 +1447,9 @@ static void nsvg__scanlineSolid(unsigned char* row, int count, unsigned char* co
 	}
 }
 
-static void nsvg__rasterizeSortedEdges(NSVGrasterizer *r, float tx, float ty, float scalex, float scaley, NSVGcachedPaint* cache, char fillRule, NSVGclip* clip)
+static void nsvg__rasterizeSortedEdges(NSVGrasterizer *r,
+                                       /* float tx, float ty, float scalex, float scaley, */
+                                       NSVGcachedPaint* cache, char fillRule, NSVGclip* clip)
 {
 	NSVGactiveEdge *active = NULL;
 	int y, s;
@@ -1457,7 +1541,7 @@ static void nsvg__rasterizeSortedEdges(NSVGrasterizer *r, float tx, float ty, fl
           }
         }
       }
-      r->fscanline(&r->bitmap[y * r->stride], xmax-xmin+1, &r->scanline[xmin], xmin, y, tx,ty, scalex, scaley, cache);
+      r->fscanline(&r->bitmap[y * r->stride], xmax-xmin+1, &r->scanline[xmin], xmin, y,/* tx,ty, scalex, scaley, */ cache);
 
 		}
 	}
@@ -1526,35 +1610,37 @@ static void nsvg__unpremultiplyAlpha(unsigned char* image, int w, int h, int str
 static void nsvg__initPaint(NSVGcachedPaint* cache, NSVGpaint* paint, NSVGshape* shape, float *xformShape)
 {
 	int i, j;
-	NSVGgradient* grad;
+	NSVGgradient* grad = paint->gradient;
 
   float opacity = shape->opacity;
 
 	cache->type = paint->type;
-//  if (shape->debug) {
-//    DBG("cachetype=%d color=%x opacity=%d\n", cache->type, paint->color, (int)(shape->opacity*255.f));
-//  }
 
-	if (paint->type == NSVG_PAINT_COLOR) {
+//  DBG("shape=%a, paint-type=%d\n", shape->id, cache->type);
+
+	if (cache->type == NSVG_PAINT_COLOR) {
 		cache->colors[0] = nsvg__applyOpacity(paint->color, opacity);
-//    cache->colors[0] = paint->color;
-    if (shape->debug) {
-//      DBG("cache color=%x\n", cache->colors[0]);
-    }
 		return;
 	}
+  if (cache->type == NSVG_PAINT_PATTERN) {
+    cache->colors[0] = nsvg__applyOpacity(0, opacity);
+    if (grad) {
+      cache->image = ((NSVGpattern*)grad)->image;
+    }
+    float xform[6];
+    nsvg__xformIdentity(xform);
+    xform[0] = shape->bounds[2] - shape->bounds[0];
+    xform[3] = shape->bounds[3] - shape->bounds[1];
+    xform[4] = shape->bounds[0];
+    xform[5] = shape->bounds[1];
+    nsvg__xformMultiply(xform, xformShape);
+    nsvg__xformInverse(cache->xform, xform);
+    return;
+  }
 
-	grad = paint->gradient;
-//  DumpFloat("initGrad xform", grad->xform, 6);
 	cache->spread = grad->spread;
-
-	float xform[6];
-	memcpy(xform, xformShape, sizeof(float)*6);
-  nsvg__xformMultiply(xform, grad->xform);
-  //inverse
-  nsvg__xformInverse(cache->xform, xform);
-
-//  nsvg__xformInverse(cache->xform, grad->xform);
+  nsvg__xformInverse(cache->xform, xformShape);
+  nsvg__xformMultiply(cache->xform, grad->xform);
 
 	if (grad->nstops == 0) {
     for (i = 0; i < 256; i++) {
@@ -1563,7 +1649,6 @@ static void nsvg__initPaint(NSVGcachedPaint* cache, NSVGpaint* paint, NSVGshape*
 	} else if (grad->nstops == 1) {
     for (i = 0; i < 256; i++) {
 			cache->colors[i] = nsvg__applyOpacity(grad->stops[i].color, opacity);
-//      cache->colors[i] = grad->stops[i].color;
     }
 	} else {  //nstops=2 as usual gradient
 		unsigned int ca, cb = 0;
@@ -1571,7 +1656,6 @@ static void nsvg__initPaint(NSVGcachedPaint* cache, NSVGpaint* paint, NSVGshape*
 		int ia, ib, count;
 
 		ca = nsvg__applyOpacity(grad->stops[0].color, opacity);
-//    ca = grad->stops[0].color;
 		ua = nsvg__clampf(grad->stops[0].offset, 0, 1);
 		ub = nsvg__clampf(grad->stops[grad->nstops-1].offset, ua, 1);
 		ia = (int)(ua * 255.0f);
@@ -1583,8 +1667,6 @@ static void nsvg__initPaint(NSVGcachedPaint* cache, NSVGpaint* paint, NSVGshape*
 		for (i = 0; i < grad->nstops-1; i++) {
 			ca = nsvg__applyOpacity(grad->stops[i].color, opacity);  //= color begin
 			cb = nsvg__applyOpacity(grad->stops[i+1].color, opacity); //= color end
-//      ca = grad->stops[i].color;
-//      cb = grad->stops[i+1].color;
 			ua = nsvg__clampf(grad->stops[i].offset, 0, 1); //=0
 			ub = nsvg__clampf(grad->stops[i+1].offset, 0, 1); //=1
 			ia = (int)(ua * 255.0f);  //=0
@@ -1598,11 +1680,11 @@ static void nsvg__initPaint(NSVGcachedPaint* cache, NSVGpaint* paint, NSVGshape*
 				u += du;
 			}
 		}
-    if (shape->debug) {
-      DBG("Color cache [0,50,100,150,200,250]:%x,%x,%x,%x,%x,%x\n",
-        cache->colors[0], cache->colors[50], cache->colors[100], cache->colors[150],
-        cache->colors[200], cache->colors[250]);
-    }
+//    if (shape->debug) {
+//      DBG("Color cache [0,50,100,150,200,250]:%x,%x,%x,%x,%x,%x\n",
+//        cache->colors[0], cache->colors[50], cache->colors[100], cache->colors[150],
+//        cache->colors[200], cache->colors[250]);
+//    }
 		for (i = ib; i < 256; i++)  //tail
 			cache->colors[i] = cb;
 	}
@@ -1664,6 +1746,8 @@ static void nsvg__rasterizeShapes(
 	int i;
   float min_scale = fabsf(scalex) < fabsf(scaley) ? scalex : scaley;
 
+  memset(&cache, 0, sizeof(NSVGcachedPaint));
+
 	r->bitmap = dst;
 	r->width = w;
 	r->height = h;
@@ -1687,35 +1771,40 @@ static void nsvg__rasterizeShapes(
 			continue;
 
     memcpy(&xform[0], shape->xform, sizeof(float)*6);
-    xform[0] *= scalex;
-    xform[1] *= scaley;
-    xform[2] *= scalex;
-    xform[3] *= scaley;
-    xform[4] *= scalex;
-    xform[5] *= scaley;
     if (shape->link) {
-      shapeLink = shape->link;
+      shapeLink = shape->link; //original shape
       nsvg__xformPremultiply(xform, shapeLink->xform);
     } else {
       shapeLink = shape;
     }
-    if (shapeLink->debug) {
-        DBG("ShapeID=%a\n", shapeLink->id);
-        DumpFloat("shape xform", xform, 6);
-        DumpFloat("shape bounds", shapeLink->bounds, 4);
-//    DBG("shape opacity=%s\n", PoolPrintFloat(shapeLink->opacity));
- //     DBG("shape flag=%d\n", (int)shapeLink->flags);
-    }
+//    if (strstr(shapeLink->id, "shar")) {
+//      DBG("ShapeID=%a\n", shapeLink->id);
+//      DumpFloat("shape xform before move", &xform[0], 6);
+//      DBG("t4=%x t5=%x\n", xform[4], xform[5]);
+//    }
+    xform[0] *= scalex;
+    xform[1] *= scaley;
+    xform[2] *= scalex;
+    xform[3] *= scaley;
+    xform[4] = xform[4] * scalex + tx;
+    xform[5] = xform[5] * scaley + ty;
 
-     if( shape->image_href && external_image )// load external file
+//    if (strstr(shapeLink->id, "shar")) {
+//        DumpFloat("shape xform", &xform[0], 6);
+//        DumpFloat("shape bounds", shapeLink->bounds, 4);
+//      DBG("shape opacity=%s\n", PoolPrintFloat(shapeLink->opacity));
+//      DBG("shape flag=%d\n", (int)shapeLink->flags);
+//    }
+
+     if( shapeLink->image_href && external_image )// load external file
      {
        // compute size
        float rect[4];
-       rect[0] = shape->bounds[0] * scalex + tx;
-       rect[1] = shape->bounds[1] * scaley + ty;
-       rect[2] = shape->bounds[2] * scalex + tx;
-       rect[3] = shape->bounds[3] * scaley + ty;
-       external_image(obj, r, shape->image_href, rect);
+       rect[0] = shapeLink->bounds[0] * scalex + tx;
+       rect[1] = shapeLink->bounds[1] * scaley + ty;
+       rect[2] = shapeLink->bounds[2] * scalex + tx;
+       rect[3] = shapeLink->bounds[3] * scaley + ty;
+       external_image(obj, r, shapeLink->image_href, rect);
      }
 
 		if (shapeLink->fill.type != NSVG_PAINT_NONE) {
@@ -1724,56 +1813,42 @@ static void nsvg__rasterizeShapes(
 			r->nedges = 0;
 
 			nsvg__flattenShape(r, shapeLink, xform);
-      if (shapeLink->debug) {
-        DBG("shape to fill %a, edges=%d\n", (CHAR8*)(shapeLink->id), r->nedges);
-      }
+//      if (shapeLink->debug) {
+//        DBG("shape to fill %a, edges=%d\n", (CHAR8*)(shapeLink->id), r->nedges);
+//      }
 			// Scale and translate edges
- //     DBG("edge translate [%s,%s]\n", PoolPrintFloat(tx), PoolPrintFloat(ty));
 			for (i = 0; i < r->nedges; i++) {
 				e = &r->edges[i];
-				e->x0 = tx + e->x0;
-				e->y0 = (ty + e->y0) * NSVG__SUBSAMPLES;  //NSVG__SUBSAMPLES = 5
-				e->x1 = tx + e->x1;
-				e->y1 = (ty + e->y1) * NSVG__SUBSAMPLES;
-//        if (i == 0 || i == 50) {
-//          DBG(" edge[%d]=%s\n", i, PoolPrintFloat(e->x0));
-//        }
+        e->y0 *= NSVG__SUBSAMPLES;
+        e->y1 *= NSVG__SUBSAMPLES;
 			}
 
 			// Rasterize edges
 			qsort(r->edges, r->nedges, sizeof(NSVGedge), nsvg__cmpEdge);
 
 			// now, traverse the scanlines and find the intersections on each scanline, use non-zero rule
-			nsvg__initPaint(&cache, &shapeLink->fill, shapeLink, xform);
-      //TODO-check there must be no tx,ty,sx,sx - they are alredy in the edges.
-			nsvg__rasterizeSortedEdges(r, tx, ty, scalex, scaley, &cache, shapeLink->fillRule, &shapeLink->clip);
-//        nsvg__rasterizeSortedEdges(r, 0, 0, 1.0f, 1.0f, &cache, shapeLink->fillRule, &shapeLink->clip);
+			nsvg__initPaint(&cache, &shapeLink->fill, shapeLink, &xform[0]);
+      nsvg__rasterizeSortedEdges(r, &cache, shapeLink->fillRule, &shapeLink->clip);
     }
 		if (shape->stroke.type != NSVG_PAINT_NONE && (shape->strokeWidth * fabsf(min_scale)) > 0.01f) {
 			nsvg__resetPool(r);
 			r->freelist = NULL;
 			r->nedges = 0;
-
-//      DBG("x=%d y=%d\n", (int)xform[4], (int)xform[5]);
 			nsvg__flattenShapeStroke(r, shapeLink, xform);
-      DBG("shape stroke %a, edges=%d\n", (CHAR8*)(shapeLink->id), r->nedges);
-//			dumpEdges(r, "edge.svg");
 
 			// Scale and translate edges
 			for (i = 0; i < r->nedges; i++) {
 				e = &r->edges[i];
-				e->x0 = tx + e->x0;
-				e->y0 = (ty + e->y0) * NSVG__SUBSAMPLES;
-				e->x1 = tx + e->x1;
-				e->y1 = (ty + e->y1) * NSVG__SUBSAMPLES;
+        e->y0 *= NSVG__SUBSAMPLES;
+        e->y1 *= NSVG__SUBSAMPLES;
 			}
 
 			// Rasterize edges
 			qsort(r->edges, r->nedges, sizeof(NSVGedge), nsvg__cmpEdge);
 
 			// now, traverse the scanlines and find the intersections on each scanline, use non-zero rule
-			nsvg__initPaint(&cache, &shapeLink->stroke, shapeLink, xform);
-			nsvg__rasterizeSortedEdges(r, tx, ty, scalex, scaley, &cache, NSVG_FILLRULE_NONZERO, &shapeLink->clip);
+			nsvg__initPaint(&cache, &shapeLink->stroke, shapeLink, &xform[0]);
+			nsvg__rasterizeSortedEdges(r, &cache, NSVG_FILLRULE_NONZERO, &shapeLink->clip);
 		}
 	}
 
@@ -1838,13 +1913,13 @@ void nsvgRasterize(
 
   tx -= image->realBounds[0] * scalex;
   ty -= image->realBounds[1] * scaley;
-  DBG(" image will be shifted by [%s,%s]\n", PoolPrintFloat(tx), PoolPrintFloat(ty));
-   // image will be shifted by [ 4.939199, 3.614399]
+//  DBG("  image will be shifted by [%s,%s]\n", PoolPrintFloat(tx), PoolPrintFloat(ty));
+//  DumpFloat("  image real bounds ", image->realBounds, 4);
+
   nsvg__rasterizeClipPaths(r, image, w, h, tx, ty, scalex, scaley);
 
   nsvg__rasterizeShapes(r, image->shapes, tx, ty, scalex, scaley,
                         dst, w, h, stride, nsvg__scanlineSolid, external_image, obj);
-  if (0) {
-    nsvg__unpremultiplyAlpha(dst, w, h, stride);
-  }
+
+  nsvg__unpremultiplyAlpha(dst, w, h, stride);
 }

@@ -131,7 +131,7 @@ INTN ScrollbarYMovement;
 //#define ROW0__TILESIZE (144)
 //#define ROW1_TILESIZE (64)
 #define TILE_XSPACING (8)
-#define TILE_YSPACING (24)
+//#define TILE_YSPACING (24)
 #define ROW0_SCROLLSIZE (100)
 #define INDICATOR_SIZE (52)
 
@@ -1743,13 +1743,14 @@ VOID InitSelection(VOID)
       SelectionImages[4] = egDecodePNG(ACCESS_EMB_DATA(emb_selection_indicator), ACCESS_EMB_SIZE(emb_selection_indicator), TRUE);
 
     }
-    SelectionImages[4] = egEnsureImageSize(SelectionImages[4], INDICATOR_SIZE, INDICATOR_SIZE, &MenuBackgroundPixel);
+    INTN ScaledIndicatorSize = (INTN)(INDICATOR_SIZE * GlobalConfig.Scale);
+    SelectionImages[4] = egEnsureImageSize(SelectionImages[4], ScaledIndicatorSize, ScaledIndicatorSize, &MenuBackgroundPixel);
     if (!SelectionImages[4]) {
-      SelectionImages[4] = egCreateFilledImage(INDICATOR_SIZE, INDICATOR_SIZE,
+      SelectionImages[4] = egCreateFilledImage(ScaledIndicatorSize, ScaledIndicatorSize,
                                                TRUE, &StdBackgroundPixel);
 
     }
-    SelectionImages[5] = egCreateFilledImage(INDICATOR_SIZE, INDICATOR_SIZE,
+    SelectionImages[5] = egCreateFilledImage(ScaledIndicatorSize, ScaledIndicatorSize,
                                              TRUE, &MenuBackgroundPixel);
   }
 
@@ -1764,7 +1765,13 @@ VOID InitSelection(VOID)
   Buttons[0] = egLoadImage(ThemeDir, GetIconsExt(L"radio_button", L"png"), TRUE); //memory leak
   Buttons[1] = egLoadImage(ThemeDir, GetIconsExt(L"radio_button_selected", L"png"), TRUE);
   if (!Buttons[0]) {
+    Buttons[0] = egLoadIcon(ThemeDir, L"radio_button.png", 48);
+  }
+  if (!Buttons[0]) {
     Buttons[0] = egDecodePNG(ACCESS_EMB_DATA(emb_radio_button), ACCESS_EMB_SIZE(emb_radio_button), TRUE);
+  }
+  if (!Buttons[1]) {
+    Buttons[1] = egLoadIcon(ThemeDir, L"radio_button_selected.png", 48);
   }
 
   if (!Buttons[1]) {
@@ -1775,6 +1782,13 @@ VOID InitSelection(VOID)
   Buttons[2] = egLoadImage(ThemeDir, GetIconsExt(L"checkbox", L"png"), TRUE);
   Buttons[3] = egLoadImage(ThemeDir, GetIconsExt(L"checkbox_checked", L"png"), TRUE);
   if (!Buttons[2]) {
+    Buttons[2] = egLoadIcon(ThemeDir, L"checkbox.png", 48);
+  }
+  if (!Buttons[3]) {
+    Buttons[3] = egLoadIcon(ThemeDir, L"checkbox_checked.png", 48);
+  }
+
+  if (!Buttons[2]) {
     Buttons[2] = egDecodePNG(ACCESS_EMB_DATA(emb_checkbox), ACCESS_EMB_SIZE(emb_checkbox), TRUE);
   }
 
@@ -1783,15 +1797,20 @@ VOID InitSelection(VOID)
   }
 
   // non-selected background images
-  //TODO FALSE -> TRUE
   if (GlobalConfig.SelectionBigFileName != NULL) {
     SelectionImages[1] = egCreateFilledImage(row0TileSize, row0TileSize,
                                              TRUE, &MenuBackgroundPixel);
     SelectionImages[3] = egCreateFilledImage(row1TileSize, row1TileSize,
                                              TRUE, &MenuBackgroundPixel);
   } else { // using embedded theme (this is an assumption but a better check is required)
-    EG_PIXEL BackgroundPixel = DarkEmbeddedBackgroundPixel;
-    BackgroundPixel.a = 0xff;
+    EG_PIXEL BackgroundPixel;
+    if (GlobalConfig.DarkEmbedded || GlobalConfig.TypeSVG) {
+      BackgroundPixel = DarkEmbeddedBackgroundPixel;
+      BackgroundPixel.a = 0x00;
+    } else {
+      BackgroundPixel = StdBackgroundPixel;
+      BackgroundPixel.a = 0xff;
+    }
     if (GlobalConfig.DarkEmbedded) {
       SelectionImages[1] = egCreateFilledImage(row0TileSize, row0TileSize,
                                                TRUE, &BackgroundPixel);
@@ -1800,9 +1819,9 @@ VOID InitSelection(VOID)
 
     } else {
       SelectionImages[1] = egCreateFilledImage(row0TileSize, row0TileSize,
-                                               TRUE, &StdBackgroundPixel);
+                                               TRUE, &BackgroundPixel); //&StdBackgroundPixel);
       SelectionImages[3] = egCreateFilledImage(row1TileSize, row1TileSize,
-                                               TRUE, &StdBackgroundPixel);
+                                               TRUE, &BackgroundPixel);
     }
   }
 //  DBG("selections inited\n");
@@ -2851,7 +2870,7 @@ INTN DrawTextXY(IN CHAR16 *Text, IN INTN XPos, IN INTN YPos, IN UINT8 XAlign)
   TextBufferXY = egCreateFilledImage(TextWidth, TextHeight, TRUE, &MenuBackgroundPixel);
 
   // render the text
-  TextWidth = egRenderText(Text, TextBufferXY, 0, 0, 0xFFFF);
+  TextWidth = egRenderText(Text, TextBufferXY, 0, 0, 0xFFFF, 1);
 
   if (XAlign != X_IS_LEFT) {
     // shift 64 is prohibited
@@ -2964,7 +2983,7 @@ VOID DrawMenuText(IN CHAR16 *Text, IN INTN SelectedWidth, IN INTN XPos, IN INTN 
   }
 
   // render the text
-  egRenderText(Text, TextBuffer, TEXT_XMARGIN, TEXT_YMARGIN, Cursor);
+  egRenderText(Text, TextBuffer, TEXT_XMARGIN, TEXT_YMARGIN, Cursor, 2);
   BltImageAlpha(TextBuffer, (INTN)XPos, (INTN)YPos, &MenuBackgroundPixel, 16);
 }
 
@@ -3156,6 +3175,7 @@ VOID GraphicsMenuStyle(IN REFIT_MENU_SCREEN *Screen, IN SCROLL_STATE *State, IN 
   INTN PlaceCentre = (TextHeight / 2) - 7;
   UINTN OldChosenItem = ~(UINTN)0;
 	INTN TitleLen = 0;
+  INTN ScaledWidth = (INTN)(GlobalConfig.CharWidth * GlobalConfig.Scale);
 
   HidePointer();
 
@@ -3165,31 +3185,24 @@ VOID GraphicsMenuStyle(IN REFIT_MENU_SCREEN *Screen, IN SCROLL_STATE *State, IN 
       egGetScreenSize(&UGAWidth, &UGAHeight);
       InitAnime(Screen);
 			SwitchToGraphicsAndClear();
-			//BltClearScreen(FALSE);
 
-      EntriesPosY = ((UGAHeight - LAYOUT_TOTAL_HEIGHT) >> 1) + LayoutBannerOffset + (TextHeight << 1);
+      EntriesPosY = ((UGAHeight - (int)(LAYOUT_TOTAL_HEIGHT * GlobalConfig.Scale)) >> 1) + (int)(LayoutBannerOffset * GlobalConfig.Scale) + (TextHeight << 1);
 
       VisibleHeight = ((UGAHeight - EntriesPosY) / TextHeight) - Screen->InfoLineCount - 2;/* - GlobalConfig.PruneScrollRows; */
       //DBG("MENU_FUNCTION_INIT 1 EntriesPosY=%d VisibleHeight=%d\n", EntriesPosY, VisibleHeight);
       if (Screen->Entries[0]->Tag == TAG_SWITCH) {
         if (((REFIT_INPUT_DIALOG*)(Screen->Entries[0]))->Item->IValue == 3) {
-   /*       if ((OldChosenTheme != 0xFFFF)) { //embedded theme
-            j = OldChosenTheme;
-          } */
           j = (OldChosenTheme == 0xFFFF) ? 0: (OldChosenTheme + 1);
         } else if (((REFIT_INPUT_DIALOG*)(Screen->Entries[0]))->Item->IValue == 90) {
           j = OldChosenConfig;
         } else if (((REFIT_INPUT_DIALOG*)(Screen->Entries[0]))->Item->IValue == 116) {
-      /*    if ((OldChosenDsdt != 0xFFFF)) { //embedded DSDT
-            j = OldChosenDsdt;
-          } */
           j = (OldChosenDsdt == 0xFFFF) ? 0: (OldChosenDsdt + 1);
         }
       }
       InitScroll(State, Screen->EntryCount, Screen->EntryCount, VisibleHeight, j);
       // determine width of the menu - not working
       //MenuWidth = 80;  // minimum
-      MenuWidth = LAYOUT_TEXT_WIDTH; //500
+      MenuWidth = (int)(LAYOUT_TEXT_WIDTH * GlobalConfig.Scale); //500
       DrawMenuText(NULL, 0, 0, 0, 0);
 
       if (Screen->TitleImage) {
@@ -3246,7 +3259,7 @@ VOID GraphicsMenuStyle(IN REFIT_MENU_SCREEN *Screen, IN SCROLL_STATE *State, IN 
 			//DBG("PAINT_ALL: EntriesPosY=%d MaxVisible=%d\n", EntriesPosY, State->MaxVisible);
 			//DBG("DownButton.Height=%d TextHeight=%d\n", DownButton.Height, TextHeight);
       t2 = EntriesPosY + (State->MaxVisible + 1) * TextHeight - DownButton.Height;
-      t1 = EntriesPosX + TextHeight + TEXT_XMARGIN + MenuWidth + 16;
+      t1 = EntriesPosX + TextHeight + MenuWidth  + (INTN)((TEXT_XMARGIN + 16) * GlobalConfig.Scale);
 			//DBG("PAINT_ALL: %d %d\n", t1, t2);
       SetBar(t1, EntriesPosY, t2, State);
 
@@ -3258,34 +3271,24 @@ VOID GraphicsMenuStyle(IN REFIT_MENU_SCREEN *Screen, IN SCROLL_STATE *State, IN 
 
         Entry->Place.XPos = EntriesPosX;
         Entry->Place.YPos = EntriesPosY + j * TextHeight;
-        Entry->Place.Width = TitleLen * GlobalConfig.CharWidth;
+        Entry->Place.Width = TitleLen * ScaledWidth;
         Entry->Place.Height = (UINTN)TextHeight;
         StrCpyS(ResultString, TITLE_MAX_LEN, Entry->Title);
 
-				/*
-        if (Entry->Tag == TAG_SWITCH) {
-          if (((REFIT_INPUT_DIALOG*)Entry)->Item->IValue == 3) {
-            OldChosenItem = OldChosenTheme;
-          } else if (((REFIT_INPUT_DIALOG*)Entry)->Item->IValue == 90) {
-            OldChosenItem = OldChosenConfig;
-          }
-        }
-				*/
-
         if (Entry->Tag == TAG_INPUT) {
           if (((REFIT_INPUT_DIALOG*)Entry)->Item->ItemType == BoolValue) {
-            Entry->Place.Width = StrLen(ResultString) * GlobalConfig.CharWidth;
+            Entry->Place.Width = StrLen(ResultString) * ScaledWidth;
             DrawMenuText(L" ", 0, EntriesPosX, Entry->Place.YPos, 0xFFFF);
             DrawMenuText(ResultString, (i == State->CurrentSelection) ? (MenuWidth) : 0,
                          EntriesPosX + (TextHeight + TEXT_XMARGIN), Entry->Place.YPos, 0xFFFF);
             BltImageAlpha((((REFIT_INPUT_DIALOG*)(Entry))->Item->BValue) ? Buttons[3] :Buttons[2],
-                  EntriesPosX + TEXT_XMARGIN, Entry->Place.YPos + PlaceCentre,
+                  EntriesPosX + (INTN)(TEXT_XMARGIN * GlobalConfig.Scale), Entry->Place.YPos + PlaceCentre,
                   &MenuBackgroundPixel, 16);
           } else {
 						// text input
             StrCatS(ResultString, TITLE_MAX_LEN, ((REFIT_INPUT_DIALOG*)(Entry))->Item->SValue);
             StrCatS(ResultString, TITLE_MAX_LEN, L" ");
-            Entry->Place.Width = StrLen(ResultString) * GlobalConfig.CharWidth;
+            Entry->Place.Width = StrLen(ResultString) * ScaledWidth;
             // Slice - suppose to use Row as Cursor in text
             DrawMenuText(ResultString, (i == State->CurrentSelection) ? MenuWidth : 0, EntriesPosX,
                          Entry->Place.YPos, TitleLen + Entry->Row);
@@ -3333,16 +3336,6 @@ VOID GraphicsMenuStyle(IN REFIT_MENU_SCREEN *Screen, IN SCROLL_STATE *State, IN 
       REFIT_MENU_ENTRY *EntryC = Screen->Entries[State->CurrentSelection];
       TitleLen = StrLen(EntryL->Title);
       StrCpyS(ResultString, TITLE_MAX_LEN, EntryL->Title);
-
-			/*
-      if (EntryL->Tag == TAG_SWITCH) {
-        if (((REFIT_INPUT_DIALOG*)EntryL)->Item->IValue == 3) {
-          OldChosenItem = OldChosenTheme;
-        } else if (((REFIT_INPUT_DIALOG*)EntryL)->Item->IValue == 90) {
-          OldChosenItem = OldChosenConfig;
-        }
-      }
-			*/
 
       // redraw selection cursor
       // 1. blackosx swapped this around so drawing of selection comes before drawing scrollbar.
@@ -3443,7 +3436,7 @@ VOID GraphicsMenuStyle(IN REFIT_MENU_SCREEN *Screen, IN SCROLL_STATE *State, IN 
     }
 
     case MENU_FUNCTION_PAINT_TIMEOUT:
-      X = (UGAWidth - StrLen(ParamText) * GlobalConfig.CharWidth) >> 1;
+      X = (UGAWidth - StrLen(ParamText) * ScaledWidth) >> 1;
       DrawMenuText(ParamText, 0, X, TimeoutPosY, 0xFFFF);
       break;
   }
@@ -3458,11 +3451,7 @@ static VOID DrawMainMenuEntry(REFIT_MENU_ENTRY *Entry, BOOLEAN selected, INTN XP
 {
 //  EG_IMAGE *TmpBuffer = NULL;
   INTN Scale = GlobalConfig.MainEntriesSize >> 3;
-/*
-  if (GlobalConfig.BootCampStyle && (Entry->Row == 1)) {
-    return;
-  }
-*/
+
   if (((Entry->Tag == TAG_LOADER) || (Entry->Tag == TAG_LEGACY)) &&
       !(GlobalConfig.HideBadges & HDBADGES_SWAP) &&
       (Entry->Row == 0)) {
@@ -3480,7 +3469,11 @@ static VOID DrawMainMenuEntry(REFIT_MENU_ENTRY *Entry, BOOLEAN selected, INTN XP
     }
   }
   //  DBG("Entry title=%s; Width=%d\n", Entry->Title, MainImage->Width);
-  Scale = ((Entry->Row == 0) ? (Scale * (selected ? 1 : -1)): 16) ;
+  if (GlobalConfig.TypeSVG) {
+    Scale = 16 * (selected ? 1 : -1);
+  } else {
+    Scale = ((Entry->Row == 0) ? (Scale * (selected ? 1 : -1)): 16) ;
+  }
   if (GlobalConfig.SelectionOnTop) {
     SelectionImages[0]->HasAlpha = TRUE;
     SelectionImages[2]->HasAlpha = TRUE;
@@ -3502,10 +3495,10 @@ static VOID DrawMainMenuEntry(REFIT_MENU_ENTRY *Entry, BOOLEAN selected, INTN XP
   if (GlobalConfig.BootCampStyle) {
     if (Entry->Row == 0) {
       BltImageAlpha(SelectionImages[(4) + (selected ? 0 : 1)],
-                    XPos + (row0TileSize / 2) - (INDICATOR_SIZE / 2),
-                    row0PosY + row0TileSize
-                    + ((GlobalConfig.HideUIFlags & HIDEUI_FLAG_LABEL) ? 10 :
-                       (FontHeight - TEXT_YMARGIN + 20)),
+                    XPos + (row0TileSize / 2) - (INTN)(INDICATOR_SIZE * 0.5f * GlobalConfig.Scale),
+                    row0PosY + row0TileSize +
+                    ((GlobalConfig.HideUIFlags & HIDEUI_FLAG_LABEL) ? (INTN)(10.f * GlobalConfig.Scale):
+                       (FontHeight  + (INTN)((20 - TEXT_YMARGIN) * GlobalConfig.Scale))),
                     &MenuBackgroundPixel, Scale);
 
     }
@@ -3541,6 +3534,7 @@ static VOID FillRectAreaOfScreen(IN INTN XPos, IN INTN YPos, IN INTN Width, IN I
 static VOID DrawMainMenuLabel(IN CHAR16 *Text, IN INTN XPos, IN INTN YPos, IN REFIT_MENU_SCREEN *Screen, IN SCROLL_STATE *State)
 {
   INTN TextWidth;
+  INTN BadgeDim = (INTN)(BADGE_DIMENSION * GlobalConfig.Scale);
 
   egMeasureText(Text, &TextWidth, NULL);
 
@@ -3553,8 +3547,8 @@ static VOID DrawMainMenuLabel(IN CHAR16 *Text, IN INTN XPos, IN INTN YPos, IN RE
       && (GlobalConfig.HideBadges & HDBADGES_INLINE) && (!OldRow)
       && (OldTextWidth) && (OldTextWidth != TextWidth)) {
     //Clear badge
-    BltImageAlpha(NULL, (OldX - (OldTextWidth >> 1) - (BADGE_DIMENSION + 16)),
-                  (OldY - ((BADGE_DIMENSION - TextHeight) >> 1)), &MenuBackgroundPixel, BADGE_DIMENSION >> 3);
+    BltImageAlpha(NULL, (OldX - (OldTextWidth >> 1) - (BadgeDim + 16)),
+                  (OldY - ((BadgeDim - TextHeight) >> 1)), &MenuBackgroundPixel, BadgeDim >> 3);
   }
   DrawTextXY(Text, XPos, YPos, X_IS_CENTER);
 
@@ -3564,8 +3558,8 @@ static VOID DrawMainMenuLabel(IN CHAR16 *Text, IN INTN XPos, IN INTN YPos, IN RE
        (Screen->Entries[State->CurrentSelection]->Row == 0)) {
     // Display Inline Badge: small icon before the text
     BltImageAlpha(((LOADER_ENTRY*)Screen->Entries[State->CurrentSelection])->me.Image,
-                  (XPos - (TextWidth >> 1) - (BADGE_DIMENSION + 16)),
-                  (YPos - ((BADGE_DIMENSION - TextHeight) >> 1)), &MenuBackgroundPixel, BADGE_DIMENSION >> 3);
+                  (XPos - (TextWidth >> 1) - (BadgeDim + 16)),
+                  (YPos - ((BadgeDim - TextHeight) >> 1)), &MenuBackgroundPixel, BadgeDim >> 3);
   }
 
   OldX = XPos;
@@ -3657,22 +3651,22 @@ VOID MainMenuVerticalStyle(IN REFIT_MENU_SCREEN *Screen, IN SCROLL_STATE *State,
 			SwitchToGraphicsAndClear();
 			//BltClearScreen(FALSE);
       //adjustable by theme.plist?
-      EntriesPosY = LAYOUT_Y_EDGE;
-      EntriesGap = GlobalConfig.TileYSpace;
-      EntriesWidth = GlobalConfig.MainEntriesSize + 16;
-      EntriesHeight = GlobalConfig.MainEntriesSize + 16;
+      EntriesPosY = (int)(LAYOUT_Y_EDGE * GlobalConfig.Scale);
+      EntriesGap = (int)(GlobalConfig.TileYSpace * GlobalConfig.Scale);
+      EntriesWidth = GlobalConfig.MainEntriesSize + (int)(16 * GlobalConfig.Scale);
+      EntriesHeight = GlobalConfig.MainEntriesSize + (int)(16 * GlobalConfig.Scale);
       //
-      VisibleHeight = (UGAHeight - EntriesPosY - LAYOUT_Y_EDGE + EntriesGap) / (EntriesHeight + EntriesGap);
-      EntriesPosX = UGAWidth - EntriesWidth - BAR_WIDTH - LAYOUT_X_EDGE;
-      TimeoutPosY = UGAHeight - LAYOUT_Y_EDGE - TextHeight;
+      VisibleHeight = (UGAHeight - EntriesPosY - (int)(LAYOUT_Y_EDGE * GlobalConfig.Scale) + EntriesGap) / (EntriesHeight + EntriesGap);
+      EntriesPosX = UGAWidth - EntriesWidth - (int)((BAR_WIDTH + LAYOUT_X_EDGE) * GlobalConfig.Scale);
+      TimeoutPosY = UGAHeight - (int)(LAYOUT_Y_EDGE * GlobalConfig.Scale) - TextHeight;
 
       CountItems(Screen);
       InitScroll(State, row0Count, Screen->EntryCount, VisibleHeight, 0);
       row0PosX = EntriesPosX;
       row0PosY = EntriesPosY;
-      row1PosX = (UGAWidth + EntriesGap - (row1TileSize + TILE_XSPACING) * row1Count) >> 1;
-      textPosY = TimeoutPosY - GlobalConfig.TileYSpace - TextHeight;
-      row1PosY = textPosY - row1TileSize - GlobalConfig.TileYSpace - LayoutTextOffset;
+      row1PosX = (UGAWidth + EntriesGap - (row1TileSize + (int)(TILE_XSPACING* GlobalConfig.Scale)) * row1Count) >> 1;
+      textPosY = TimeoutPosY - (int)(GlobalConfig.TileYSpace * GlobalConfig.Scale) - TextHeight;
+      row1PosY = textPosY - row1TileSize - (int)(GlobalConfig.TileYSpace * GlobalConfig.Scale) - LayoutTextOffset;
       if (!itemPosX) {
         itemPosX = AllocatePool(sizeof(UINT64) * Screen->EntryCount);
         itemPosY = AllocatePool(sizeof(UINT64) * Screen->EntryCount);
@@ -3688,7 +3682,7 @@ VOID MainMenuVerticalStyle(IN REFIT_MENU_SCREEN *Screen, IN SCROLL_STATE *State,
         } else {
           itemPosX[i] = row1PosXRunning;
           itemPosY[i] = row1PosY;
-          row1PosXRunning += row1TileSize + TILE_XSPACING;
+          row1PosXRunning += row1TileSize + (int)(TILE_XSPACING* GlobalConfig.Scale);
           //         DBG("next item in row1 at x=%d\n", row1PosXRunning);
         }
       }
@@ -3794,41 +3788,44 @@ VOID MainMenuStyle(IN REFIT_MENU_SCREEN *Screen, IN SCROLL_STATE *State, IN UINT
 			SwitchToGraphicsAndClear();
 			//BltClearScreen(FALSE);
 
-      EntriesGap = GlobalConfig.TileXSpace;
+      EntriesGap = (int)(GlobalConfig.TileXSpace * GlobalConfig.Scale);
       EntriesWidth = GlobalConfig.MainEntriesSize + (16 * row0TileSize) / 144;
-      EntriesHeight = GlobalConfig.MainEntriesSize + 16;
+      EntriesHeight = GlobalConfig.MainEntriesSize + (int)(16.f * GlobalConfig.Scale);
 
-      MaxItemOnScreen = (UGAWidth - ROW0_SCROLLSIZE * 2) / (EntriesWidth + EntriesGap); //8
+      MaxItemOnScreen = (UGAWidth - (int)((ROW0_SCROLLSIZE * 2)* GlobalConfig.Scale)) / (EntriesWidth + EntriesGap); //8
       CountItems(Screen);
       InitScroll(State, row0Count, Screen->EntryCount, MaxItemOnScreen, 0);
       row0PosX = (UGAWidth + 8 - (EntriesWidth + EntriesGap) *
                   ((MaxItemOnScreen < row0Count)?MaxItemOnScreen:row0Count)) >> 1;
-      row0PosY = ((UGAHeight - LayoutMainMenuHeight) >> 1) + LayoutBannerOffset; //LAYOUT_BANNER_YOFFSET;
+      row0PosY = (int)(((float)UGAHeight - LayoutMainMenuHeight * GlobalConfig.Scale) * 0.5f +
+                  LayoutBannerOffset * GlobalConfig.Scale);
 
-      row1PosX = (UGAWidth + 8 - (row1TileSize + TILE_XSPACING) * row1Count) >> 1;
+      row1PosX = (UGAWidth + 8 - (row1TileSize + EntriesGap) * row1Count) >> 1;
 
       if (GlobalConfig.BootCampStyle) {
-        row1PosY = row0PosY + row0TileSize + LayoutButtonOffset + GlobalConfig.TileYSpace + INDICATOR_SIZE
+        row1PosY = row0PosY + row0TileSize +
+        (int)((LayoutButtonOffset + GlobalConfig.TileYSpace + INDICATOR_SIZE) * GlobalConfig.Scale)
                      + ((GlobalConfig.HideUIFlags & HIDEUI_FLAG_LABEL) ? 15 : (FontHeight + 30));
       } else {
-        row1PosY = row0PosY + EntriesHeight + GlobalConfig.TileYSpace + LayoutButtonOffset;
+        row1PosY = row0PosY + EntriesHeight +
+            (INTN)((GlobalConfig.TileYSpace + LayoutButtonOffset) * GlobalConfig.Scale);
       }
 
       if (row1Count > 0) {
         if (GlobalConfig.BootCampStyle) {
-          textPosY = row0PosY + row0TileSize + 10;
+          textPosY = row0PosY + row0TileSize + (INTN)(10 * GlobalConfig.Scale);
         } else {
-          textPosY = row1PosY + row1TileSize + GlobalConfig.TileYSpace + LayoutTextOffset;
+          textPosY = row1PosY + row1TileSize + (INTN)((GlobalConfig.TileYSpace + LayoutTextOffset) * GlobalConfig.Scale);
         }
       } else {
         if (GlobalConfig.BootCampStyle) {
-          textPosY = row0PosY + row0TileSize + 10;
+          textPosY = row0PosY + row0TileSize + (INTN)(10 * GlobalConfig.Scale);
         } else {
           textPosY = row1PosY;
         }
       }
 
-      FunctextPosY = row1PosY + row1TileSize + GlobalConfig.TileYSpace + LayoutTextOffset;
+      FunctextPosY = row1PosY + row1TileSize + (INTN)((GlobalConfig.TileYSpace + LayoutTextOffset) * GlobalConfig.Scale);
       if (!itemPosX) {
         itemPosX = AllocatePool(sizeof(UINT64) * Screen->EntryCount);
       }
@@ -3842,7 +3839,7 @@ VOID MainMenuStyle(IN REFIT_MENU_SCREEN *Screen, IN SCROLL_STATE *State, IN UINT
           row0PosXRunning += EntriesWidth + EntriesGap;
         } else {
           itemPosX[i] = row1PosXRunning;
-          row1PosXRunning += row1TileSize + TILE_XSPACING;
+          row1PosXRunning += row1TileSize + (INTN)(TILE_XSPACING * GlobalConfig.Scale);
           //DBG("next item in row1 at x=%d\n", row1PosXRunning);
         }
       }
@@ -3876,8 +3873,8 @@ VOID MainMenuStyle(IN REFIT_MENU_SCREEN *Screen, IN SCROLL_STATE *State, IN UINT
                                    EntriesWidth + GlobalConfig.TileXSpace, TextHeight, &MenuBackgroundPixel,
                                    X_IS_CENTER);
               // draw the text
-              DrawBCSText(Screen->Entries[i]->Title, itemPosX[i - State->FirstVisible] + (row0TileSize / 2),
-                           textPosY, X_IS_CENTER);
+              DrawBCSText(Screen->Entries[i]->Title,
+                          itemPosX[i - State->FirstVisible] + (row0TileSize / 2), textPosY, X_IS_CENTER);
             }
           }
         } else {

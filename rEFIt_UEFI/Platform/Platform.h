@@ -1283,6 +1283,7 @@ typedef enum {
   MacBookAir62,
   MacBookAir71,
   MacBookAir72,
+  MacBookAir81,
   MacMini11,
   MacMini21,
   MacMini31,
@@ -1293,6 +1294,7 @@ typedef enum {
   MacMini61,
   MacMini62,
   MacMini71,
+  MacMini81,
   iMac41,
   iMac42,
   iMac51,
@@ -2133,7 +2135,7 @@ ParseXML (
   );
 
 EFI_STATUS ParseSVGTheme(CONST CHAR8* buffer, TagPtr * dict, UINT32 bufSize);
-//VOID LoadSVGfont(NSVGfont  *fontSVG);
+//VOID RenderSVGfont(NSVGfont  *fontSVG);
 
 TagPtr
 GetProperty (

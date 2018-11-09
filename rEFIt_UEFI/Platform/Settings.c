@@ -155,9 +155,10 @@ REFIT_CONFIG   GlobalConfig = {
   FALSE,          // BOOLEAN     SignatureFixup;
   FALSE,          // BOOLEAN     DarkEmbedded;
   FALSE,          // BOOLEAN     TypeSVG;
-  0,              // INTN        Codepage;
-  0,              // INTN        CodepageSize;
-
+  0xC0,           // INTN        Codepage;
+  0xC0,           // INTN        CodepageSize; //extended latin
+  1.0f,           // float       Scale;
+  0.0f,           // float       CentreShift;
 };
 
 static struct FIX_CONFIG { const CHAR8* oldName; const CHAR8* newName; UINT32 bitData; } FixesConfig[] =
@@ -2751,13 +2752,18 @@ GetEarlyUserSettings (
         AsciiStrCpyS (gSettings.Language, 16, Prop->string);
         if (AsciiStrStr (Prop->string, "en")) {
           gLanguage = english;
-          GlobalConfig.Codepage = 0;
+          GlobalConfig.Codepage = 0xC0;
+          GlobalConfig.CodepageSize = 0;
         } else if (AsciiStrStr (Prop->string, "ru")) {
           gLanguage = russian;
           GlobalConfig.Codepage = 0x410;
           GlobalConfig.CodepageSize = 0x40;
+        } else if (AsciiStrStr (Prop->string, "ua")) {
+          gLanguage = ukrainian;
+          GlobalConfig.Codepage = 0x400;
+          GlobalConfig.CodepageSize = 0x60;
         } else if (AsciiStrStr (Prop->string, "fr")) {
-          gLanguage = french;
+          gLanguage = french; //default is extended latin
         } else if (AsciiStrStr (Prop->string, "it")) {
           gLanguage = italian;
         } else if (AsciiStrStr (Prop->string, "es")) {
@@ -2772,18 +2778,18 @@ GetEarlyUserSettings (
           gLanguage = dutch;
         } else if (AsciiStrStr (Prop->string, "pl")) {
           gLanguage = polish;
-        } else if (AsciiStrStr (Prop->string, "ua")) {
-          gLanguage = ukrainian;
         } else if (AsciiStrStr (Prop->string, "cz")) {
           gLanguage = czech;
         } else if (AsciiStrStr (Prop->string, "hr")) {
           gLanguage = croatian;
         } else if (AsciiStrStr (Prop->string, "id")) {
           gLanguage = indonesian;
-        } else if (AsciiStrStr (Prop->string, "ko")) {
-          gLanguage = korean;
         } else if (AsciiStrStr (Prop->string, "ro")) {
           gLanguage = romanian;
+        } else if (AsciiStrStr (Prop->string, "ko")) {
+          gLanguage = korean;
+          GlobalConfig.Codepage = 0x1100;
+          GlobalConfig.CodepageSize = 0x100;
         }
       }
       
@@ -3851,7 +3857,6 @@ GetThemeTagSettings (
           Anime->Next = GuiAnime;
         }
         GuiAnime      = Anime;
-        
       } else {
         GuiAnime      = Anime; //first anime
       }
@@ -3912,7 +3917,6 @@ LoadTheme (CHAR16 *TestTheme)
     if (ThemePath != NULL) {
       FreePool (ThemePath);
     }
-    
     if (UGAHeight > HEIGHT_2K) {
       ThemePath = PoolPrint(L"EFI\\CLOVER\\themes\\%s@2x", TestTheme);
     } else {
@@ -3923,7 +3927,6 @@ LoadTheme (CHAR16 *TestTheme)
         ThemeDir->Close (ThemeDir);
         ThemeDir = NULL;
       }
-      
       Status = SelfRootDir->Open(SelfRootDir, &ThemeDir, ThemePath, EFI_FILE_MODE_READ, 0);
       if (EFI_ERROR (Status)) {
         FreePool (ThemePath);
@@ -3934,33 +3937,27 @@ LoadTheme (CHAR16 *TestTheme)
         Status = egLoadFile(ThemeDir, CONFIG_THEME_SVG, (UINT8**)&ThemePtr, &Size);
         if (!EFI_ERROR(Status) && (ThemePtr != NULL) && (Size != 0)) {
           Status = ParseSVGTheme((const CHAR8*)ThemePtr, &ThemeDict, 0);
-          
           if (EFI_ERROR(Status)) {
             ThemeDict = NULL;
           }
-          
           if (ThemeDict == NULL) {
             DBG("svg file %s not parsed\n", CONFIG_THEME_SVG);
           } else {
             DBG("Using vector theme '%s' (%s)\n", TestTheme, ThemePath);
           }
-         
         } else {
           Status = egLoadFile(ThemeDir, CONFIG_THEME_FILENAME, (UINT8**)&ThemePtr, &Size);
           if (!EFI_ERROR (Status) && (ThemePtr != NULL) && (Size != 0)) {
             Status = ParseXML((const CHAR8*)ThemePtr, &ThemeDict, 0);
-            
             if (EFI_ERROR (Status)) {
               ThemeDict = NULL;
             }
-            
             if (ThemeDict == NULL) {
               DBG ("xml file %s not parsed\n", CONFIG_THEME_FILENAME);
             } else {
               DBG ("Using theme '%s' (%s)\n", TestTheme, ThemePath);
             }
           }
-          
         }
       }
     }
@@ -3986,6 +3983,13 @@ InitTheme(
   UINTN      Rnd;
   
   DbgHeader("InitTheme");
+  GlobalConfig.TypeSVG = FALSE;
+  row0TileSize = 144;
+  row1TileSize = 64;
+  if (FontImage != NULL) {
+    egFreeImage (FontImage);
+    FontImage = NULL;
+  }
   
   Rnd = ((Time != NULL) && (ThemesNum != 0)) ? Time->Second % ThemesNum : 0;
   
@@ -4020,7 +4024,7 @@ InitTheme(
   KillMouse();
   
   // Invalidate BuiltinIcons
-  //  DBG ("Invalidating BuiltinIcons...\n");
+//    DBG ("Invalidating BuiltinIcons...\n");
   for (i = 0; i < BUILTIN_ICON_COUNT; i++) {
     if (BuiltinIconTable[i].Image != NULL) {
       egFreeImage (BuiltinIconTable[i].Image);
@@ -4047,13 +4051,13 @@ InitTheme(
       if (TestTheme != NULL) {
         ThemeDict = LoadTheme (TestTheme);
         if (ThemeDict != NULL) {
-          //        DBG ("special theme %s found and %s parsed\n", TestTheme, CONFIG_THEME_FILENAME);
+//                  DBG ("special theme %s found and %s parsed\n", TestTheme, CONFIG_THEME_FILENAME);
           if (GlobalConfig.Theme) {
             FreePool (GlobalConfig.Theme);
           }
           GlobalConfig.Theme = TestTheme;
         } else { // special theme not loaded
-          //         DBG ("special theme %s not found, skipping\n", TestTheme, CONFIG_THEME_FILENAME);
+ //                  DBG ("special theme %s not found, skipping\n", TestTheme, CONFIG_THEME_FILENAME);
           FreePool (TestTheme);
         }
         TestTheme = NULL;
@@ -4074,7 +4078,6 @@ InitTheme(
         TestTheme   = PoolPrint (L"%a", ChosenTheme);
         if (TestTheme != NULL) {
           ThemeDict = LoadTheme (TestTheme);
-          //         DBG("3\n");
           if (ThemeDict != NULL) {
             DBG ("theme %a defined in NVRAM found and %s parsed\n", ChosenTheme, CONFIG_THEME_FILENAME);
             if (GlobalConfig.Theme != NULL) {
@@ -4116,16 +4119,8 @@ InitTheme(
         }
       }
     }
-    // Try to get a theme
-/*  if (ThemeDict == NULL) { //use embedded
-      ThemeDict = LoadTheme (ThemesList[Rnd]);
-      if (ThemeDict != NULL) {
-        GlobalConfig.Theme = AllocateCopyPool (StrSize (ThemesList[Rnd]), ThemesList[Rnd]);
-      }
-    } */
   } // ThemesNum>0
-  
-  
+
 finish:
   if (!ThemeDict) {  // No theme could be loaded, use embedded
     DBG (" using embedded theme\n");
@@ -4151,11 +4146,13 @@ finish:
     GlobalConfig.BadgeScale = 16;
   } else { // theme loaded successfully
     // read theme settings
-    TagPtr DictPointer = GetProperty(ThemeDict, "Theme");
-    if (DictPointer != NULL) {
-      Status = GetThemeTagSettings(DictPointer);
-      if (EFI_ERROR (Status)) {
-        DBG ("Config theme error: %r\n", Status);
+    if (!GlobalConfig.TypeSVG) {
+      TagPtr DictPointer = GetProperty(ThemeDict, "Theme");
+      if (DictPointer != NULL) {
+        Status = GetThemeTagSettings(DictPointer);
+        if (EFI_ERROR (Status)) {
+          DBG ("Config theme error: %r\n", Status);
+        }
       }
     }
     FreeTag(ThemeDict);
@@ -4166,12 +4163,9 @@ finish:
       break;
     }
   }
-  
   if (ChosenTheme != NULL) {
     FreePool (ChosenTheme);
   }
-  
-  //  DBG("8\n");
   PrepareFont();
   return Status;
 }
@@ -7119,7 +7113,7 @@ SetDevices (LOADER_ENTRY *Entry)
                 UINT32 LEVW = 0, LEVX = 0, LEVD = 0, PCHL = 0;
                 UINT32 ShiftLEVX = 0, FBLEVX = 0;
                 UINT32 SYSLEVW = 0x80000000;
-                UINT32 OSXLEVW = 0xC0000000;
+                UINT32 MACLEVW = 0xC0000000;
 
                 MsgLog ("Intel GFX IntelBacklight\n");
                 // Read LEV2
@@ -7202,7 +7196,7 @@ SetDevices (LOADER_ENTRY *Entry)
                 //  Sandy Bridge/Ivy Bridge: 0x0710
                 //  Haswell/Broadwell: 0x056C/0x07A1/0x0AD9/0x1499
                 //  Skylake/KabyLake: 0x056C
-                //  Coffee Lake: 0xFF7B/0xFFFF
+                //  Coffee Lake: 0xFFFF
                 switch (Pci.Hdr.DeviceId) {
                   case 0x0102: // "Intel HD Graphics 2000"
                   case 0x0106: // "Intel HD Graphics 2000"
@@ -7411,7 +7405,7 @@ SetDevices (LOADER_ENTRY *Entry)
                   case 0x5926: // "Intel Iris Plus Graphics 640"
                   case 0x5927: // "Intel Iris Plus Graphics 650"
                   case 0x5917: // "Intel UHD Graphics 620"
-                  case 0x87C0: // "Intel UHD Graphics 615"
+                  case 0x87C0: // "Intel UHD Graphics 617"
                     FBLEVX = 0x056C;
                     break;
 
@@ -7442,16 +7436,50 @@ SetDevices (LOADER_ENTRY *Entry)
                                                 &SYSLEVW
                                                 );
                 }
-                if (gSettings.IntelBacklight) {
-                  MsgLog ("  Write macOS LEVW: 0x%x\n", OSXLEVW);
-                  /*Status = */PciIo->Mem.Write(
-                                                PciIo,
-                                                EfiPciIoWidthUint32,
-                                                0,
-                                                0xC8250,
-                                                1,
-                                                &OSXLEVW
-                                                );
+
+                switch (gCPUStructure.Model) {
+                  case CPU_MODEL_SANDY_BRIDGE:
+                  case CPU_MODEL_IVY_BRIDGE:
+                  case CPU_MODEL_IVY_BRIDGE_E5:
+                    // if change SYS LEVW to macOS LEVW, the brightness of the pop-up may decrease or increase.
+                    // but the brightness of the monitor will not actually change. so we should not use this.
+                    MsgLog ("  Skip writing macOS LEVW: 0x%x\n", MACLEVW);
+                    break;
+
+                  case CPU_MODEL_HASWELL:
+                  case CPU_MODEL_HASWELL_ULT:
+                  case CPU_MODEL_HASWELL_U5:    // Broadwell
+                  case CPU_MODEL_BROADWELL_HQ:
+                  case CPU_MODEL_BROADWELL_E5:
+                  case CPU_MODEL_BROADWELL_DE:
+                    // if not change SYS LEVW to macOS LEVW, backlight will be dark and don't work keys for backlight.
+                    // so we should use this.
+                    MsgLog ("  Write macOS LEVW: 0x%x\n", MACLEVW);
+
+                    /*Status = */PciIo->Mem.Write(
+                                                  PciIo,
+                                                  EfiPciIoWidthUint32,
+                                                  0,
+                                                  0xC8250,
+                                                  1,
+                                                  &MACLEVW
+                                                  );
+                    break;
+
+                  default:
+                    if (gSettings.IntelBacklight) {
+                      MsgLog ("  Write macOS LEVW: 0x%x\n", MACLEVW);
+
+                      /*Status = */PciIo->Mem.Write(
+                                                    PciIo,
+                                                    EfiPciIoWidthUint32,
+                                                    0,
+                                                    0xC8250,
+                                                    1,
+                                                    &MACLEVW
+                                                    );
+                    }
+                    break;
                 }
 
                 switch (Pci.Hdr.DeviceId) {
@@ -7489,50 +7517,29 @@ SetDevices (LOADER_ENTRY *Entry)
                         MsgLog ("  Read default Framebuffer LEVX: 0x%x\n", FBLEVX);
                       }
 
-                      if ((ShiftLEVX != FBLEVX) || !LEVX) {
-                        LEVX = (LEVL * FBLEVX) / ShiftLEVX;
-                        MsgLog ("  Write new LEVX: 0x%x\n", LEVX);
-                        LEVL = FBLEVX | FBLEVX << 16;
-                        MsgLog ("  Write new LEVL: 0x%x\n", LEVL);
+                      LEVL = (LEVL * FBLEVX) / ShiftLEVX;
+                      MsgLog ("  Write new LEVL: 0x%x\n", LEVL);
 
-                        if (FBLEVX > ShiftLEVX) {
-                          /*Status = */PciIo->Mem.Write(
-                                                        PciIo,
-                                                        EfiPciIoWidthUint32,
-                                                        0,
-                                                        0xC8254,
-                                                        1,
-                                                        &LEVL
-                                                        );
+                      /*Status = */PciIo->Mem.Write(
+                                                    PciIo,
+                                                    EfiPciIoWidthUint32,
+                                                    0,
+                                                    0x48254,
+                                                    1,
+                                                    &LEVL
+                                                    );
 
-                          /*Status = */PciIo->Mem.Write(
-                                                        PciIo,
-                                                        EfiPciIoWidthUint32,
-                                                        0,
-                                                        0x48254,
-                                                        1,
-                                                        &LEVX
-                                                        );
-                        } else {
-                          /*Status = */PciIo->Mem.Write(
-                                                        PciIo,
-                                                        EfiPciIoWidthUint32,
-                                                        0,
-                                                        0x48254,
-                                                        1,
-                                                        &LEVX
-                                                        );
+                      LEVX = FBLEVX | FBLEVX << 16;
+                      MsgLog ("  Write new LEVX: 0x%x\n", LEVX);
 
-                          /*Status = */PciIo->Mem.Write(
-                                                        PciIo,
-                                                        EfiPciIoWidthUint32,
-                                                        0,
-                                                        0xC8254,
-                                                        1,
-                                                        &LEVL
-                                                        );
-                        }
-                      }
+                      /*Status = */PciIo->Mem.Write(
+                                                    PciIo,
+                                                    EfiPciIoWidthUint32,
+                                                    0,
+                                                    0xC8254,
+                                                    1,
+                                                    &LEVX
+                                                    );
                     }
                     break;
 
@@ -7540,6 +7547,7 @@ SetDevices (LOADER_ENTRY *Entry)
                   case 0x3E93: // "Intel UHD Graphics 610"
                   case 0x3E91: // "Intel UHD Graphics 630"
                   case 0x3E92: // "Intel UHD Graphics 630"
+                  case 0x3E98: // "Intel UHD Graphics 630"
                   case 0x3E9B: // "Intel UHD Graphics 630"
                   case 0x3EA5: // "Intel Iris Plus Graphics 655"
                     // Write LEVD
@@ -7579,6 +7587,7 @@ SetDevices (LOADER_ENTRY *Entry)
                         MsgLog ("  Read default Framebuffer LEVX: 0x%x\n", FBLEVX);
                         LEVX = (((LEVX & 0xFFFF) * FBLEVX / ShiftLEVX) | FBLEVX << 16);
                       }
+
                       MsgLog ("  Write new LEVX: 0x%x\n", LEVX);
 
                       /*Status = */PciIo->Mem.Write(

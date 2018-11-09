@@ -65,7 +65,8 @@ enum NSVGpaintType {
   NSVG_PAINT_LINEAR_GRADIENT = 2,
   NSVG_PAINT_RADIAL_GRADIENT = 3,
   NSVG_PAINT_CONIC_GRADIENT = 4,
-  NSVG_PAINT_GRADIENT_LINK = 5
+  NSVG_PAINT_GRADIENT_LINK = 5,
+  NSVG_PAINT_PATTERN = 6,
 };
 
 enum NSVGspreadType {
@@ -147,6 +148,15 @@ typedef struct NSVGclip
 #define kMaxTextLength 256
 
 typedef struct NSVGshape NSVGshape;
+
+typedef struct NSVGpattern {
+  char id[64];
+  int nx, ny;  //repeat
+  float width;
+  float height;
+  void* image;
+  struct NSVGpattern* next;
+} NSVGpattern;
 
 typedef struct NSVGgroup
 {
@@ -296,6 +306,7 @@ typedef struct NSVGattrib
   char visible;
   NSVGclipPathIndex clipPathCount;
   NSVGgroup* group;
+//  NSVGpattern* pattern;
 } NSVGattrib;
 
  typedef struct NSVGstyles
@@ -341,6 +352,13 @@ typedef struct NSVGfont {
   struct NSVGfont* next;
 } NSVGfont;
 
+typedef struct textFaces {
+  NSVGfont *font;
+  UINT32 color;
+  INTN   size;
+  BOOLEAN valid;
+} textFaces;
+
 typedef struct NSVGtext {
   char id[64];
 //  char class[64];
@@ -354,6 +372,7 @@ typedef struct NSVGtext {
   NSVGstyles* style;
   NSVGshape* shapes;
   struct NSVGtext *next;
+  NSVGgroup* group;
 } NSVGtext;
 
 typedef struct NSVGparser
@@ -369,6 +388,7 @@ typedef struct NSVGparser
   NSVGgradientData* gradients;
   NSVGshape* shapesTail;
   struct NSVGfont* font;
+  float opacity;
   // this is temporary set for Menu text, later each text will have own face
   float fontSize;
   char fontStyle;
@@ -382,10 +402,12 @@ typedef struct NSVGparser
   char titleFlag;
   char shapeFlag;
   char styleFlag;
+  char patternFlag;
 //  char groupFlag;
   BOOLEAN isText;
   char unknown[64];
   NSVGtext* text;
+  NSVGpattern *patterns;
   NSVGclipPath* clipPath;
   NSVGclipPathIndex clipPathStack[NSVG_MAX_CLIP_PATHS];
 } NSVGparser;
@@ -401,7 +423,7 @@ typedef struct NSVGparser
 
 // Parses SVG file from a null terminated string, returns SVG image as paths.
 // Important note: changes the string.
-NSVGparser* nsvgParse(char* input, const char* units, float dpi);
+NSVGparser* nsvgParse(char* input, const char* units, float dpi, float opacity);
 
 // Deletes list of paths.
 void nsvgDelete(NSVGimage* image);
@@ -411,8 +433,9 @@ void nsvg__xformInverse(float* inv, float* t);
 void nsvg__xformPremultiply(float* t, float* s);
 void nsvg__xformMultiply(float* t, float* s);
 void nsvg__deleteFont(NSVGfont* font);
+void nsvg__imageBounds(NSVGparser* p, float* bounds);
 float addLetter(NSVGparser* p, CHAR16 letter, float x, float y, float scale, UINT32 color);
-VOID LoadSVGfont(NSVGfont  *fontSVG, UINT32 color);
+VOID RenderSVGfont(NSVGfont  *fontSVG, UINT32 color);
 
 //--------------- Rasterizer --------------
 typedef struct NSVGrasterizer NSVGrasterizer;
@@ -478,12 +501,13 @@ typedef struct NSVGcachedPaint {
   char spread;
   char pad[6];
   float xform[6];
+  void *image;
   unsigned int colors[256];
 } NSVGcachedPaint;
 
 typedef void (*NSVGscanlineFunction)(
         unsigned char* dst, int count, unsigned char* cover, int x, int y,
-        float tx, float ty, float scalex, float scaley, NSVGcachedPaint* cache);
+    /*    float tx, float ty, float scalex, float scaley, */ NSVGcachedPaint* cache);
 
 struct NSVGrasterizer
 {

@@ -10,7 +10,14 @@
 
 
 #define memcpy(dest,source,count) CopyMem(dest,(void*)source,(UINTN)(count))
-#define fabsf(x) ((x >= 0.0f)?x:(-x))
+//#define fabsf(x) ((x >= 0.0f)?x:(-x))
+#define fabsf(x) FabsF(x)
+
+float FabsF(float x)
+{
+  if (x < 0.f) return -x;
+  return x;
+}
 
 //we will assume sqrt(abs(x))
 float SqrtF(float X)
@@ -353,7 +360,7 @@ CHAR16* PoolPrintFloat(float X)
   CHAR8 S = ' ';
   float D;
   I = (INTN)X;
-  D = I;
+  D = (float)I;
   if (I == 0 && X < 0) {
     S = '-';
   }
@@ -361,4 +368,29 @@ CHAR16* PoolPrintFloat(float X)
   return PoolPrint(L"%c%d.%06d", S, I, (INTN)Fract);
 }
 
+static UINT32 seed = 12345;
+float rndf() //expected 0..1
+{
+//  UINT16 Rand = 0;
+//  AsmRdRand16(&Rand);  //it's a pity panic
+//  return (float)Rand / 65536.f;
+  seed = seed * 214013 + 2531011;
+  float x = seed / 4294967296.0f;
+  return x;
+}
 
+int dither(float x)
+{
+  int i = (int)x;
+  float dx = x - (float)i;
+  if (dx > rndf()) i++;
+  return i;
+}
+//there is
+#if 0
+BOOLEAN
+EFIAPI
+AsmRdRand16 (
+             OUT     UINT16                    *Rand
+             );
+#endif

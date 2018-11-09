@@ -454,7 +454,7 @@ EFI_STATUS egSaveFile(IN EFI_FILE_HANDLE BaseDir OPTIONAL, IN CHAR16 *FileName,
   BufferSize = FileDataLength;
   Status = FileHandle->Write(FileHandle, &BufferSize, FileData);
   FileHandle->Close(FileHandle);
-  DBG("not written %r\n", Status);
+//  DBG("not written %r\n", Status);
   return Status;
 }
 
@@ -541,9 +541,10 @@ EG_IMAGE * egLoadIcon(IN EFI_FILE_HANDLE BaseDir, IN CHAR16 *FileName, IN UINTN 
     } else {
       ptr++;
     }
-    Size = StrLen(ptr)+1;
+    CHAR16 *ptr2 = StrStr(ptr, L".");
+    Size = ptr2 - ptr + 2;
     IconName = AllocateZeroPool(Size);
-    UnicodeStrToAsciiStrS(ptr, IconName, Size);
+    UnicodeStrToAsciiStrS(ptr, IconName, Size - 1);
 
     while (OSIconsTable[i].name) {
       if (AsciiStrCmp(OSIconsTable[i].name, IconName) == 0) {
@@ -680,7 +681,7 @@ VOID egRawCompose(IN OUT EG_PIXEL *CompBasePtr, IN EG_PIXEL *TopBasePtr,
   INTN      Alpha;
   INTN      CompAlpha;
   INTN      RevAlpha;
-  INTN       Temp;
+  INTN      TempAlpha;
 //  EG_PIXEL    *CompUp;
   if (!CompBasePtr || !TopBasePtr) {
     return;
@@ -697,38 +698,24 @@ VOID egRawCompose(IN OUT EG_PIXEL *CompBasePtr, IN EG_PIXEL *TopBasePtr,
     CompPtr = CompBasePtr;
     for (x = 0; x < Width; x++) {
       TopAlpha = TopPtr->a & 0xFF; //exclude sign
-      CompAlpha = CompPtr->a & 0xFF;
-      RevAlpha = 255 - TopAlpha;
-//      Alpha = 255 * (UINT8)TopAlpha + (UINT8)CompPtr->a * (UINT8)RevAlpha;
-      Alpha = (255*255 - (255 - TopAlpha) * (255 - CompAlpha)) / 255;
 
-      if (TopAlpha == 0) {
-        TopPtr++, CompPtr++; // no need to bother
-        continue;
+      if (TopAlpha == 255) {
+        CompPtr->b = TopPtr->b;
+        CompPtr->g = TopPtr->g;
+        CompPtr->r = TopPtr->r;
+        CompPtr->a = (UINT8)TopAlpha;
+      } else if (TopAlpha != 0) {
+        CompAlpha = CompPtr->a & 0xFF;
+        RevAlpha = 255 - TopAlpha;
+        TempAlpha = CompAlpha * RevAlpha;
+        TopAlpha *= 255;
+        Alpha = TopAlpha + TempAlpha;
+
+        CompPtr->b = (UINT8)((TopPtr->b * TopAlpha + CompPtr->b * TempAlpha) / Alpha);
+        CompPtr->g = (UINT8)((TopPtr->g * TopAlpha + CompPtr->g * TempAlpha) / Alpha);
+        CompPtr->r = (UINT8)((TopPtr->r * TopAlpha + CompPtr->r * TempAlpha) / Alpha);
+        CompPtr->a = (UINT8)(Alpha / 255);
       }
-
-
-
-      Temp = (TopPtr->b * TopAlpha) + (CompPtr->b * RevAlpha);
-      CompPtr->b = (UINT8)(Temp / 255);
-
-      Temp = (TopPtr->g * TopAlpha) + (CompPtr->g  * RevAlpha);
-      CompPtr->g = (UINT8)(Temp / 255);
-
-      Temp = (TopPtr->r * TopAlpha) + (CompPtr->r * RevAlpha);
-      CompPtr->r = (UINT8)(Temp / 255);
-
-      CompPtr->a = (UINT8)Alpha;
-
-      // apianti - Determine the alpha channel first and use associative compose
-      //Temp = (UINTN)CompPtr->a * RevAlpha + Alpha * Alpha;
-/*      CompPtr->a = (CompPtr->a > Alpha) ? CompPtr->a : (UINT8)Alpha; // (UINT8)(Temp / 255);
-      Temp = (UINTN)CompPtr->b * RevAlpha + (UINTN)TopPtr->b * Alpha; // +0x80;
-      CompPtr->b = (UINT8)(Temp / 255); // (UINT8)((Temp + (Temp >> 8)) >> 8);
-      Temp = (UINTN)CompPtr->g * RevAlpha + (UINTN)TopPtr->g * Alpha; // +0x80;
-      CompPtr->g = (UINT8)(Temp / 255); // (UINT8)((Temp + (Temp >> 8)) >> 8);
-      Temp = (UINTN)CompPtr->r * RevAlpha + (UINTN)TopPtr->r * Alpha; // +0x80;
-      CompPtr->r = (UINT8)(Temp / 255); // (UINT8)((Temp + (Temp >> 8)) >> 8);*/
       TopPtr++, CompPtr++;
     }
     TopBasePtr += TopLineOffset;
@@ -790,11 +777,11 @@ VOID egComposeImage(IN OUT EG_IMAGE *CompImage, IN EG_IMAGE *TopImage, IN INTN P
   // compose
   if (CompWidth > 0) {
     if (CompImage->HasAlpha && !BackgroundImage) {
-      CompImage->HasAlpha = FALSE;
+       CompImage->HasAlpha = FALSE;
     }
 
     if (TopImage->HasAlpha) {
-      if (CompImage->HasAlpha) {
+      if (CompImage->HasAlpha) {  //aaaa
         egRawCompose(CompImage->PixelData + PosY * CompImage->Width + PosX,
                      TopImage->PixelData,
                      CompWidth, CompHeight, CompImage->Width, TopImage->Width);
